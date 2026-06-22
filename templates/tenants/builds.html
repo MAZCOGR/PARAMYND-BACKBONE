@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Builds & Images — Paramynd Admin{% endblock %}
+{% block breadcrumb_title %}Paramynd <span>/ Builds & Images</span>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Builds & Images Docker</h1>
+    <p>Tags disponibles dans Artifact Registry et historique Cloud Build.</p>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+  <!-- Tags disponibles -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Tags disponibles</div>
+      <span class="badge badge-mock">Artifact Registry</span>
+    </div>
+    {% if available_tags %}
+    <div class="table-container" style="border:none;border-radius:0;">
+      <table>
+        <thead>
+          <tr>
+            <th>Tag</th>
+            <th>Digest</th>
+            <th>Créé le</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tag in available_tags %}
+          <tr>
+            <td>
+              <span class="code-tag" style="color:var(--success)">{{ tag.tag }}</span>
+            </td>
+            <td class="td-mono" style="font-size:11px;">{{ tag.digest|truncatechars:16 }}</td>
+            <td class="text-sm text-muted">{{ tag.created|default:"—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding:40px;">
+      <div class="icon">📦</div>
+      <h3>Aucun tag trouvé</h3>
+      <p>Configurez Artifact Registry pour voir les images disponibles.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Historique Cloud Build -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Historique Cloud Build</div>
+      <span class="badge badge-mock">Cloud Build</span>
+    </div>
+    {% if builds %}
+    <div class="table-container" style="border:none;border-radius:0;">
+      <table>
+        <thead>
+          <tr>
+            <th>ID Build</th>
+            <th>Statut</th>
+            <th>Tags</th>
+            <th>Durée</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for build in builds %}
+          <tr>
+            <td class="td-mono" style="font-size:11px;">{{ build.id|truncatechars:14 }}</td>
+            <td>
+              {% if build.status == 'SUCCESS' %}
+              <span class="badge badge-active">Réussi</span>
+              {% elif build.status == 'FAILURE' %}
+              <span class="badge badge-failed">Échoué</span>
+              {% elif build.status == 'WORKING' %}
+              <span class="badge badge-provisioning pulse">En cours</span>
+              {% else %}
+              <span class="badge badge-archived">{{ build.status }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% for tag in build.tags %}
+              <span class="code-tag">{{ tag }}</span>
+              {% empty %}
+              <span class="text-muted">—</span>
+              {% endfor %}
+            </td>
+            <td class="text-sm text-muted">{{ build.duration }}</td>
+            <td class="text-sm text-muted">{{ build.created|truncatechars:19 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding:40px;">
+      <div class="icon">🏗️</div>
+      <h3>Aucun build trouvé</h3>
+      <p>Configurez Cloud Build pour voir l'historique.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

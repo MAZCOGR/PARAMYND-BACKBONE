@@ -1,0 +1,1131 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Paramynd Admin — Control Plane{% endblock %}
+
+{% block extra_head %}
+<meta name="description" content="Paramynd unifie vos ERP, EPM et OMP via une couche d'orchestration IA pour analyser, planifier et décider en temps réel.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════
+   PARAMYND HOME — Apple-inspired Design
+   Borderless · Radius 5px · Shadow-first · Minimal
+   ═══════════════════════════════════════════════════════ */
+
+:root {
+  --r: 5px;              /* border-radius universel */
+  --r-lg: 12px;          /* cartes larges */
+  --black: #050507;
+  --black-2: #0d0d12;
+  --surface: rgba(255,255,255,0.045);
+  --surface-hover: rgba(255,255,255,0.075);
+  --purple: #7c5cfc;
+  --purple-dim: rgba(124,92,252,0.18);
+  --teal: #06d6a0;
+  --teal-dim: rgba(6,214,160,0.12);
+  --white: #ffffff;
+  --gray-1: rgba(255,255,255,0.85);
+  --gray-2: rgba(255,255,255,0.5);
+  --gray-3: rgba(255,255,255,0.25);
+  --gray-4: rgba(255,255,255,0.08);
+  --shadow-sm: 0 2px 12px rgba(0,0,0,0.4);
+  --shadow-md: 0 8px 32px rgba(0,0,0,0.55);
+  --shadow-lg: 0 24px 64px rgba(0,0,0,0.7);
+  --shadow-glow: 0 0 60px rgba(124,92,252,0.15);
+  --ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  background: var(--black);
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: transparent;
+  color: var(--white);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; }
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 5px; }
+
+/* ════════════════════════════════
+   NAV
+   ════════════════════════════════ */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+  height: 56px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 40px;
+  transition: background 0.4s var(--ease), backdrop-filter 0.4s var(--ease);
+}
+.nav.stuck {
+  background: rgba(5,5,7,0.82);
+  backdrop-filter: blur(24px) saturate(1.8);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.nav-logo {
+  display: flex; align-items: center; gap: 9px;
+}
+.nav-logo-mark {
+  width: 28px; height: 28px; border-radius: 5px;
+  background: linear-gradient(135deg, var(--purple) 0%, var(--teal) 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  box-shadow: 0 2px 12px rgba(124,92,252,0.4);
+  flex-shrink: 0;
+}
+.nav-logo-name {
+  font-size: 17px; font-weight: 700; letter-spacing: -0.4px;
+  color: var(--white);
+}
+.nav-center {
+  display: flex; align-items: center; gap: 4px;
+  position: absolute; left: 50%; transform: translateX(-50%);
+}
+.nav-link {
+  padding: 6px 14px;
+  font-size: 14px; font-weight: 500; color: var(--gray-2);
+  border-radius: var(--r);
+  transition: color 0.2s, background 0.2s;
+}
+.nav-link:hover { color: var(--white); background: var(--gray-4); }
+.nav-right { display: flex; align-items: center; gap: 10px; }
+.nav-btn-ghost {
+  padding: 7px 16px;
+  font-size: 14px; font-weight: 500; color: var(--gray-2);
+  border-radius: var(--r);
+  transition: color 0.2s, background 0.2s;
+}
+.nav-btn-ghost:hover { color: var(--white); background: var(--gray-4); }
+.nav-btn-primary {
+  padding: 8px 18px;
+  font-size: 14px; font-weight: 600; color: var(--white);
+  border-radius: var(--r);
+  background: var(--purple);
+  box-shadow: 0 2px 16px rgba(124,92,252,0.45);
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), background 0.2s;
+}
+.nav-btn-primary:hover {
+  background: #8b6dfc;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 24px rgba(124,92,252,0.55);
+}
+
+/* ════════════════════════════════
+   HERO
+   ════════════════════════════════ */
+.hero {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; text-align: center;
+  padding: 140px 48px 100px;
+  position: relative; overflow: hidden;
+}
+
+/* Brain canvas — fixed full-page background */
+#brainCanvas {
+  position: fixed; inset: 0;
+  width: 100vw; height: 100vh;
+  pointer-events: none; z-index: -1;
+  opacity: 0;
+  animation: canvasFadeIn 2s ease 0.5s forwards;
+}
+@keyframes canvasFadeIn {
+  to { opacity: 1; }
+}
+/* Hero vignette overlay */
+.hero-ambient {
+  position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 50%, rgba(5,5,7,0) 30%, rgba(5,5,7,0.55) 100%),
+    radial-gradient(ellipse 100% 30% at 50% 100%, rgba(5,5,7,0.8) 0%, transparent 100%);
+}
+
+.hero-content { position: relative; z-index: 1; max-width: 860px; }
+
+/* Eyebrow */
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 12px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase;
+  color: var(--purple);
+  margin-bottom: 28px;
+  opacity: 0; animation: fadeUp 0.7s var(--ease) 0.1s forwards;
+}
+.eyebrow-line {
+  display: block; width: 24px; height: 1.5px;
+  background: linear-gradient(90deg, var(--purple), transparent);
+}
+
+/* H1 */
+.hero-title {
+  font-size: clamp(52px, 7vw, 88px);
+  font-weight: 900;
+  line-height: 1.0;
+  letter-spacing: -3px;
+  color: var(--white);
+  margin-bottom: 28px;
+  opacity: 0; animation: fadeUp 0.7s var(--ease) 0.2s forwards;
+}
+.hero-title .accent-word {
+  background: linear-gradient(120deg, var(--purple) 0%, #a78bfa 40%, var(--teal) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+
+/* Subtitle */
+.hero-sub {
+  font-size: clamp(17px, 2.2vw, 21px);
+  font-weight: 400; line-height: 1.65;
+  color: var(--gray-2);
+  max-width: 600px; margin: 0 auto 48px;
+  opacity: 0; animation: fadeUp 0.7s var(--ease) 0.3s forwards;
+}
+
+/* CTAs */
+.hero-ctas {
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  flex-wrap: wrap;
+  opacity: 0; animation: fadeUp 0.7s var(--ease) 0.4s forwards;
+}
+.cta-primary {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 15px 32px;
+  font-size: 16px; font-weight: 600; color: var(--white);
+  background: var(--purple);
+  border-radius: var(--r);
+  box-shadow: 0 4px 24px rgba(124,92,252,0.45), 0 1px 0 rgba(255,255,255,0.1) inset;
+  transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease), background 0.2s;
+}
+.cta-primary:hover {
+  background: #8b6dfc; transform: translateY(-2px);
+  box-shadow: 0 8px 36px rgba(124,92,252,0.55), 0 1px 0 rgba(255,255,255,0.1) inset;
+}
+.cta-secondary {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 15px 32px;
+  font-size: 16px; font-weight: 500; color: var(--gray-1);
+  background: var(--surface);
+  border-radius: var(--r);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.25s var(--ease), background 0.2s, color 0.2s;
+}
+.cta-secondary:hover { background: var(--surface-hover); color: var(--white); transform: translateY(-2px); }
+
+/* Hero hint */
+.hero-hint {
+  margin-top: 48px;
+  font-size: 12px; color: var(--gray-3); letter-spacing: 0.3px;
+  opacity: 0; animation: fadeUp 0.7s var(--ease) 0.55s forwards;
+}
+
+/* ════════════════════════════════
+   LOGOS BAND
+   ════════════════════════════════ */
+.logos-band {
+  padding: 56px 48px 72px;
+  text-align: center;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+.logos-label {
+  font-size: 11px; font-weight: 600; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--gray-3);
+  margin-bottom: 24px;
+}
+.logos-track {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; flex-wrap: wrap;
+  max-width: 900px; margin: 0 auto;
+}
+.logo-chip {
+  padding: 7px 16px;
+  font-size: 13px; font-weight: 600; color: var(--gray-3);
+  background: transparent;
+  border-radius: var(--r);
+  letter-spacing: 0.2px;
+  transition: color 0.2s, background 0.2s;
+}
+.logo-chip:hover { color: var(--gray-1); background: var(--gray-4); }
+
+/* ════════════════════════════════
+   SECTION UTILITIES
+   ════════════════════════════════ */
+.section { padding: 120px 48px; }
+.section-inner { max-width: 1080px; margin: 0 auto; }
+
+.section-eyebrow {
+  font-size: 12px; font-weight: 700; letter-spacing: 1.8px;
+  text-transform: uppercase; color: var(--purple);
+  margin-bottom: 18px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-eyebrow::before { content: ''; display: block; width: 16px; height: 1.5px; background: var(--purple); }
+
+.section-title {
+  font-size: clamp(36px, 4.5vw, 60px);
+  font-weight: 800; letter-spacing: -2px; line-height: 1.05;
+  color: var(--white); margin-bottom: 18px;
+}
+.section-sub {
+  font-size: 18px; line-height: 1.7; color: var(--gray-2);
+  max-width: 520px; margin-bottom: 64px;
+}
+
+/* ════════════════════════════════
+   HOW IT WORKS — Apple-style steps
+   ════════════════════════════════ */
+.steps-layout {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 80px; align-items: center;
+}
+.steps-visual {
+  position: relative; height: 460px;
+  border-radius: var(--r-lg);
+  background: var(--black-2);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+}
+
+/* Animated pipeline visual */
+.pipeline {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 0; padding: 32px;
+}
+.pipe-node {
+  width: 100%; padding: 14px 20px;
+  background: rgba(255,255,255,0.04);
+  border-radius: var(--r);
+  box-shadow: var(--shadow-sm);
+  display: flex; align-items: center; gap: 14px;
+  transition: background 0.3s;
+}
+.pipe-node:hover { background: rgba(255,255,255,0.07); }
+.pipe-node-icon {
+  width: 38px; height: 38px; border-radius: var(--r);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; flex-shrink: 0;
+}
+.pipe-node-text h5 { font-size: 13px; font-weight: 700; color: var(--white); margin-bottom: 2px; }
+.pipe-node-text p { font-size: 11px; color: var(--gray-2); }
+.pipe-connector {
+  width: 1.5px; height: 22px;
+  background: linear-gradient(180deg, rgba(124,92,252,0.5), rgba(6,214,160,0.5));
+  margin: 0 auto;
+  position: relative;
+}
+.pipe-connector::after {
+  content: '';
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 4px; height: 100%;
+  background: linear-gradient(180deg, var(--purple), var(--teal));
+  border-radius: 5px;
+  animation: flowDown 2s linear infinite;
+  clip-path: inset(0 0 0 0);
+}
+@keyframes flowDown {
+  0% { clip-path: inset(0 0 100% 0); }
+  50% { clip-path: inset(0 0 0 0); }
+  100% { clip-path: inset(100% 0 0 0); }
+}
+
+.steps-list { display: flex; flex-direction: column; gap: 36px; }
+.step-item { display: flex; gap: 20px; align-items: flex-start; }
+.step-num {
+  width: 32px; height: 32px; border-radius: var(--r);
+  background: var(--purple-dim);
+  color: var(--purple);
+  font-size: 13px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 2px;
+}
+.step-body h4 {
+  font-size: 17px; font-weight: 700; color: var(--white);
+  margin-bottom: 6px; letter-spacing: -0.3px;
+}
+.step-body p { font-size: 15px; color: var(--gray-2); line-height: 1.65; }
+
+/* ════════════════════════════════
+   FEATURES — bento grid
+   ════════════════════════════════ */
+.bento {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: auto;
+  gap: 16px;
+}
+.bento-card {
+  background: var(--black-2);
+  border-radius: var(--r-lg);
+  padding: 36px 32px;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease), background 0.3s;
+  overflow: hidden; position: relative;
+}
+.bento-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg), 0 0 40px rgba(124,92,252,0.08);
+  background: #111118;
+}
+/* Subtle top accent line */
+.bento-card::before {
+  content: ''; position: absolute;
+  top: 0; left: 32px; right: 32px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+}
+
+.bento-card.col-8  { grid-column: span 8; }
+.bento-card.col-4  { grid-column: span 4; }
+.bento-card.col-6  { grid-column: span 6; }
+.bento-card.col-12 { grid-column: span 12; }
+
+.bento-icon {
+  width: 48px; height: 48px; border-radius: var(--r);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+}
+.bento-card h3 {
+  font-size: 20px; font-weight: 700; letter-spacing: -0.5px;
+  color: var(--white); margin-bottom: 10px;
+}
+.bento-card p {
+  font-size: 15px; color: var(--gray-2); line-height: 1.7;
+}
+.bento-tag {
+  display: inline-block; margin-top: 20px;
+  padding: 4px 12px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border-radius: var(--r);
+}
+
+/* ════════════════════════════════
+   INTEGRATIONS
+   ════════════════════════════════ */
+.integ-section { background: rgba(13,13,18,0.72); }
+.integ-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+}
+.integ-card {
+  background: var(--black);
+  border-radius: var(--r-lg);
+  padding: 28px 20px;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease), background 0.2s;
+}
+.integ-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md), 0 0 0 1px rgba(124,92,252,0.2);
+  background: #0d0d12;
+}
+.integ-emoji { font-size: 30px; margin-bottom: 12px; display: block; }
+.integ-name { font-size: 14px; font-weight: 700; color: var(--white); margin-bottom: 4px; }
+.integ-type { font-size: 11px; color: var(--gray-3); font-weight: 500; letter-spacing: 0.3px; }
+
+/* ════════════════════════════════
+   CTA FINALE
+   ════════════════════════════════ */
+.cta-section {
+  padding: 140px 48px;
+  text-align: center;
+  position: relative; overflow: hidden;
+}
+.cta-section::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 60% 70% at 50% 100%, rgba(124,92,252,0.1) 0%, transparent 70%);
+  pointer-events: none;
+}
+.cta-section-inner { position: relative; z-index: 1; max-width: 640px; margin: 0 auto; }
+.cta-section h2 {
+  font-size: clamp(40px, 5vw, 68px);
+  font-weight: 900; letter-spacing: -2.5px; line-height: 1.0;
+  color: var(--white); margin-bottom: 20px;
+}
+.cta-section p {
+  font-size: 19px; color: var(--gray-2); margin-bottom: 44px; line-height: 1.65;
+}
+
+/* ════════════════════════════════
+   FOOTER
+   ════════════════════════════════ */
+.footer {
+  border-top: 1px solid rgba(255,255,255,0.05);
+  padding: 36px 48px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 16px;
+}
+.footer-left { display: flex; align-items: center; gap: 10px; }
+.footer-copy { font-size: 13px; color: var(--gray-3); }
+.footer-links { display: flex; gap: 20px; }
+.footer-links a { font-size: 13px; color: var(--gray-3); transition: color 0.2s; }
+.footer-links a:hover { color: var(--gray-1); }
+
+/* ════════════════════════════════
+   REVEAL ANIMATION
+   ════════════════════════════════ */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.reveal {
+  opacity: 0; transform: translateY(28px);
+  transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
+}
+.reveal.in { opacity: 1; transform: translateY(0); }
+.reveal-d1 { transition-delay: 0.08s; }
+.reveal-d2 { transition-delay: 0.16s; }
+.reveal-d3 { transition-delay: 0.24s; }
+.reveal-d4 { transition-delay: 0.32s; }
+.reveal-d5 { transition-delay: 0.40s; }
+
+/* ════════════════════════════════
+   RESPONSIVE
+   ════════════════════════════════ */
+@media (max-width: 1024px) {
+  .bento-card.col-8, .bento-card.col-4 { grid-column: span 12; }
+  .bento-card.col-6 { grid-column: span 12; }
+  .steps-layout { grid-template-columns: 1fr; }
+  .steps-visual { display: none; }
+  .integ-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 768px) {
+  .hero { padding: 110px 24px 80px; }
+  .section { padding: 80px 24px; }
+  .nav { padding: 0 20px; }
+  .nav-center { display: none; }
+  .hero-title { letter-spacing: -2px; }
+  .integ-grid { grid-template-columns: repeat(2, 1fr); }
+  .footer { flex-direction: column; align-items: flex-start; gap: 20px; }
+}
+</style>
+{% endblock %}
+
+{% block body %}
+
+<!-- ══════════════ NAV ══════════════ -->
+<nav class="nav" id="nav">
+  <a href="{% url 'home' %}" class="nav-logo">
+    <div class="nav-logo-mark">🧠</div>
+    <span class="nav-logo-name">Paramynd Admin</span>
+  </a>
+
+  <div class="nav-center">
+    <a href="#how" class="nav-link">Fonctionnement</a>
+    <a href="#features" class="nav-link">Fonctionnalités</a>
+    <a href="#integrations" class="nav-link">Intégrations</a>
+  </div>
+
+  <div class="nav-right">
+    <a href="{% url 'accounts:login' %}" class="nav-btn-ghost">Connexion</a>
+    <a href="{% url 'accounts:login' %}" class="nav-btn-primary" id="nav-cta">Accéder →</a>
+  </div>
+</nav>
+
+<!-- Canvas fixed full-page background -->
+<canvas id="brainCanvas"></canvas>
+
+<!-- ══════════════ HERO ══════════════ -->
+<section class="hero">
+  <div class="hero-ambient"></div>
+  <div class="hero-content">
+
+    <div class="eyebrow">
+      <span class="eyebrow-line"></span>
+      Orchestration Agent-to-Agent
+    </div>
+
+    <h1 class="hero-title">
+      L'intelligence qui<br>
+      <span class="accent-word">unifie votre entreprise</span>
+    </h1>
+
+    <p class="hero-sub">
+      Paramynd connecte vos ERP, EPM et OMP dans une couche d'orchestration IA — pour analyser toutes vos données, planifier partout où c'est possible, et exécuter sans friction.
+    </p>
+
+    <div class="hero-ctas">
+      <a href="{% url 'accounts:login' %}" class="cta-primary" id="hero-cta-main">
+        Accéder à la plateforme
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <a href="#how" class="cta-secondary" id="hero-cta-demo">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2"/><path d="M6.5 5.5l4 2.5-4 2.5V5.5z" fill="currentColor"/></svg>
+        Comment ça marche
+      </a>
+    </div>
+
+    <p class="hero-hint">Connecté nativement à SAP · Oracle · OMP · Anaplan · Kinaxis</p>
+  </div>
+</section>
+
+<!-- ══════════════ LOGOS ══════════════ -->
+<div class="logos-band">
+  <p class="logos-label">Compatible avec votre stack existante</p>
+  <div class="logos-track">
+    <span class="logo-chip">SAP S/4HANA</span>
+    <span class="logo-chip">Oracle ERP</span>
+    <span class="logo-chip">OMP</span>
+    <span class="logo-chip">SAP IBP</span>
+    <span class="logo-chip">Anaplan</span>
+    <span class="logo-chip">OneStream</span>
+    <span class="logo-chip">Workday</span>
+    <span class="logo-chip">Microsoft D365</span>
+    <span class="logo-chip">Kinaxis</span>
+    <span class="logo-chip">API Custom</span>
+  </div>
+</div>
+
+<!-- ══════════════ HOW IT WORKS ══════════════ -->
+<section class="section" id="how">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-eyebrow">Architecture</div>
+      <h2 class="section-title">Une pipeline orchestrée<br>de bout en bout</h2>
+      <p class="section-sub">De la collecte de données brutes à l'exécution dans vos systèmes cibles — sans ETL complexe, sans intervention manuelle.</p>
+    </div>
+
+    <div class="steps-layout">
+      <!-- Visual pipeline -->
+      <div class="steps-visual reveal reveal-d2">
+        <div class="pipeline">
+          <div class="pipe-node">
+            <div class="pipe-node-icon" style="background:rgba(124,92,252,0.15);">🔌</div>
+            <div class="pipe-node-text">
+              <h5>Sources connectées</h5>
+              <p>SAP · Oracle · OMP · APIs</p>
+            </div>
+          </div>
+          <div class="pipe-connector"></div>
+          <div class="pipe-node">
+            <div class="pipe-node-icon" style="background:rgba(6,214,160,0.12);">🤖</div>
+            <div class="pipe-node-text">
+              <h5>Couche d'orchestration</h5>
+              <p>Agents IA · Analyse · Décision</p>
+            </div>
+          </div>
+          <div class="pipe-connector"></div>
+          <div class="pipe-node">
+            <div class="pipe-node-icon" style="background:rgba(245,158,11,0.12);">📋</div>
+            <div class="pipe-node-text">
+              <h5>Planning unifié</h5>
+              <p>S&OP · Demand · Budget · Supply</p>
+            </div>
+          </div>
+          <div class="pipe-connector"></div>
+          <div class="pipe-node">
+            <div class="pipe-node-icon" style="background:rgba(37,99,235,0.12);">🚀</div>
+            <div class="pipe-node-text">
+              <h5>Exécution automatisée</h5>
+              <p>ERP · WMS · TMS · Finance</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Steps -->
+      <div class="steps-list">
+        <div class="step-item reveal reveal-d1">
+          <div class="step-num">01</div>
+          <div class="step-body">
+            <h4>Connecter toutes vos sources</h4>
+            <p>Branchez vos ERP, EPM et outils de planning en quelques clics. Nos connecteurs natifs lisent et écrivent en bidirectionnel.</p>
+          </div>
+        </div>
+        <div class="step-item reveal reveal-d2">
+          <div class="step-num">02</div>
+          <div class="step-body">
+            <h4>Les agents analysent en continu</h4>
+            <p>Des agents IA spécialisés ingèrent, croisent et analysent vos données transactionnelles et de planning en temps réel.</p>
+          </div>
+        </div>
+        <div class="step-item reveal reveal-d3">
+          <div class="step-num">03</div>
+          <div class="step-body">
+            <h4>Planifier avec toutes les données</h4>
+            <p>Générez vos S&OP, demand plans et budgets en croisant automatiquement toutes vos sources — sans copier-coller Excel.</p>
+          </div>
+        </div>
+        <div class="step-item reveal reveal-d4">
+          <div class="step-num">04</div>
+          <div class="step-body">
+            <h4>Exécuter en boucle fermée</h4>
+            <p>Les agents poussent les décisions dans vos systèmes cibles et surveillent l'exécution pour détecter les écarts.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ FEATURES — BENTO ══════════════ -->
+<section class="section" id="features" style="background: rgba(13,13,18,0.78);">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-eyebrow">Fonctionnalités</div>
+      <h2 class="section-title">Tout ce que vos équipes<br>attendent d'une plateforme</h2>
+      <p class="section-sub">Paramynd couvre l'intégralité du cycle — de la donnée brute à l'action terrain.</p>
+    </div>
+
+    <div class="bento">
+      <!-- Large card -->
+      <div class="bento-card col-8 reveal reveal-d1">
+        <div class="bento-icon" style="background:rgba(124,92,252,0.15);">🤖</div>
+        <h3>Orchestration Agent-to-Agent</h3>
+        <p>Des agents IA spécialisés — analyste, planificateur, exécuteur — communiquent entre eux pour orchestrer des workflows complexes de bout en bout, sans intervention humaine.</p>
+        <span class="bento-tag" style="background:rgba(124,92,252,0.1); color:#a78bfa;">Intelligence artificielle</span>
+      </div>
+
+      <!-- Small card -->
+      <div class="bento-card col-4 reveal reveal-d2">
+        <div class="bento-icon" style="background:rgba(6,214,160,0.12);">⚡</div>
+        <h3>Décisions temps réel</h3>
+        <p>Dès qu'un écart est détecté dans vos données, les alertes et recommandations sont générées instantanément.</p>
+        <span class="bento-tag" style="background:rgba(6,214,160,0.1); color:#06d6a0;">Temps réel</span>
+      </div>
+
+      <!-- 3 medium cards -->
+      <div class="bento-card col-4 reveal reveal-d1">
+        <div class="bento-icon" style="background:rgba(245,158,11,0.1);">📊</div>
+        <h3>EPM Unifié</h3>
+        <p>Anaplan, OneStream, SAP BPC consolidés dans une vue unique et synchronisée en permanence.</p>
+      </div>
+
+      <div class="bento-card col-4 reveal reveal-d2">
+        <div class="bento-icon" style="background:rgba(37,99,235,0.1);">🔄</div>
+        <h3>S&OP Automatisé</h3>
+        <p>Demand sensing et supply planning pilotés par l'IA, synchronisés avec OMP, Kinaxis et SAP IBP.</p>
+      </div>
+
+      <div class="bento-card col-4 reveal reveal-d3">
+        <div class="bento-icon" style="background:rgba(239,68,68,0.1);">🔗</div>
+        <h3>ERP Layer natif</h3>
+        <p>Lecture et écriture bidirectionnelle dans SAP S/4, Oracle et D365 — sans ETL, sans middleware.</p>
+      </div>
+
+      <!-- Wide bottom card -->
+      <div class="bento-card col-12 reveal reveal-d1" style="display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:center;">
+        <div>
+          <div class="bento-icon" style="background:rgba(124,92,252,0.1);">🛡️</div>
+          <h3>Sécurité Enterprise-grade</h3>
+          <p>RBAC granulaire, audit trail complet, SSO, conformité RGPD et SOC 2. Prêt pour les exigences IT des grandes organisations.</p>
+          <span class="bento-tag" style="background:rgba(124,92,252,0.1); color:#a78bfa; margin-top:20px;">Enterprise Ready</span>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div style="background:rgba(255,255,255,0.03); border-radius:var(--r); padding:16px; box-shadow:var(--shadow-sm);">
+            <div style="font-size:11px;color:var(--gray-3);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">RBAC</div>
+            <div style="font-size:15px;font-weight:700;">4 rôles</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.03); border-radius:var(--r); padding:16px; box-shadow:var(--shadow-sm);">
+            <div style="font-size:11px;color:var(--gray-3);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Audit</div>
+            <div style="font-size:15px;font-weight:700;">100% tracé</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.03); border-radius:var(--r); padding:16px; box-shadow:var(--shadow-sm);">
+            <div style="font-size:11px;color:var(--gray-3);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Auth</div>
+            <div style="font-size:15px;font-weight:700;">JWT + SSO</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.03); border-radius:var(--r); padding:16px; box-shadow:var(--shadow-sm);">
+            <div style="font-size:11px;color:var(--gray-3);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Conformité</div>
+            <div style="font-size:15px;font-weight:700;">RGPD</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ INTEGRATIONS ══════════════ -->
+<section class="section integ-section" id="integrations">
+  <div class="section-inner">
+    <div class="reveal" style="text-align:center; margin-bottom:56px;">
+      <div class="section-eyebrow" style="justify-content:center;">Intégrations</div>
+      <h2 class="section-title">Branchez votre stack<br>existante en quelques clics</h2>
+      <p class="section-sub" style="margin:0 auto;">Aucun remplacement nécessaire. Paramynd vient se poser sur vos systèmes actuels.</p>
+    </div>
+    <div class="integ-grid">
+      <div class="integ-card reveal reveal-d1">
+        <span class="integ-emoji">🏢</span>
+        <div class="integ-name">SAP S/4HANA</div>
+        <div class="integ-type">ERP</div>
+      </div>
+      <div class="integ-card reveal reveal-d1">
+        <span class="integ-emoji">🔮</span>
+        <div class="integ-name">Oracle ERP</div>
+        <div class="integ-type">ERP</div>
+      </div>
+      <div class="integ-card reveal reveal-d2">
+        <span class="integ-emoji">📦</span>
+        <div class="integ-name">OMP</div>
+        <div class="integ-type">Supply Chain Planning</div>
+      </div>
+      <div class="integ-card reveal reveal-d2">
+        <span class="integ-emoji">🌐</span>
+        <div class="integ-name">SAP IBP</div>
+        <div class="integ-type">Business Planning</div>
+      </div>
+      <div class="integ-card reveal reveal-d3">
+        <span class="integ-emoji">📈</span>
+        <div class="integ-name">Anaplan</div>
+        <div class="integ-type">EPM / Planning</div>
+      </div>
+      <div class="integ-card reveal reveal-d1">
+        <span class="integ-emoji">🎯</span>
+        <div class="integ-name">OneStream</div>
+        <div class="integ-type">EPM / Consolidation</div>
+      </div>
+      <div class="integ-card reveal reveal-d2">
+        <span class="integ-emoji">⚙️</span>
+        <div class="integ-name">Microsoft D365</div>
+        <div class="integ-type">ERP / CRM</div>
+      </div>
+      <div class="integ-card reveal reveal-d2">
+        <span class="integ-emoji">🔁</span>
+        <div class="integ-name">Kinaxis</div>
+        <div class="integ-type">Supply Chain</div>
+      </div>
+      <div class="integ-card reveal reveal-d3">
+        <span class="integ-emoji">👥</span>
+        <div class="integ-name">Workday</div>
+        <div class="integ-type">HCM / Finance</div>
+      </div>
+      <div class="integ-card reveal reveal-d3">
+        <span class="integ-emoji">🔌</span>
+        <div class="integ-name">API Custom</div>
+        <div class="integ-type">REST / GraphQL / Webhook</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ CTA FINALE ══════════════ -->
+<section class="cta-section">
+  <div class="cta-section-inner reveal">
+    <h2>Prêt à orchestrer<br>votre entreprise ?</h2>
+    <p>Accédez à la plateforme et commencez à connecter vos systèmes dès aujourd'hui.</p>
+    <a href="{% url 'accounts:login' %}" class="cta-primary" id="cta-final" style="display:inline-flex;">
+      Accéder à la plateforme
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+  </div>
+</section>
+
+<!-- ══════════════ FOOTER ══════════════ -->
+<footer class="footer">
+  <div class="footer-left">
+    <div class="nav-logo-mark" style="width:24px;height:24px;font-size:12px;">🧠</div>
+    <span class="footer-copy">© 2026 Paramynd</span>
+  </div>
+  <div class="footer-links">
+    <a href="{% url 'accounts:login' %}">Connexion</a>
+    <a href="{% url 'dashboard:home' %}">Dashboard</a>
+    <a href="{% url 'admin:index' %}">Admin</a>
+  </div>
+</footer>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ════════════════════════════════════════════════
+//  BIG BANG → UNIVERSE — Brain Canvas Animation
+// ════════════════════════════════════════════════
+(function () {
+  const canvas = document.getElementById('brainCanvas');
+  const ctx    = canvas.getContext('2d');
+
+  const P  = [124, 92, 252];
+  const T  = [6, 214, 160];
+  const W2 = [230, 220, 255];
+
+  function rgb(c,a)    { return `rgba(${c[0]},${c[1]},${c[2]},${+a.toFixed(3)})`; }
+  function mix(a,b,t)  { return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t]; }
+  function lp(a,b,t)   { return a+(b-a)*t; }
+  function eo(t,e=3)   { return 1-Math.pow(1-Math.min(t,1),e); }
+  function clamp(v,lo,hi){ return Math.max(lo,Math.min(hi,v)); }
+  function rand(a,b)   { return a+Math.random()*(b-a); }
+
+  let W, H;
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  const PH_BANG   = 900;
+  const PH_FLY    = 3400;
+  const PH_SETTLE = 5000;
+
+  let nodes=[], signals=[], rings=[], flash=0, startT=null, raf;
+  let mouse = {x:-9999,y:-9999};
+
+  function connR() { return Math.hypot(W,H)*0.15; }
+
+  function mkNode() {
+    const pad=50;
+    const tx=rand(pad,W-pad), ty=rand(pad,H-pad);
+    const cx=W*.5, cy=H*.5;
+    const ang=Math.atan2(ty-cy,tx-cx)+rand(-0.35,0.35);
+    const spd=rand(5,14);
+    return {
+      x:cx, y:cy,
+      vx:Math.cos(ang)*spd, vy:Math.sin(ang)*spd,
+      tx, ty,
+      r:rand(1.4,3.8), hue:Math.random(),
+      ph:rand(0,Math.PI*2), phSpd:rand(0.007,0.022),
+      bright:rand(0.5,1.0),
+      wAng:rand(0,Math.PI*2), wSpd:rand(0.0003,0.0008),
+      trail:[], isPlanet:false,
+    };
+  }
+
+  function neighbours(i) {
+    const n=nodes[i],r2=connR()*connR(),out=[];
+    for(let j=0;j<nodes.length;j++){
+      if(i===j)continue;
+      const m=nodes[j],dx=m.x-n.x,dy=m.y-n.y;
+      if(dx*dx+dy*dy<r2)out.push(j);
+    }
+    return out.slice(0,5);
+  }
+  function spawnSig(){
+    const fi=(Math.random()*nodes.length)|0;
+    const nb=neighbours(fi);
+    if(!nb.length)return;
+    signals.push({fi,ti:nb[(Math.random()*nb.length)|0],t:0,hue:Math.random()});
+  }
+
+  function init(){
+    nodes=Array.from({length:140},mkNode);
+    signals=[];rings=[];flash=0;startT=null;
+    /* designate 7 planet nodes — larger, spread evenly around canvas */
+    const pCount=7;
+    const pIdx=[...Array(nodes.length).keys()].sort(()=>Math.random()-.5).slice(0,pCount);
+    pIdx.forEach((i,k)=>{
+      const n=nodes[i];
+      n.isPlanet=true;
+      n.r=rand(4.5,8.5);
+      n.bright=1.0;
+      /* planet targets: spread around canvas in a ring at ~70% radius */
+      const ang2=(k/pCount)*Math.PI*2+rand(-.3,.3);
+      const dist=Math.min(W,H)*0.32;
+      n.tx=W*.5+Math.cos(ang2)*dist;
+      n.ty=H*.5+Math.sin(ang2)*dist;
+    });
+  }
+
+  function draw(ts){
+    if(!startT)startT=ts;
+    const t=ts-startT;
+    const cx=W*.5,cy=H*.5;
+    ctx.clearRect(0,0,W,H);
+
+    /* ── SINGULARITY ── */
+    if(t<PH_BANG){
+      const p=t/PH_BANG;
+      const pul=.5+.5*Math.sin(p*Math.PI*7);
+      const r1=3+pul*10,r2=15+pul*60;
+      const gO=ctx.createRadialGradient(cx,cy,0,cx,cy,r2);
+      gO.addColorStop(0,rgb(P,.5*pul));
+      gO.addColorStop(.5,rgb(T,.2*pul));
+      gO.addColorStop(1,rgb(P,0));
+      ctx.beginPath();ctx.arc(cx,cy,r2,0,Math.PI*2);
+      ctx.fillStyle=gO;ctx.fill();
+      const gC=ctx.createRadialGradient(cx,cy,0,cx,cy,r1);
+      gC.addColorStop(0,rgb(W2,1));
+      gC.addColorStop(.4,rgb(P,.95));
+      gC.addColorStop(1,rgb(P,0));
+      ctx.beginPath();ctx.arc(cx,cy,r1,0,Math.PI*2);
+      ctx.fillStyle=gC;ctx.fill();
+      if(t>PH_BANG*.82){
+        flash=clamp((t-PH_BANG*.82)/(PH_BANG*.18),0,1);
+        ctx.fillStyle=`rgba(230,220,255,${(flash*.8).toFixed(3)})`;
+        ctx.fillRect(0,0,W,H);
+      }
+    }
+
+    /* ── EXPANSION + SETTLE + DRIFT ── */
+    if(t>=PH_BANG){
+      const tE=t-PH_BANG;
+      const fly=clamp(tE/(PH_FLY-PH_BANG),0,1);
+      const setP=clamp((t-PH_FLY)/(PH_SETTLE-PH_FLY),0,1);
+      const done=t>PH_SETTLE;
+
+      flash=clamp(flash-0.018,0,1);
+      if(flash>0){
+        ctx.fillStyle=`rgba(230,220,255,${(flash*.65).toFixed(3)})`;
+        ctx.fillRect(0,0,W,H);
+      }
+
+      /* shockwave rings removed */
+
+      /* physics */
+      for(const n of nodes){
+        n.ph+=n.phSpd;
+        if(t < PH_FLY){
+          /* fly/expansion phase: smooth ease interpolation from center to target */
+          const prevX = n.x, prevY = n.y;
+          const E = 1 - Math.pow(1 - fly, 4); // easeOutQuart
+          n.x = cx + (n.tx - cx) * E;
+          n.y = cy + (n.ty - cy) * E;
+          n.vx = n.x - prevX;
+          n.vy = n.y - prevY;
+          n.trail.push({x:n.x,y:n.y});
+          if(n.trail.length>14)n.trail.shift();
+        }else{
+          /* drift phase */
+          if(n.trail.length>0) n.trail.shift();
+          /* slow wander */
+          n.wAng+=n.wSpd*(1+.3*Math.sin(n.ph));
+          const wF = n.isPlanet ? 0.003 : 0.005;
+          n.vx+=Math.cos(n.wAng)*wF;
+          n.vy+=Math.sin(n.wAng)*wF;
+          /* planet gravity: non-planets attracted to nearest planet */
+          if(!n.isPlanet){
+            let nearP=null,nearD2=Infinity;
+            for(const p of nodes){
+              if(!p.isPlanet)continue;
+              const gx=p.x-n.x,gy=p.y-n.y,gd2=gx*gx+gy*gy;
+              if(gd2<nearD2){nearD2=gd2;nearP=p;}
+            }
+            if(nearP){
+              const gd=Math.sqrt(nearD2)||1;
+              const gravStr=0.003;
+              n.vx+=(nearP.x-n.x)/gd*gravStr;
+              n.vy+=(nearP.y-n.y)/gd*gravStr;
+              /* orbit effect */
+              n.vx += -(nearP.y-n.y)/gd * 0.006;
+              n.vy += (nearP.x-n.x)/gd * 0.006;
+            }
+          } else {
+            /* planets gently pulled to center so they don't wander off */
+            const cdx = cx - n.x, cdy = cy - n.y, cd = Math.hypot(cdx, cdy) || 1;
+            if (cd > Math.min(W,H)*0.3) {
+              n.vx += (cdx/cd) * 0.002;
+              n.vy += (cdy/cd) * 0.002;
+            }
+          }
+          
+          /* mouse repulsion */
+          const mdx=n.x-mouse.x,mdy=n.y-mouse.y,md2=mdx*mdx+mdy*mdy;
+          if(md2<22000){const f=.6/Math.max(md2,1);n.vx+=mdx*f;n.vy+=mdy*f;}
+          
+          /* edge boundary — soft bounce */
+          const pad=40;
+          if(n.x<pad)n.vx+=(pad-n.x)*.01;
+          if(n.x>W-pad)n.vx-=(n.x-(W-pad))*.01;
+          if(n.y<pad)n.vy+=(pad-n.y)*.01;
+          if(n.y>H-pad)n.vy-=(n.y-(H-pad))*.01;
+          
+          n.vx*=.991;n.vy*=.991;
+          n.x+=n.vx;n.y+=n.vy;
+        }
+      }
+
+      /* comet trails */
+      for(const n of nodes){
+        if(!n.trail.length)continue;
+        const col=mix(P,T,n.hue);
+        for(let i=0;i<n.trail.length;i++){
+          const tp=i/n.trail.length;
+          ctx.beginPath();
+          ctx.arc(n.trail[i].x,n.trail[i].y,n.r*tp*.55,0,Math.PI*2);
+          ctx.fillStyle=rgb(col,tp*.45*(1-fly*.4));
+          ctx.fill();
+        }
+      }
+
+      /* connections */
+      const cA=lp(0,0.13,eo(setP,3));
+      const cR=connR();
+      for(let i=0;i<nodes.length;i++){
+        const a=nodes[i];
+        for(let j=i+1;j<nodes.length;j++){
+          const b=nodes[j];
+          const dx=b.x-a.x,dy=b.y-a.y,d2=dx*dx+dy*dy;
+          if(d2>cR*cR)continue;
+          const d=Math.sqrt(d2);
+          ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);
+          ctx.strokeStyle=rgb(mix(P,T,(a.hue+b.hue)*.5),cA*(1-d/cR));
+          ctx.lineWidth=.7;ctx.stroke();
+        }
+      }
+
+      /* signals removed — clean cosmic drift */
+
+      /* nodes */
+      for(const n of nodes){
+        const col=mix(P,T,n.hue);
+        const pul=.55+.45*Math.sin(n.ph);
+        const r=n.r*(.88+.12*pul);
+        const al=n.bright*pul*.9;
+        if(n.isPlanet){
+          /* planet: large soft halo + bright core + outer ring */
+          const g2=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,r*18);
+          g2.addColorStop(0,rgb(col,al*.35));g2.addColorStop(.5,rgb(col,al*.1));g2.addColorStop(1,rgb(col,0));
+          ctx.beginPath();ctx.arc(n.x,n.y,r*18,0,Math.PI*2);
+          ctx.fillStyle=g2;ctx.fill();
+          ctx.beginPath();ctx.arc(n.x,n.y,r*1.6,0,Math.PI*2);
+          ctx.fillStyle=rgb(col,al*.9);ctx.fill();
+          ctx.beginPath();ctx.arc(n.x,n.y,r*1.6,0,Math.PI*2);
+          ctx.strokeStyle=rgb(col,.25);ctx.lineWidth=r*.6;ctx.stroke();
+        }else{
+          const g=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,r*6);
+          g.addColorStop(0,rgb(col,al*.4));g.addColorStop(1,rgb(col,0));
+          ctx.beginPath();ctx.arc(n.x,n.y,r*6,0,Math.PI*2);
+          ctx.fillStyle=g;ctx.fill();
+          ctx.beginPath();ctx.arc(n.x,n.y,r,0,Math.PI*2);
+          ctx.fillStyle=rgb(col,al);ctx.fill();
+        }
+      }
+    }
+    raf=requestAnimationFrame(draw);
+  }
+
+  document.addEventListener('mousemove',e=>{
+    mouse.x=e.clientX;mouse.y=e.clientY;
+  },{passive:true});
+  document.addEventListener('mouseleave',()=>{mouse.x=-9999;mouse.y=-9999;});
+
+  function start(){resize();init();raf=requestAnimationFrame(draw);}
+  window.addEventListener('resize',()=>{cancelAnimationFrame(raf);start();});
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden)cancelAnimationFrame(raf);
+    else{startT=null;raf=requestAnimationFrame(draw);}
+  });
+  start();
+})();
+
+// ════════════════════════════════════════════════
+//  NAV + REVEAL + SMOOTH SCROLL
+// ════════════════════════════════════════════════
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('stuck', window.scrollY > 20);
+}, { passive: true });
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); observer.unobserve(e.target); } });
+}, { threshold: 0.12 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  });
+});
+</script>
+{% endblock %}

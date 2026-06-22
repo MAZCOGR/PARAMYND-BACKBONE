@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion — Paramynd Admin</title>
+  <meta name="description" content="Accès sécurisé à l'interface d'administration Paramynd">
+  <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body>
+<div class="login-page">
+  <div class="login-card fade-in">
+    <div class="login-header">
+      <div class="login-logo">P</div>
+      <h1>Paramynd Admin</h1>
+      <p>Connexion à l'interface de contrôle</p>
+    </div>
+
+    {% if messages %}
+    <div class="messages-container mb-4">
+      {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" class="login-form" id="login-form">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label class="form-label" for="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          class="form-input"
+          placeholder="admin@paramynd.com"
+          required
+          autofocus
+          autocomplete="email"
+        >
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Mot de passe</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          class="form-input"
+          placeholder="••••••••"
+          required
+          autocomplete="current-password"
+        >
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-lg w-full" id="login-btn">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+        </svg>
+        Se connecter
+      </button>
+    </form>
+
+    <div class="login-footer">
+      Accès réservé aux administrateurs Paramynd
+    </div>
+  </div>
+</div>
+
+<script>
+  document.getElementById('login-form').addEventListener('submit', function() {
+    const btn = document.getElementById('login-btn');
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spin" style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;"></span> Connexion...`;
+  });
+</script>
+</body>
+</html>

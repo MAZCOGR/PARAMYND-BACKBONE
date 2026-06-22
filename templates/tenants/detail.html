@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tenant.name }} — Paramynd Admin{% endblock %}
+{% block breadcrumb_title %}Tenants <span>/ {{ tenant.name }}</span>{% endblock %}
+
+{% block topbar_actions %}
+  {% if tenant.cloud_run_url %}
+  <a href="{{ tenant.cloud_run_url }}" target="_blank" class="btn btn-outline btn-sm">
+    <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+    </svg>
+    Ouvrir l'instance
+  </a>
+  {% endif %}
+  <button onclick="openModal('deploy-modal')" class="btn btn-primary btn-sm">
+    <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+    </svg>
+    Déployer
+  </button>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumb mb-3">
+  <a href="{% url 'tenants:list' %}">Tenants</a>
+  <span class="sep">›</span>
+  <span class="current">{{ tenant.name }}</span>
+</div>
+
+<!-- Header tenant -->
+<div class="page-header">
+  <div class="flex items-center gap-3">
+    <div style="width:44px;height:44px;background:linear-gradient(135deg,var(--accent),#c084fc);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;color:#fff;flex-shrink:0;">
+      {{ tenant.name|first|upper }}
+    </div>
+    <div>
+      <h1>{{ tenant.name }}</h1>
+      <p>
+        <span class="badge badge-{{ tenant.status }}">{{ tenant.get_status_display }}</span>
+        &nbsp;
+        <span class="td-mono">{{ tenant.slug }}</span>
+        {% if tenant.contact_email %} · {{ tenant.contact_email }}{% endif %}
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Info Grid -->
+<div class="info-grid mb-4">
+  <div class="info-item">
+    <label>Service Cloud Run</label>
+    <div class="value"><span class="code-tag">{{ tenant.service_name }}</span></div>
+  </div>
+  <div class="info-item">
+    <label>Projet GCP</label>
+    <div class="value">{{ tenant.gcp_project_id }}</div>
+  </div>
+  <div class="info-item">
+    <label>Région</label>
+    <div class="value">{{ tenant.cloud_run_region }}</div>
+  </div>
+  <div class="info-item">
+    <label>Version actuelle</label>
+    <div class="value">
+      {% if tenant.current_image_tag %}<span class="code-tag">{{ tenant.current_image_tag }}</span>{% else %}<span class="text-muted">Non déployé</span>{% endif %}
+    </div>
+  </div>
+  <div class="info-item">
+    <label>Base de données</label>
+    <div class="value">{{ tenant.db_name|default:"—" }}</div>
+  </div>
+  <div class="info-item">
+    <label>Dernier déploiement</label>
+    <div class="value">{% if tenant.last_deployed_at %}{{ tenant.last_deployed_at|timesince }} ago{% else %}Jamais{% endif %}</div>
+  </div>
+  {% if tenant.cloud_run_url %}
+  <div class="info-item" style="grid-column: 1/-1;">
+    <label>URL d'accès</label>
+    <div class="value">
+      <a href="{{ tenant.cloud_run_url }}" target="_blank" class="url-link" style="max-width:none;">
+        <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+        {{ tenant.cloud_run_url }}
+      </a>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 380px;gap:20px;align-items:start;">
+  <!-- Historique déploiements -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Historique des déploiements</div>
+      <span class="badge badge-mock text-sm">{{ deployments|length }} déploiement(s)</span>
+    </div>
+    {% if deployments %}
+    <div class="table-container" style="border:none;border-radius:0;">
+      <table>
+        <thead>
+          <tr>
+            <th>Version</th>
+            <th>Statut</th>
+            <th>Déployé par</th>
+            <th>Révision</th>
+            <th>Date</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for dep in deployments %}
+          <tr>
+            <td><span class="code-tag">{{ dep.image_tag }}</span></td>
+            <td><span class="badge badge-{{ dep.status }}">{{ dep.get_status_display }}</span></td>
+            <td class="td-mono">{{ dep.deployed_by|default:"—"|truncatechars:20 }}</td>
+            <td class="td-mono">{{ dep.revision_name|default:"—"|truncatechars:20 }}</td>
+            <td class="text-sm text-muted">{{ dep.started_at|timesince }} ago</td>
+            <td>
+              {% if dep.revision_name and dep.status == 'success' %}
+              <form method="post" action="{% url 'tenants:rollback' tenant.pk %}" onsubmit="return confirm('Rollback vers {{ dep.revision_name }} ?')">
+                {% csrf_token %}
+                <input type="hidden" name="revision_name" value="{{ dep.revision_name }}">
+                <button type="submit" class="btn btn-outline btn-sm">↩ Rollback</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding: 40px;">
+      <div class="icon">🚀</div>
+      <h3>Aucun déploiement</h3>
+      <p>Déployez une version pour commencer.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Panneau latéral édition -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Modifier le tenant</div>
+    </div>
+    <div class="card-body">
+      <form method="post" action="{% url 'tenants:detail' tenant.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="update_tenant" value="1">
+
+        <div class="form-group mb-3">
+          <label class="form-label">Nom</label>
+          <input type="text" name="name" class="form-input" value="{{ tenant.name }}" required>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="form-label">Email de contact</label>
+          <input type="email" name="contact_email" class="form-input" value="{{ tenant.contact_email|default:'' }}">
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="form-label">Statut</label>
+          <select name="status" class="form-input">
+            {% for val, label in status_choices %}
+            <option value="{{ val }}" {% if tenant.status == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="form-label">Domaine personnalisé</label>
+          <input type="text" name="custom_domain" class="form-input" value="{{ tenant.custom_domain|default:'' }}" placeholder="acme.paramynd.com">
+        </div>
+
+        <div class="form-group mb-4">
+          <label class="form-label">Notes</label>
+          <textarea name="notes" rows="3" class="form-input">{{ tenant.notes }}</textarea>
+        </div>
+
+        <button type="submit" class="btn btn-outline w-full">Sauvegarder</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal de déploiement ─────────────────────────────── -->
+<div id="deploy-modal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">
+        🚀 Déployer {{ tenant.name }}
+      </div>
+      <button class="modal-close" onclick="closeModal('deploy-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <form method="post" action="{% url 'tenants:deploy' tenant.pk %}" id="deploy-form">
+        {% csrf_token %}
+
+        <div class="form-group mb-3">
+          <label class="form-label">Version à déployer <span class="required">*</span></label>
+          <select name="image_tag" class="form-input" required id="deploy-tag-select">
+            <option value="">— Choisir un tag —</option>
+            {% for tag in available_tags %}
+            <option value="{{ tag.tag }}" {% if tenant.current_image_tag == tag.tag %}selected{% endif %}>
+              {{ tag.tag }}{% if tenant.current_image_tag == tag.tag %} (actuel){% endif %}
+            </option>
+            {% endfor %}
+          </select>
+          <div id="image-uri-preview" class="form-hint mt-1"></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;" class="mb-3">
+          <div class="form-group">
+            <label class="form-label">Min. instances</label>
+            <input type="number" name="min_instances" class="form-input" value="0" min="0" max="10">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Max. instances</label>
+            <input type="number" name="max_instances" class="form-input" value="10" min="1" max="100">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Mémoire</label>
+            <select name="memory" class="form-input">
+              <option value="256Mi">256 Mi</option>
+              <option value="512Mi" selected>512 Mi</option>
+              <option value="1Gi">1 Gi</option>
+              <option value="2Gi">2 Gi</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">CPU</label>
+            <select name="cpu" class="form-input">
+              <option value="1" selected>1 vCPU</option>
+              <option value="2">2 vCPU</option>
+              <option value="4">4 vCPU</option>
+            </select>
+          </div>
+        </div>
+
+        {% if tenant.current_image_tag %}
+        <div class="alert alert-info mb-3" style="font-size:12.5px;">
+          Version actuelle : <span class="code-tag">{{ tenant.current_image_tag }}</span>
+        </div>
+        {% endif %}
+
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('deploy-modal')">Annuler</button>
+      <button class="btn btn-primary" id="deploy-confirm-btn" onclick="submitDeploy()">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+        </svg>
+        Lancer le déploiement
+      </button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Tags data pour l'aperçu de l'URI
+  const tagsData = {
+    {% for tag in available_tags %}
+    "{{ tag.tag }}": "{{ tag.uri }}",
+    {% endfor %}
+  };
+
+  const select = document.getElementById('deploy-tag-select');
+  const preview = document.getElementById('image-uri-preview');
+
+  if (select) {
+    select.addEventListener('change', function() {
+      const uri = tagsData[this.value];
+      preview.textContent = uri ? `Image : ${uri}` : '';
+    });
+  }
+
+  function openModal(id) {
+    document.getElementById(id).classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function submitDeploy() {
+    const tag = document.getElementById('deploy-tag-select').value;
+    if (!tag) {
+      alert('Veuillez sélectionner une version à déployer.');
+      return;
+    }
+    const btn = document.getElementById('deploy-confirm-btn');
+    btn.disabled = true;
+    btn.textContent = 'Déploiement en cours…';
+    document.getElementById('deploy-form').submit();
+  }
+
+  // Fermer le modal en cliquant en dehors
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', function(e) {
+      if (e.target === this) {
+        this.classList.remove('open');
+        document.body.style.overflow = '';
+      }
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,46 @@
+steps:
+  # Build Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/admin:${TAG_NAME}'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/admin:latest'
+      - '.'
+
+  # Push vers Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '--all-tags'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/admin'
+
+  # Déployer sur Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'paramynd-admin'
+      - '--image=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/admin:${TAG_NAME}'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--set-env-vars=DJANGO_SETTINGS_MODULE=core.settings,DB_NAME=paramynd_admin,DB_USER=admin,DEBUG=False,ALLOWED_HOSTS=*'
+      - '--set-secrets=DB_PASSWORD=DB_PASS:latest,SECRET_KEY=PARAMYND_ADMIN_SECRET_KEY:latest'
+      - '--set-cloudsql-instances=${_CLOUD_SQL_INSTANCE}'
+      - '--min-instances=1'
+      - '--max-instances=5'
+
+substitutions:
+  _REGION: europe-west9
+  _REPO: paramynd
+  _CLOUD_SQL_INSTANCE: yellow-455523:europe-west9:yellow-db-paris
+
+tags:
+  - 'paramynd-admin'
+  - '${TAG_NAME}'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

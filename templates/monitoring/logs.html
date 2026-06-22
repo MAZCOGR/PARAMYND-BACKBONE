@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Monitoring — Paramynd Admin{% endblock %}
+{% block breadcrumb_title %}Paramynd <span>/ Monitoring</span>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Monitoring — Logs Cloud Run</h1>
+    <p>Consultez les logs en temps réel de vos instances Cloud Run.</p>
+  </div>
+</div>
+
+<!-- Sélecteur de tenant et filtres -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" action="{% url 'monitoring:logs' %}" class="flex gap-3 items-center flex-wrap">
+      <div class="form-group" style="min-width:240px;">
+        <label class="form-label">Instance</label>
+        <select name="tenant" class="form-input" onchange="this.form.submit()">
+          <option value="">— Choisir un client —</option>
+          {% for t in tenants %}
+          <option value="{{ t.slug }}" {% if selected_slug == t.slug %}selected{% endif %}>
+            {{ t.name }} ({{ t.slug }})
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group" style="min-width:160px;">
+        <label class="form-label">Sévérité</label>
+        <select name="severity" class="form-input">
+          {% for val, label in severity_choices %}
+          <option value="{{ val }}" {% if severity_filter == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group" style="padding-top:20px;">
+        <button type="submit" class="btn btn-primary">Filtrer</button>
+      </div>
+
+      {% if selected_slug %}
+      <div class="form-group" style="padding-top:20px;margin-left:auto;">
+        <button type="button" onclick="refreshLogs()" class="btn btn-outline">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          Rafraîchir
+        </button>
+      </div>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<!-- Console de logs -->
+{% if selected_slug %}
+<div class="log-console fade-in">
+  <div class="log-toolbar">
+    <div class="dot dot-red"></div>
+    <div class="dot dot-yellow"></div>
+    <div class="dot dot-green"></div>
+    <span style="margin-left:6px;">paramynd-{{ selected_slug }} — Cloud Run Logs</span>
+    <span style="margin-left:auto;">{{ logs|length }} entrée(s){% if severity_filter %} · {{ severity_filter }}{% endif %}</span>
+  </div>
+
+  <div class="log-body" id="log-body">
+    {% if logs %}
+      {% for log in logs %}
+      <div class="log-line">
+        <span class="log-ts">{{ log.timestamp|truncatechars:19 }}</span>
+        <span class="log-sev {{ log.severity }}">{{ log.severity }}</span>
+        <span class="log-msg">{{ log.message }}</span>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="log-line">
+        <span class="log-ts" style="color:var(--text-muted)">—</span>
+        <span class="log-msg" style="color:var(--text-muted)">Aucun log trouvé pour cette instance.</span>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% else %}
+<div class="card">
+  <div class="empty-state">
+    <div class="icon">📋</div>
+    <h3>Sélectionnez une instance</h3>
+    <p>Choisissez un client dans le menu ci-dessus pour afficher ses logs Cloud Run.</p>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+{% if selected_slug %}
+<script>
+  function refreshLogs() {
+    window.location.reload();
+  }
+
+  // Auto-scroll vers le bas du console
+  const logBody = document.getElementById('log-body');
+  if (logBody) {
+    logBody.scrollTop = logBody.scrollHeight;
+  }
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Tenants — Paramynd Admin{% endblock %}
+{% block breadcrumb_title %}Paramynd <span>/ Tenants</span>{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'tenants:create' %}" class="btn btn-primary btn-sm">
+    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+    </svg>
+    Nouveau tenant
+  </a>
+{% endblock %}
+
+{% block content %}
+<!-- Stats -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-label">Total clients</div>
+    <div class="stat-value">{{ stats.total }}</div>
+    <div class="stat-sub">instances enregistrées</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Actifs</div>
+    <div class="stat-value" style="color: var(--success)">{{ stats.active }}</div>
+    <div class="stat-sub">Cloud Run en ligne</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Provisionnement</div>
+    <div class="stat-value" style="color: var(--info)">{{ stats.provisioning }}</div>
+    <div class="stat-sub">en cours de déploiement</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">En erreur</div>
+    <div class="stat-value" style="color: var(--danger)">{{ stats.failed }}</div>
+    <div class="stat-sub">nécessitent attention</div>
+  </div>
+</div>
+
+<!-- Recherche & Filtres -->
+<div class="search-bar">
+  <form method="get" action="{% url 'tenants:list' %}" class="flex gap-2 items-center w-full">
+    <div class="search-input-wrap">
+      <svg class="search-icon" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      <input type="text" name="q" value="{{ search }}" placeholder="Rechercher un client…" class="form-input">
+    </div>
+
+    <div class="filter-pills">
+      <a href="{% url 'tenants:list' %}{% if search %}?q={{ search }}{% endif %}" class="pill {% if not status_filter %}active{% endif %}">Tous</a>
+      {% for val, label in status_choices %}
+      <a href="?status={{ val }}{% if search %}&q={{ search }}{% endif %}" class="pill {% if status_filter == val %}active{% endif %}">{{ label }}</a>
+      {% endfor %}
+    </div>
+
+    <button type="submit" class="btn btn-outline btn-sm">Filtrer</button>
+  </form>
+</div>
+
+<!-- Table tenants -->
+{% if tenants %}
+<div class="table-container fade-in">
+  <table>
+    <thead>
+      <tr>
+        <th>Nom</th>
+        <th>Slug</th>
+        <th>Statut</th>
+        <th>Version déployée</th>
+        <th>URL Cloud Run</th>
+        <th>Dernier déploiement</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for tenant in tenants %}
+      <tr>
+        <td>
+          <a href="{% url 'tenants:detail' tenant.pk %}" class="td-primary" style="color: var(--text-primary)">
+            {{ tenant.name }}
+          </a>
+          {% if tenant.contact_email %}
+          <div class="text-sm text-muted mt-1">{{ tenant.contact_email }}</div>
+          {% endif %}
+        </td>
+        <td><span class="td-mono">{{ tenant.slug }}</span></td>
+        <td>
+          <span class="badge badge-{{ tenant.status }}">{{ tenant.get_status_display }}</span>
+        </td>
+        <td>
+          {% if tenant.current_image_tag %}
+          <span class="code-tag">{{ tenant.current_image_tag }}</span>
+          {% else %}
+          <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if tenant.cloud_run_url %}
+          <a href="{{ tenant.cloud_run_url }}" target="_blank" class="url-link">
+            <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+            </svg>
+            {{ tenant.cloud_run_url|truncatechars:35 }}
+          </a>
+          {% else %}
+          <span class="text-muted">Non déployé</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if tenant.last_deployed_at %}
+          <span class="text-sm text-muted">{{ tenant.last_deployed_at|timesince }} ago</span>
+          {% else %}
+          <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        <td>
+          <div class="flex gap-2">
+            <a href="{% url 'tenants:detail' tenant.pk %}" class="btn btn-outline btn-sm">Gérer</a>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card">
+  <div class="empty-state">
+    <div class="icon">🏢</div>
+    <h3>Aucun client{% if search or status_filter %} correspondant{% endif %}</h3>
+    <p>
+      {% if search or status_filter %}
+      Modifiez vos filtres ou créez un nouveau tenant.
+      {% else %}
+      Commencez par créer votre premier tenant client.
+      {% endif %}
+    </p>
+    {% if not search and not status_filter %}
+    <div class="mt-4">
+      <a href="{% url 'tenants:create' %}" class="btn btn-primary">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+        </svg>
+        Créer un tenant
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

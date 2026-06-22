@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Nouveau tenant — Paramynd Admin{% endblock %}
+{% block breadcrumb_title %}Tenants <span>/ Nouveau client</span>{% endblock %}
+
+{% block content %}
+<div class="breadcrumb mb-3">
+  <a href="{% url 'tenants:list' %}">Tenants</a>
+  <span class="sep">›</span>
+  <span class="current">Nouveau tenant</span>
+</div>
+
+<div class="page-header">
+  <div>
+    <h1>Créer un tenant</h1>
+    <p>Enregistre un nouveau client et configure son instance Cloud Run.</p>
+  </div>
+</div>
+
+<div class="card" style="max-width: 720px;">
+  <div class="card-header">
+    <div class="card-title">Informations du client</div>
+  </div>
+  <div class="card-body">
+    <form method="post" id="create-form">
+      {% csrf_token %}
+
+      {% if form.errors %}
+      <div class="alert alert-error mb-3">
+        <div>
+          <strong>Erreur de validation :</strong>
+          <ul style="margin-top: 6px; padding-left: 16px;">
+            {% for field in form %}
+              {% for error in field.errors %}
+              <li>{{ field.label }} : {{ error }}</li>
+              {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="form-grid">
+        <!-- Nom -->
+        <div class="form-group">
+          <label class="form-label" for="id_name">Nom du client <span class="required">*</span></label>
+          <input type="text" name="name" id="id_name" class="form-input" value="{{ form.name.value|default:'' }}" placeholder="Acme Corp" required>
+          {% if form.name.errors %}<div class="form-error">{{ form.name.errors.0 }}</div>{% endif %}
+        </div>
+
+        <!-- Slug -->
+        <div class="form-group">
+          <label class="form-label" for="id_slug">Slug <span class="required">*</span></label>
+          <input type="text" name="slug" id="id_slug" class="form-input" value="{{ form.slug.value|default:'' }}" placeholder="acme-corp" required pattern="[a-z0-9][a-z0-9\-]{1,28}[a-z0-9]">
+          <div class="form-hint">Minuscules + tirets, 3-30 car. → nom du service : <span id="service-preview" class="code-tag">paramynd-acme-corp</span></div>
+          {% if form.slug.errors %}<div class="form-error">{{ form.slug.errors.0 }}</div>{% endif %}
+        </div>
+
+        <!-- Email contact -->
+        <div class="form-group">
+          <label class="form-label" for="id_contact_email">Email de contact</label>
+          <input type="email" name="contact_email" id="id_contact_email" class="form-input" value="{{ form.contact_email.value|default:'' }}" placeholder="contact@acme.com">
+        </div>
+
+        <!-- GCP Project -->
+        <div class="form-group">
+          <label class="form-label" for="id_gcp_project_id">Projet GCP <span class="required">*</span></label>
+          <input type="text" name="gcp_project_id" id="id_gcp_project_id" class="form-input" value="{{ form.gcp_project_id.value|default:'yellow-455523' }}" required>
+        </div>
+
+        <!-- Région -->
+        <div class="form-group">
+          <label class="form-label" for="id_cloud_run_region">Région Cloud Run</label>
+          <input type="text" name="cloud_run_region" id="id_cloud_run_region" class="form-input" value="{{ form.cloud_run_region.value|default:'europe-west9' }}">
+        </div>
+
+        <!-- Cloud SQL Instance -->
+        <div class="form-group">
+          <label class="form-label" for="id_cloud_sql_instance">Instance Cloud SQL</label>
+          <input type="text" name="cloud_sql_instance" id="id_cloud_sql_instance" class="form-input" value="{{ form.cloud_sql_instance.value|default:'' }}" placeholder="yellow-455523:europe-west9:yellow-db-paris">
+          <div class="form-hint">Laissez vide pour utiliser l'instance par défaut</div>
+        </div>
+
+        <!-- DB Name -->
+        <div class="form-group">
+          <label class="form-label" for="id_db_name">Nom de la base de données</label>
+          <input type="text" name="db_name" id="id_db_name" class="form-input" value="{{ form.db_name.value|default:'' }}" placeholder="paramynd_acme">
+          <div class="form-hint">Laissez vide pour générer depuis le slug</div>
+        </div>
+
+        <!-- Domaine custom -->
+        <div class="form-group">
+          <label class="form-label" for="id_custom_domain">Domaine personnalisé</label>
+          <input type="text" name="custom_domain" id="id_custom_domain" class="form-input" value="{{ form.custom_domain.value|default:'' }}" placeholder="acme.paramynd.com">
+        </div>
+
+        <!-- Notes -->
+        <div class="form-group full">
+          <label class="form-label" for="id_notes">Notes internes</label>
+          <textarea name="notes" id="id_notes" rows="3" class="form-input" placeholder="Informations supplémentaires sur ce client...">{{ form.notes.value|default:'' }}</textarea>
+        </div>
+      </div>
+
+      <div class="flex gap-3 mt-4" style="justify-content: flex-end;">
+        <a href="{% url 'tenants:list' %}" class="btn btn-outline">Annuler</a>
+        <button type="submit" class="btn btn-primary" id="submit-btn">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+          </svg>
+          Créer le tenant
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Auto-génération du slug depuis le nom
+  const nameInput = document.getElementById('id_name');
+  const slugInput = document.getElementById('id_slug');
+  const servicePreview = document.getElementById('service-preview');
+  const dbNameInput = document.getElementById('id_db_name');
+
+  let slugManuallyEdited = false;
+
+  function slugify(text) {
+    return text
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // supprimer accents
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .substring(0, 30);
+  }
+
+  nameInput.addEventListener('input', function() {
+    if (!slugManuallyEdited) {
+      const slug = slugify(this.value);
+      slugInput.value = slug;
+      updatePreview(slug);
+    }
+  });
+
+  slugInput.addEventListener('input', function() {
+    slugManuallyEdited = true;
+    updatePreview(this.value);
+  });
+
+  function updatePreview(slug) {
+    servicePreview.textContent = slug ? `paramynd-${slug}` : 'paramynd-...';
+    if (!dbNameInput.value) {
+      document.getElementById('id_db_name').placeholder = slug ? `paramynd_${slug.replace(/-/g,'_')}` : 'paramynd_acme';
+    }
+  }
+</script>
+{% endblock %}
