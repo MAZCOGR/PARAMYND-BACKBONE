@@ -798,7 +798,7 @@ select option { background: var(--black-2); }
 /* ── Builds Page Layout ────────────────────────────────────── */
 .builds-grid {
   display: grid;
-  grid-template-columns: 220px 1fr 1fr;
+  grid-template-columns: 220px minmax(0, 1fr) minmax(0, 1fr);
   gap: 24px;
   align-items: start;
 }
