@@ -12,24 +12,32 @@
 </div>
 
 <div hx-get="{% url 'tenants:builds_content' %}" hx-trigger="load" hx-swap="outerHTML">
-  <!-- Squelette de chargement -->
-  <div style="display:grid;grid-template-columns:1fr;gap:20px;align-items:start;">
+  <!-- Squelette de chargement en 3 colonnes -->
+  <div style="display:grid;grid-template-columns:220px 1fr 1fr;gap:24px;align-items:start;">
+    <!-- KPIs Skeleton -->
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      <div class="card" style="height: 100px; padding: 20px;"></div>
+      <div class="card" style="height: 100px; padding: 20px;"></div>
+      <div class="card" style="height: 100px; padding: 20px;"></div>
+    </div>
+    
+    <!-- Table 1 Skeleton -->
     <div class="card">
       <div class="card-header">
-        <div class="card-title">Tags disponibles</div>
+        <div class="card-title">Derniers Commits</div>
       </div>
       <div class="empty-state" style="padding:60px 20px;">
         <div class="spin" style="font-size:32px; color:var(--accent); margin-bottom: 16px; display:inline-block; line-height:1;">⟳</div>
-        <h3 style="color:var(--text-muted); font-size:14px; font-weight:500;">Connexion à Artifact Registry...</h3>
       </div>
     </div>
+
+    <!-- Table 2 Skeleton -->
     <div class="card">
       <div class="card-header">
         <div class="card-title">Historique Cloud Build</div>
       </div>
       <div class="empty-state" style="padding:60px 20px;">
         <div class="spin" style="font-size:32px; color:var(--accent); margin-bottom: 16px; display:inline-block; line-height:1;">⟳</div>
-        <h3 style="color:var(--text-muted); font-size:14px; font-weight:500;">Connexion à Cloud Build...</h3>
       </div>
     </div>
   </div>

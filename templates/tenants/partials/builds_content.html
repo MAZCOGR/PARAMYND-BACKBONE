@@ -1,32 +1,32 @@
 <div style="animation: fadeIn 0.4s ease;">
   
-  <!-- KPIs -->
-  <div class="kpi-grid">
-    <div class="kpi-card">
-      <div class="kpi-title">Taux de Succès</div>
-      <div class="kpi-value" style="color: {% if kpis.success_rate >= 80 %}var(--success){% elif kpis.success_rate >= 50 %}var(--warning){% else %}var(--danger){% endif %};">{{ kpis.success_rate }}%</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-title">Dernier Statut</div>
-      <div class="kpi-value" style="font-size: 24px; margin-top: 4px;">
-        {% if kpis.latest_status == 'SUCCESS' %}
-          <span style="color: var(--success);">Réussi</span>
-        {% elif kpis.latest_status == 'WORKING' %}
-          <span style="color: var(--accent);" class="pulse">En cours</span>
-        {% elif kpis.latest_status == 'FAILURE' %}
-          <span style="color: var(--danger);">Échec</span>
-        {% else %}
-          <span style="color: var(--text-muted);">{{ kpis.latest_status }}</span>
-        {% endif %}
+  <div style="display:grid;grid-template-columns:220px 1fr 1fr;gap:24px;align-items:start;">
+    
+    <!-- KPIs -->
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      <div class="kpi-card">
+        <div class="kpi-title">Taux de Succès</div>
+        <div class="kpi-value" style="color: {% if kpis.success_rate >= 80 %}var(--success){% elif kpis.success_rate >= 50 %}var(--warning){% else %}var(--danger){% endif %};">{{ kpis.success_rate }}%</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Dernier Statut</div>
+        <div class="kpi-value" style="font-size: 24px; margin-top: 4px;">
+          {% if kpis.latest_status == 'SUCCESS' %}
+            <span style="color: var(--success);">Réussi</span>
+          {% elif kpis.latest_status == 'WORKING' %}
+            <span style="color: var(--accent);" class="pulse">En cours</span>
+          {% elif kpis.latest_status == 'FAILURE' %}
+            <span style="color: var(--danger);">Échec</span>
+          {% else %}
+            <span style="color: var(--text-muted);">{{ kpis.latest_status }}</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Commits Détectés</div>
+        <div class="kpi-value">{{ kpis.total_tags }}</div>
       </div>
     </div>
-    <div class="kpi-card">
-      <div class="kpi-title">Commits Détectés</div>
-      <div class="kpi-value">{{ kpis.total_tags }}</div>
-    </div>
-  </div>
-
-  <div style="display:grid;grid-template-columns:1fr;gap:20px;align-items:start;">
     
     <!-- Historique Git Local -->
     <div class="card" style="padding: 0;">
