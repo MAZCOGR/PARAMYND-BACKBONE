@@ -147,6 +147,23 @@ def deploy_service(
         result = operation.result(timeout=300)
         revision = result.latest_created_revision if hasattr(result, 'latest_created_revision') else 'unknown'
 
+        # Rendre le service public (non authentifié)
+        try:
+            policy = client.get_iam_policy(request={'resource': service_fqn})
+            binding_found = False
+            for b in policy.bindings:
+                if b.role == 'roles/run.invoker':
+                    if 'allUsers' not in b.members:
+                        b.members.append('allUsers')
+                    binding_found = True
+                    break
+            if not binding_found:
+                policy.bindings.add(role='roles/run.invoker', members=['allUsers'])
+            client.set_iam_policy(request={'resource': service_fqn, 'policy': policy})
+            logger.info(f"Permissions IAM configurées pour rendre {service_name} public.")
+        except Exception as e:
+            logger.error(f"Erreur lors de la configuration IAM publique pour {service_name}: {e}")
+
         return {
             'success': True,
             'url': result.uri if hasattr(result, 'uri') else '',

@@ -182,7 +182,10 @@ def tenant_deploy_view(request, pk):
         primary_tag = c.tag if c.tag else c.short_hash
         if primary_tag and primary_tag not in seen_tags:
             seen_tags.add(primary_tag)
-            available_tags.append({'tag': primary_tag})
+            available_tags.append({
+                'tag': primary_tag,
+                'uri': artifact_registry.get_image_uri(primary_tag)
+            })
             
     if not available_tags:
         available_tags = artifact_registry.list_available_tags()

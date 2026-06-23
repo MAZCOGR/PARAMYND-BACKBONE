@@ -651,13 +651,17 @@
       }
     })
     .then(response => {
+      if (!response.ok) {
+        throw new Error('Erreur réseau ou serveur : ' + response.status);
+      }
       // Reload the page to show new state (success message from Django)
       window.location.reload();
     })
     .catch(err => {
       console.error(err);
-      alert('Une erreur s\'est produite pendant le déploiement.');
-      window.location.reload();
+      alert("Une erreur s'est produite pendant le déploiement. Vérifiez les logs côté serveur.");
+      // On cache la barre de progression en cas d'erreur
+      document.getElementById('deployment-progress-card').style.display = 'none';
     });
   }
 </script>
