@@ -4,7 +4,7 @@ steps:
     args:
       - 'build'
       - '-t'
-      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/admin:${TAG_NAME}'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/admin:${SHORT_SHA}'
       - '-t'
       - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/admin:latest'
       - '.'
@@ -23,7 +23,7 @@ steps:
       - 'run'
       - 'deploy'
       - 'paramynd-admin'
-      - '--image=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/admin:${TAG_NAME}'
+      - '--image=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/admin:${SHORT_SHA}'
       - '--region=${_REGION}'
       - '--platform=managed'
       - '--allow-unauthenticated'
@@ -40,7 +40,7 @@ substitutions:
 
 tags:
   - 'paramynd-admin'
-  - '${TAG_NAME}'
+  - '${SHORT_SHA}'
 
 options:
   logging: CLOUD_LOGGING_ONLY
