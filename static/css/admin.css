@@ -406,6 +406,19 @@ a:hover { color: var(--text-primary); }
   background: rgba(255, 255, 255, 0.03);
 }
 
+.table-scroll-limit {
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.table-scroll-limit thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #0a0a0a; /* solid background for sticky header */
+  box-shadow: 0 1px 0 rgba(255,255,255,0.1);
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
