@@ -70,8 +70,11 @@
   <div id="git-table-container">
     <div class="card" style="padding: 0; animation: fadeIn 0.4s ease; border: none; background: transparent; box-shadow: none;">
       <div class="card-header" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 20px;">
-        <div class="card-title">Derniers Commits</div>
-        <span class="badge badge-mock">Git Local</span>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div class="card-title">Derniers Commits</div>
+          <span class="badge badge-mock">Git Local</span>
+        </div>
+        <p style="color: white; font-size: 13px; margin-top: 8px; opacity: 0.8;">Cet historique liste les modifications locales apportées au code source de votre instance, qui ont déclenché ou déclencheront un déploiement.</p>
       </div>
       
       {% if recent_commits %}
@@ -126,8 +129,11 @@
   <div id="cloud-table-container">
     <div class="card" style="padding: 0; animation: fadeIn 0.4s ease; border: none; background: transparent; box-shadow: none;">
       <div class="card-header" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 20px;">
-        <div class="card-title">Historique Cloud Build</div>
-        <span class="badge badge-mock">Cloud Build</span>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div class="card-title">Historique Cloud Build</div>
+          <span class="badge badge-mock">Cloud Build</span>
+        </div>
+        <p style="color: white; font-size: 13px; margin-top: 8px; opacity: 0.8;">Suivez en temps réel la compilation de vos images Docker sur l'infrastructure Google Cloud et vérifiez le statut de chaque déploiement.</p>
       </div>
       
       {% if builds %}
