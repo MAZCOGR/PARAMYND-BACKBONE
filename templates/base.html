@@ -30,13 +30,45 @@
     <div class="page-content">
       <!-- Messages Django -->
       {% if messages %}
-      <div class="messages-container">
+      <div class="messages-container" style="position: fixed; bottom: 32px; right: 32px; z-index: 9999; display: flex; flex-direction: column; gap: 12px; pointer-events: none;">
         {% for message in messages %}
-        <div class="alert alert-{{ message.tags }}">
+        <div class="toast-message" style="pointer-events: auto; padding: 14px 20px; border-radius: 12px; background: rgba(30,30,30,0.9); backdrop-filter: blur(10px); color: var(--text-primary); box-shadow: 0 12px 40px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 12px; animation: slideInUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1) forwards; max-width: 400px; font-size: 14px; font-weight: 500;">
+          {% if message.tags == 'success' %}
+            <svg width="20" height="20" fill="none" stroke="#22c55e" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          {% elif message.tags == 'error' %}
+            <svg width="20" height="20" fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+          {% elif message.tags == 'warning' %}
+            <svg width="20" height="20" fill="none" stroke="#f59e0b" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77-1.333.192 3 1.732 3z"></path></svg>
+          {% else %}
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          {% endif %}
           {{ message }}
         </div>
         {% endfor %}
       </div>
+      <style>
+        @keyframes slideInUp {
+          from { opacity: 0; transform: translateY(30px) scale(0.9); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+      </style>
+      <script>
+        document.addEventListener('DOMContentLoaded', () => {
+          setTimeout(() => {
+            const toasts = document.querySelectorAll('.toast-message');
+            toasts.forEach(toast => {
+              toast.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+              toast.style.opacity = '0';
+              toast.style.transform = 'translateY(10px) scale(0.95)';
+              setTimeout(() => {
+                const parent = toast.parentElement;
+                toast.remove();
+                if (parent && parent.children.length === 0) parent.remove();
+              }, 400);
+            });
+          }, 4500);
+        });
+      </script>
       {% endif %}
 
       {% block content %}{% endblock %}

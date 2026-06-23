@@ -16,6 +16,13 @@ class TenantStatus(models.TextChoices):
     ARCHIVED     = 'archived',     'Archivé'
 
 
+class DomainStatus(models.TextChoices):
+    NONE     = 'none',     'Non configuré'
+    PENDING  = 'pending',  'En attente de propagation DNS'
+    ACTIVE   = 'active',   'Actif et sécurisé'
+    FAILED   = 'failed',   'Échec de configuration'
+
+
 class DeploymentStatus(models.TextChoices):
     PENDING     = 'pending',     'En attente'
     IN_PROGRESS = 'in_progress', 'En cours'
@@ -40,7 +47,11 @@ class Tenant(models.Model):
     cloud_run_region      = models.CharField(max_length=50, default='europe-west9', verbose_name='Région Cloud Run')
     cloud_run_service_name = models.CharField(max_length=255, blank=True, null=True, verbose_name='Nom du service Cloud Run')
     cloud_run_url         = models.URLField(max_length=500, blank=True, null=True, verbose_name='URL Cloud Run')
+    
+    # Custom Domain
     custom_domain         = models.CharField(max_length=255, blank=True, null=True, verbose_name='Domaine personnalisé')
+    domain_status         = models.CharField(max_length=20, choices=DomainStatus.choices, default=DomainStatus.NONE, verbose_name='Statut du domaine')
+    dns_records           = models.JSONField(blank=True, null=True, verbose_name='Enregistrements DNS requis')
 
     # Cloud SQL
     cloud_sql_instance    = models.CharField(max_length=500, blank=True, null=True, verbose_name='Instance Cloud SQL', help_text='ex: project:region:instance')

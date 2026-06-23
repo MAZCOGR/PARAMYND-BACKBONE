@@ -109,7 +109,37 @@ def tenant_detail_view(request, pk):
     """Affiche le détail d'un tenant avec son historique de déploiements."""
     tenant = get_object_or_404(Tenant, pk=pk)
     deployments = tenant.deployments.order_by('-started_at')[:20]
-    available_tags = artifact_registry.list_available_tags()
+    deployments = tenant.deployments.order_by('-started_at')[:20]
+    
+    # 1. Charger les versions directement depuis les commits SaaS
+    from .models import SaaSGitCommitRecord
+    saas_commits = SaaSGitCommitRecord.objects.all()[:30]
+    
+    available_tags = []
+    seen_tags = set()
+    for c in saas_commits:
+        # Le tag principal est soit le git tag, soit le short hash
+        primary_tag = c.tag if c.tag else c.short_hash
+        if primary_tag and primary_tag not in seen_tags:
+            seen_tags.add(primary_tag)
+            
+            commit_msg = c.message.split('\n')[0]
+            if len(commit_msg) > 50:
+                commit_msg = commit_msg[:47] + "..."
+                
+            available_tags.append({
+                'tag': primary_tag,
+                'digest': c.short_hash,
+                'created': c.date_str,
+                'uri': artifact_registry.get_image_uri(primary_tag),
+                'commit_msg': commit_msg,
+                'author': c.author
+            })
+            
+    # 2. Fallback si l'historique en base est vide
+    if not available_tags:
+        available_tags = artifact_registry.list_available_tags()
+
     deploy_form = DeployForm(available_tags=available_tags)
 
     # Formulaire de mise à jour
@@ -142,7 +172,21 @@ def tenant_detail_view(request, pk):
 def tenant_deploy_view(request, pk):
     """Lance un déploiement pour un tenant."""
     tenant = get_object_or_404(Tenant, pk=pk)
-    available_tags = artifact_registry.list_available_tags()
+    
+    # 1. Utiliser la même liste de tags que la vue de détail pour la validation
+    from .models import SaaSGitCommitRecord
+    saas_commits = SaaSGitCommitRecord.objects.all()[:30]
+    available_tags = []
+    seen_tags = set()
+    for c in saas_commits:
+        primary_tag = c.tag if c.tag else c.short_hash
+        if primary_tag and primary_tag not in seen_tags:
+            seen_tags.add(primary_tag)
+            available_tags.append({'tag': primary_tag})
+            
+    if not available_tags:
+        available_tags = artifact_registry.list_available_tags()
+        
     form = DeployForm(request.POST, available_tags=available_tags)
 
     if not form.is_valid():
@@ -189,10 +233,32 @@ def tenant_deploy_view(request, pk):
         tenant.current_image_tag = image_tag
         tenant.cloud_run_url = result.get('url')
         tenant.last_deployed_at = timezone.now()
+        
+        domain_notice = ""
+        # Setup custom domain if defined
+        if tenant.custom_domain:
+            domain_result = cloud_run.setup_custom_domain(
+                service_name=tenant.service_name,
+                custom_domain=tenant.custom_domain,
+                gcp_project_id=tenant.gcp_project_id,
+                region=tenant.cloud_run_region
+            )
+            if domain_result['success']:
+                from .models import DomainStatus
+                tenant.domain_status = DomainStatus.PENDING
+                tenant.dns_records = domain_result.get('records', [])
+                dm_mock = " (mode mock)" if domain_result.get('mock') else ""
+                domain_notice = f" Domaine personnalisé configuré{dm_mock}."
+            else:
+                from .models import DomainStatus
+                tenant.domain_status = DomainStatus.FAILED
+                tenant.dns_records = []
+                messages.warning(request, f"Erreur lien personnalisé : {domain_result.get('error')}")
+                
         tenant.save()
 
         mock_notice = " (mode mock — GCP non configuré)" if result.get('mock') else ""
-        messages.success(request, f"Déploiement réussi{mock_notice} : {image_tag} sur {tenant.name}.")
+        messages.success(request, f"Déploiement réussi{mock_notice} : {image_tag} sur {tenant.name}.{domain_notice}")
     else:
         deployment.status = DeploymentStatus.FAILED
         deployment.error_message = result.get('error')

@@ -20,6 +20,16 @@ def _get_client():
         return None
 
 
+def _get_v1_domain_client():
+    """Retourne un client Cloud Run v1 pour les DomainMappings, ou None."""
+    try:
+        from google.cloud import run_v1
+        return run_v1.DomainMappingsClient()
+    except Exception as e:
+        logger.warning(f"Cloud Run v1 SDK non disponible (DomainMappings) : {e}")
+        return None
+
+
 def deploy_service(
     tenant_slug: str,
     image_uri: str,
@@ -114,11 +124,19 @@ def deploy_service(
         # Vérifier si le service existe déjà
         try:
             client.get_service(name=service_fqn)
+            exists = True
+        except Exception as e:
+            if "NotFound" in str(type(e).__name__) or "404" in str(e):
+                exists = False
+            else:
+                # Une autre erreur (ex: permission refusée), on la relève
+                raise e
+
+        if exists:
             # Le service existe → on le met à jour
-            operation = client.update_service(
-                service=run_v2.Service(name=service_fqn, **service.__dict__)
-            )
-        except Exception:
+            service.name = service_fqn
+            operation = client.update_service(service=service)
+        else:
             # Le service n'existe pas → on le crée
             operation = client.create_service(
                 parent=parent,
@@ -241,3 +259,87 @@ def rollback_to_revision(
     except Exception as e:
         logger.error(f"Erreur rollback {service_name}: {e}")
         return {'success': False, 'error': str(e)}
+
+
+def setup_custom_domain(
+    service_name: str,
+    custom_domain: str,
+    gcp_project_id: str,
+    region: str = None,
+) -> Dict[str, Any]:
+    """
+    Crée un mapping de domaine personnalisé (DomainMapping) pour un service Cloud Run.
+    Retourne les instructions DNS si réussi.
+    """
+    if region is None:
+        region = settings.GCP_REGION
+
+    client = _get_v1_domain_client()
+    if client is None:
+        logger.info(f"[MOCK] Lien personnalisé simulé : {custom_domain} -> {service_name}")
+        return {
+            'success': True,
+            'mock': True,
+            'records': [
+                {'type': 'CNAME', 'name': custom_domain, 'rrdata': 'ghs.googlehosted.com.'}
+            ]
+        }
+
+    try:
+        from google.cloud import run_v1
+        
+        # Le parent pour l'API DomainMapping dans Cloud Run
+        parent = f"namespaces/{gcp_project_id}"
+        
+        # Le route_name doit être le nom du service
+        domain_mapping = run_v1.DomainMapping(
+            metadata=run_v1.ObjectMeta(
+                name=custom_domain,
+                namespace=gcp_project_id
+            ),
+            spec=run_v1.DomainMappingSpec(
+                route_name=service_name
+            )
+        )
+
+        try:
+            # On tente de le créer
+            response = client.create_domain_mapping(
+                parent=parent,
+                domain_mapping=domain_mapping
+            )
+        except Exception as create_err:
+            # S'il existe déjà, get_domain_mapping pourrait être utilisé ou on relance l'erreur
+            if "AlreadyExists" in str(create_err):
+                response = client.get_domain_mapping(name=f"{parent}/domainmappings/{custom_domain}")
+            else:
+                raise create_err
+
+        # Extraire les resource_records fournis par Google
+        records = []
+        if response.status and response.status.resource_records:
+            for rr in response.status.resource_records:
+                records.append({
+                    'type': run_v1.ResourceRecord.RecordType(rr.type_).name,
+                    'name': rr.name,
+                    'rrdata': rr.rrdata
+                })
+
+        # Si pas de records dispos immédiatement, on met le default (CNAME -> ghs.googlehosted.com.)
+        if not records:
+            records = [{'type': 'CNAME', 'name': custom_domain, 'rrdata': 'ghs.googlehosted.com.'}]
+
+        return {
+            'success': True,
+            'mock': False,
+            'records': records
+        }
+
+    except Exception as e:
+        logger.error(f"Erreur DomainMapping pour {custom_domain} sur {service_name} : {e}")
+        return {
+            'success': False,
+            'error': str(e),
+            'mock': False,
+            'records': []
+        }

@@ -104,7 +104,7 @@ class DeployForm(forms.Form):
     )
     memory = forms.ChoiceField(
         label='Mémoire',
-        choices=[('256Mi', '256 Mi'), ('512Mi', '512 Mi'), ('1Gi', '1 Gi'), ('2Gi', '2 Gi')],
+        choices=[('512Mi', '512 Mi'), ('1Gi', '1 Gi'), ('2Gi', '2 Gi'), ('4Gi', '4 Gi')],
         initial='512Mi',
         widget=forms.Select(attrs={'class': 'form-input'}),
     )
