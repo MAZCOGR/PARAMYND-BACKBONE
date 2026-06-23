@@ -1,0 +1,82 @@
+<div id="kpi-cloud-1-container" hx-swap-oob="true">
+  <div class="kpi-card" style="animation: fadeIn 0.4s ease;">
+    <div class="kpi-title">Taux de Succès</div>
+    <div class="kpi-value" style="color: {% if success_rate >= 80 %}var(--success){% elif success_rate >= 50 %}var(--warning){% else %}var(--danger){% endif %};">{{ success_rate }}%</div>
+  </div>
+</div>
+<div id="kpi-cloud-2-container" hx-swap-oob="true">
+  <div class="kpi-card" style="animation: fadeIn 0.4s ease;">
+    <div class="kpi-title">Dernier Statut</div>
+    <div class="kpi-value" style="font-size: 24px; margin-top: 4px;">
+      {% if latest_status == 'SUCCESS' %}
+        <span style="color: var(--success);">Réussi</span>
+      {% elif latest_status == 'WORKING' %}
+        <span style="color: var(--accent);" class="pulse">En cours</span>
+      {% elif latest_status == 'FAILURE' %}
+        <span style="color: var(--danger);">Échec</span>
+      {% else %}
+        <span style="color: var(--text-muted);">{{ latest_status }}</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="card" style="padding: 0; animation: fadeIn 0.4s ease;">
+  <div class="card-header" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 20px;">
+    <div class="card-title">Historique Cloud Build</div>
+    <span class="badge badge-mock">Cloud Build</span>
+  </div>
+  
+  {% if builds %}
+  <div class="modern-list" style="margin-top: 10px;">
+    {% for build in builds %}
+    <div class="list-item">
+      <div class="list-item-main">
+        <div class="list-item-icon {% if build.status == 'SUCCESS' %}success{% elif build.status == 'FAILURE' %}danger{% endif %}">
+          {% if build.status == 'SUCCESS' %}
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          {% elif build.status == 'FAILURE' %}
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          {% elif build.status == 'WORKING' %}
+            <span class="spin" style="font-size: 20px; line-height: 1;">⟳</span>
+          {% else %}
+            <span style="font-size: 20px; line-height: 1;">•</span>
+          {% endif %}
+        </div>
+        <div class="list-item-content">
+          <div class="list-item-title">
+            <span class="td-mono" style="font-size:11px;">{{ build.id|truncatechars:10 }}</span>
+            {% if build.branch_name %}
+            <span class="badge" style="background:rgba(124, 92, 252, 0.1); color:var(--accent);">{{ build.branch_name }}</span>
+            {% endif %}
+          </div>
+          <div class="list-item-subtitle" style="display:flex; gap:10px; align-items:center;">
+            <span>{{ build.created|truncatechars:16 }}</span>
+            <span>⏱ {{ build.duration }}</span>
+            {% if build.commit_sha %}
+            <span title="Commit" style="display:flex; align-items:center; gap:2px;">
+              <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+              {{ build.commit_sha|truncatechars:8 }}
+            </span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="list-item-actions">
+        {% for tag in build.tags %}
+          {% if tag != build.commit_sha and tag != build.branch_name %}
+          <span class="code-tag">{{ tag }}</span>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state" style="padding:40px;">
+    <div class="icon">🏗️</div>
+    <h3>Aucun build trouvé</h3>
+    <p>Configurez Cloud Build pour voir l'historique.</p>
+  </div>
+  {% endif %}
+</div>

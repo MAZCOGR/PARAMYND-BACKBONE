@@ -11,5 +11,6 @@ urlpatterns = [
     path('<uuid:pk>/rollback/', views.tenant_rollback_view, name='rollback'),
     path('<uuid:pk>/status/', views.tenant_status_view, name='status'),
     path('builds/', views.builds_view, name='builds'),
-    path('builds/content/', views.builds_content_view, name='builds_content'),
+    path('builds/git-content/', views.builds_git_content_view, name='builds_git_content'),
+    path('builds/cloud-content/', views.builds_cloud_content_view, name='builds_cloud_content'),
 ]

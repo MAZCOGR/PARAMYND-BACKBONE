@@ -266,26 +266,30 @@ def builds_view(request):
     return render(request, 'tenants/builds.html', context)
 
 @login_required
-def builds_content_view(request):
-    """Renvoie les fragments HTML contenant les données de build et les tags (asynchrone)."""
-    builds = cloud_build.list_recent_builds()
+def builds_git_content_view(request):
+    """Renvoie les données Git en premier (très rapide)."""
     recent_commits = git_service.get_recent_commits()
+    total_tags = len(recent_commits)
+    
+    context = {
+        'recent_commits': recent_commits,
+        'total_tags': total_tags,
+    }
+    return render(request, 'tenants/partials/builds_git_content.html', context)
 
-    # Calculate KPIs
+@login_required
+def builds_cloud_content_view(request):
+    """Renvoie l'historique Cloud Build (plus lent) et les KPIs restants."""
+    builds = cloud_build.list_recent_builds()
+    
     success_count = sum(1 for b in builds if b['status'] == 'SUCCESS')
     total_builds = len(builds)
     success_rate = round((success_count / total_builds) * 100) if total_builds > 0 else 0
+    latest_status = builds[0]['status'] if builds else 'N/A'
     
-    kpis = {
-        'success_rate': success_rate,
-        'total_tags': len(recent_commits),
-        'total_builds_fetched': total_builds,
-        'latest_status': builds[0]['status'] if builds else 'N/A'
-    }
-
     context = {
         'builds': builds,
-        'recent_commits': recent_commits,
-        'kpis': kpis,
+        'success_rate': success_rate,
+        'latest_status': latest_status,
     }
-    return render(request, 'tenants/partials/builds_content.html', context)
+    return render(request, 'tenants/partials/builds_cloud_content.html', context)

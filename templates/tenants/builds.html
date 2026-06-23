@@ -11,17 +11,26 @@
   </div>
 </div>
 
-<div hx-get="{% url 'tenants:builds_content' %}" hx-trigger="load" hx-swap="outerHTML">
-  <!-- Squelette de chargement en 3 colonnes -->
-  <div style="display:grid;grid-template-columns:220px 1fr 1fr;gap:24px;align-items:start;">
-    <!-- KPIs Skeleton -->
-    <div style="display:flex; flex-direction:column; gap:20px;">
-      <div class="card" style="height: 100px; padding: 20px;"></div>
-      <div class="card" style="height: 100px; padding: 20px;"></div>
+<!-- Squelette de chargement en 3 colonnes -->
+<div style="display:grid;grid-template-columns:220px 1fr 1fr;gap:24px;align-items:start;">
+  <!-- KPIs Containers -->
+  <div style="display:flex; flex-direction:column; gap:20px;">
+    <!-- KPI Cloud 1 -->
+    <div id="kpi-cloud-1-container">
       <div class="card" style="height: 100px; padding: 20px;"></div>
     </div>
-    
-    <!-- Table 1 Skeleton -->
+    <!-- KPI Cloud 2 -->
+    <div id="kpi-cloud-2-container">
+      <div class="card" style="height: 100px; padding: 20px;"></div>
+    </div>
+    <!-- KPI Git -->
+    <div id="kpi-git-container">
+      <div class="card" style="height: 100px; padding: 20px;"></div>
+    </div>
+  </div>
+  
+  <!-- Table 1 (Git) - Loads fast -->
+  <div hx-get="{% url 'tenants:builds_git_content' %}" hx-trigger="load" hx-swap="outerHTML">
     <div class="card">
       <div class="card-header">
         <div class="card-title">Derniers Commits</div>
@@ -30,8 +39,10 @@
         <div class="spin" style="font-size:32px; color:var(--accent); margin-bottom: 16px; display:inline-block; line-height:1;">⟳</div>
       </div>
     </div>
+  </div>
 
-    <!-- Table 2 Skeleton -->
+  <!-- Table 2 (Cloud Build) - Loads slow -->
+  <div hx-get="{% url 'tenants:builds_cloud_content' %}" hx-trigger="load" hx-swap="outerHTML">
     <div class="card">
       <div class="card-header">
         <div class="card-title">Historique Cloud Build</div>
