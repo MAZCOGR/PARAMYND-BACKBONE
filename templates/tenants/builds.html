@@ -16,12 +16,8 @@
     <h1>Builds & Images Docker</h1>
     <p>Tags disponibles dans Artifact Registry et historique Cloud Build.</p>
   </div>
-  <div id="sync-indicator">
-    <div hx-get="{% url 'tenants:builds_sync' %}" hx-trigger="load" hx-swap="outerHTML" hx-target="#sync-indicator">
-      <span class="badge" style="background:rgba(255,255,255,0.05); color:var(--text-muted); font-size:12px; padding:6px 12px;">
-        <span class="spin" style="display:inline-block; font-size:14px; margin-right:4px;">⟳</span> Synchronisation...
-      </span>
-    </div>
+  <div id="sync-indicator" style="display:none;">
+    <div hx-get="{% url 'tenants:builds_sync' %}" hx-trigger="load" hx-swap="outerHTML" hx-target="#sync-indicator"></div>
   </div>
 </div>
 
@@ -72,7 +68,7 @@
       <div class="card-header" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 20px; display: block;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div class="card-title">Derniers Commits</div>
-          <span class="badge badge-mock">Git Local</span>
+          <span id="git-sync-badge" class="badge pulse" style="background:rgba(255,183,3,0.1); color:var(--warning); transition: all 0.4s ease;">Git Local</span>
         </div>
         <p style="color: white; font-size: 13px; margin-top: 8px; opacity: 0.8;">Cet historique liste les modifications locales apportées au code source de votre instance, qui ont déclenché ou déclencheront un déploiement.</p>
       </div>
@@ -131,7 +127,7 @@
       <div class="card-header" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 20px; display: block;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div class="card-title">Historique Cloud Build</div>
-          <span class="badge badge-mock">Cloud Build</span>
+          <span id="cloud-sync-badge" class="badge pulse" style="background:rgba(255,183,3,0.1); color:var(--warning); transition: all 0.4s ease;">Cloud Build</span>
         </div>
         <p style="color: white; font-size: 13px; margin-top: 8px; opacity: 0.8;">Suivez en temps réel la compilation de vos images Docker sur l'infrastructure Google Cloud et vérifiez le statut de chaque déploiement.</p>
       </div>

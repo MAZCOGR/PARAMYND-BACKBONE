@@ -1,7 +1,5 @@
-<!-- Mise à jour de l'indicateur de synchronisation -->
-<div id="sync-indicator" hx-swap-oob="true">
-  <span class="badge" style="background:rgba(6,214,160,0.1); color:var(--success); font-size:12px; padding:6px 12px; animation: fadeIn 0.4s ease;">✓ À jour</span>
-</div>
+<!-- Indication de fin de synchronisation silencieuse -->
+<div id="sync-indicator" style="display:none;"></div>
 
 <!-- Mise à jour des KPIs Cloud -->
 <div id="kpi-cloud-1-container" hx-swap-oob="true">
@@ -44,7 +42,7 @@
     <div class="card-header" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 20px; display: block;">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <div class="card-title">Derniers Commits</div>
-        <span class="badge badge-mock">Git Local</span>
+        <span id="git-sync-badge" class="badge" style="background:rgba(6,214,160,0.1); color:var(--success); transition: background 0.4s ease;">Git Local</span>
       </div>
       <p style="color: white; font-size: 13px; margin-top: 8px; opacity: 0.8;">Cet historique liste les modifications locales apportées au code source de votre instance, qui ont déclenché ou déclencheront un déploiement.</p>
     </div>
@@ -103,7 +101,7 @@
     <div class="card-header" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 20px; display: block;">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <div class="card-title">Historique Cloud Build</div>
-        <span class="badge badge-mock">Cloud Build</span>
+        <span id="cloud-sync-badge" class="badge" style="background:rgba(6,214,160,0.1); color:var(--success); transition: background 0.4s ease;">Cloud Build</span>
       </div>
       <p style="color: white; font-size: 13px; margin-top: 8px; opacity: 0.8;">Suivez en temps réel la compilation de vos images Docker sur l'infrastructure Google Cloud et vérifiez le statut de chaque déploiement.</p>
     </div>
