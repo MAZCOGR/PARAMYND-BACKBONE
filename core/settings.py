@@ -128,6 +128,10 @@ if IS_CLOUD_RUN:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SAMESITE = 'Lax'
+    
+    # Fix for Firebase Hosting stripping cookies (it only allows __session)
+    SESSION_COOKIE_NAME = '__session'
+    CSRF_USE_SESSIONS = True
 else:
     DATABASES = {
         'default': {
