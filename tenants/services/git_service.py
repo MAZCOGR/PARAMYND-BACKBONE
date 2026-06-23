@@ -72,7 +72,7 @@ def _get_commits_from_repo(repo_path: str, limit: int = 10) -> List[Dict]:
 
                 commits.append({
                     'hash': commit_hash,
-                    'short_hash': commit_hash[:8],
+                    'short_hash': commit_hash[:7],
                     'message': message,
                     'author': author,
                     'date': formatted_date,

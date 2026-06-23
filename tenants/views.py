@@ -109,31 +109,31 @@ def tenant_detail_view(request, pk):
     """Affiche le détail d'un tenant avec son historique de déploiements."""
     tenant = get_object_or_404(Tenant, pk=pk)
     deployments = tenant.deployments.order_by('-started_at')[:20]
-    deployments = tenant.deployments.order_by('-started_at')[:20]
     
-    # 1. Charger les versions directement depuis les commits SaaS
+    # 1. Charger les versions
     from .models import SaaSGitCommitRecord
-    saas_commits = SaaSGitCommitRecord.objects.all()[:30]
     
+    # Check artifact registry for tags to know what is built
+    ar_tags = artifact_registry.list_available_tags(limit=100)
+    ar_tag_names = {t['tag'] for t in ar_tags}
+
+    saas_commits = SaaSGitCommitRecord.objects.all()[:30]
     available_tags = []
     seen_tags = set()
     for c in saas_commits:
-        # Le tag principal est soit le git tag, soit le short hash
         primary_tag = c.tag if c.tag else c.short_hash
         if primary_tag and primary_tag not in seen_tags:
             seen_tags.add(primary_tag)
-            
-            commit_msg = c.message.split('\n')[0]
-            if len(commit_msg) > 50:
-                commit_msg = commit_msg[:47] + "..."
-                
+            commit_msg = c.message.split('\n')[0][:50] + ('...' if len(c.message) > 50 else '')
+            is_ready = primary_tag in ar_tag_names
             available_tags.append({
                 'tag': primary_tag,
                 'digest': c.short_hash,
                 'created': c.date_str,
                 'uri': artifact_registry.get_image_uri(primary_tag),
                 'commit_msg': commit_msg,
-                'author': c.author
+                'author': c.author,
+                'is_ready': is_ready
             })
             
     # 2. Fallback si l'historique en base est vide
@@ -176,15 +176,21 @@ def tenant_deploy_view(request, pk):
     # 1. Utiliser la même liste de tags que la vue de détail pour la validation
     from .models import SaaSGitCommitRecord
     saas_commits = SaaSGitCommitRecord.objects.all()[:30]
+    
+    ar_tags = artifact_registry.list_available_tags(limit=100)
+    ar_tag_names = {t['tag'] for t in ar_tags}
+
     available_tags = []
     seen_tags = set()
     for c in saas_commits:
         primary_tag = c.tag if c.tag else c.short_hash
         if primary_tag and primary_tag not in seen_tags:
             seen_tags.add(primary_tag)
+            is_ready = primary_tag in ar_tag_names
             available_tags.append({
                 'tag': primary_tag,
-                'uri': artifact_registry.get_image_uri(primary_tag)
+                'uri': artifact_registry.get_image_uri(primary_tag),
+                'is_ready': is_ready
             })
             
     if not available_tags:

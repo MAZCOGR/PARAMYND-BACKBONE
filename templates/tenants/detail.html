@@ -479,7 +479,7 @@
               <option value="" style="background:#18181b;">— Choisir une version —</option>
               {% for tag in available_tags %}
               <option value="{{ tag.tag }}" style="background:#18181b;" {% if tenant.current_image_tag == tag.tag %}selected{% endif %}>
-                {{ tag.tag }} {% if tag.commit_msg %}— {{ tag.commit_msg }}{% endif %} {% if tenant.current_image_tag == tag.tag %} (ACTUEL){% endif %}
+                {{ tag.tag }} {% if tag.is_ready %}✅ Build prêt{% else %}⏳ Build en cours{% endif %} {% if tag.commit_msg %}— {{ tag.commit_msg }}{% endif %} {% if tenant.current_image_tag == tag.tag %} (ACTUEL){% endif %}
               </option>
               {% endfor %}
             </select>
