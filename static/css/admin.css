@@ -797,40 +797,29 @@ select option { background: var(--black-2); }
 
 /* ── Builds Page Layout ────────────────────────────────────── */
 .builds-grid {
-  display: grid;
-  grid-template-columns: 220px minmax(0, 1fr) minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 24px;
-  align-items: start;
 }
 
 .kpis-container {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   gap: 20px;
 }
+.kpis-container > div {
+  flex: 1;
+  min-width: 200px;
+}
 
-@media (max-width: 1200px) {
-  .builds-grid {
-    display: flex;
-    flex-direction: column;
-  }
-  .kpis-container {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-  .kpis-container > div {
-    flex: 1;
-    min-width: 200px;
-  }
-  
-  /* Change the order: KPIs first, then Cloud Build, then Git */
-  #kpi-group {
-    order: 1;
-  }
-  #cloud-table-container {
-    order: 2;
-  }
-  #git-table-container {
-    order: 3;
-  }
+/* Change the order: KPIs first, then Cloud Build, then Git */
+#kpi-group {
+  order: 1;
+}
+#cloud-table-container {
+  order: 2;
+}
+#git-table-container {
+  order: 3;
 }
