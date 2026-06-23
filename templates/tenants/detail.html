@@ -1,128 +1,148 @@
 {% extends "base.html" %}
 
 {% block title %}{{ tenant.name }} — Paramynd Admin{% endblock %}
-{% block breadcrumb_title %}Tenants <span>/ {{ tenant.name }}</span>{% endblock %}
 
-{% block topbar_actions %}
-  {% if tenant.cloud_run_url %}
-  <a href="{{ tenant.cloud_run_url }}" target="_blank" class="btn btn-outline btn-sm" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
-    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-    </svg>
-    Ouvrir l'instance
-  </a>
-  {% endif %}
-  <button onclick="openModal('deploy-modal')" class="btn btn-primary btn-sm" style="box-shadow: 0 4px 15px rgba(124,92,252,0.4);">
-    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-    </svg>
-    Déployer
-  </button>
+{% block extra_head %}
+<style>
+  /* Hide the topbar completely to match builds.html and backbone standard */
+  .topbar { display: none !important; }
+  
+  /* Additional utilities for form inputs */
+  .clean-input {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-primary);
+    border-radius: 6px;
+    padding: 10px 14px;
+    width: 100%;
+    font-size: 14px;
+    transition: all 0.2s ease;
+  }
+  .clean-input:focus {
+    border-color: var(--accent);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(124,92,252,0.15);
+  }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="breadcrumb mb-4" style="margin-bottom: 24px;">
-  <a href="{% url 'tenants:list' %}">Tenants</a>
-  <span class="sep">
-    <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-  </span>
-  <span class="current">{{ tenant.name }}</span>
+<div class="breadcrumb mb-4" style="margin-bottom: 24px; margin-top: 10px;">
+  <a href="{% url 'tenants:list' %}" style="color:var(--text-muted); text-decoration:none;">Tenants</a>
+  <span class="sep" style="color:var(--text-muted); margin:0 8px;">/</span>
+  <span class="current td-mono" style="font-size: 13px;">{{ tenant.name }}</span>
 </div>
 
-<!-- Premium Header -->
-<div class="card mb-4" style="padding: 32px; background: rgba(255,255,255,0.02); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); overflow: hidden; position: relative;">
-  <div style="position:absolute; top:-80px; right:-50px; width:250px; height:250px; background: var(--accent); filter: blur(120px); opacity: 0.2; pointer-events:none; border-radius: 50%;"></div>
-  <div style="position:absolute; bottom:-80px; left:-50px; width:200px; height:200px; background: var(--teal); filter: blur(100px); opacity: 0.1; pointer-events:none; border-radius: 50%;"></div>
-  
-  <div class="flex items-center gap-5 relative z-10">
-    <div style="width:72px;height:72px;background:linear-gradient(135deg,var(--accent),#c084fc);border-radius:18px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:28px;color:#fff;flex-shrink:0;box-shadow: 0 12px 32px rgba(124,92,252,0.4), inset 0 2px 4px rgba(255,255,255,0.3);">
-      {{ tenant.name|first|upper }}
-    </div>
-    <div style="flex: 1;">
-      <h1 style="font-size: 28px; font-weight: 800; margin-bottom: 10px; letter-spacing: -0.5px; color: #fff;">{{ tenant.name }}</h1>
-      <div class="flex items-center gap-3 flex-wrap">
-        <span class="badge badge-{{ tenant.status }}" style="padding: 6px 12px; font-size: 11px;">{{ tenant.get_status_display }}</span>
-        <span class="td-mono" style="background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); color: rgba(255,255,255,0.8);">{{ tenant.slug }}</span>
-        {% if tenant.contact_email %}
-        <span class="text-muted flex items-center gap-2" style="font-size: 13px; background: rgba(255,255,255,0.03); padding: 4px 10px; border-radius: 6px;">
+<div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 32px; flex-wrap:wrap; gap:16px;">
+  <div>
+    <h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px; color: var(--text-primary); word-break: break-all;">{{ tenant.name }}</h1>
+    <div style="display:flex; align-items:center; gap:12px; margin-top:12px; color:var(--text-muted); font-size:13px; flex-wrap:wrap;">
+      <span class="badge badge-{{ tenant.status }}">{{ tenant.get_status_display }}</span>
+      <span class="td-mono" style="background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:6px; font-size:12px; border: 1px solid rgba(255,255,255,0.05);">{{ tenant.slug }}</span>
+      {% if tenant.contact_email %}
+        <span style="display:flex; align-items:center; gap:6px;">
           <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
           {{ tenant.contact_email }}
         </span>
-        {% endif %}
-      </div>
+      {% endif %}
     </div>
+  </div>
+  <div style="display:flex; align-items:center; gap:16px;">
     {% if tenant.cloud_run_url %}
-    <div class="ml-auto" style="text-align: right;">
-       <a href="{{ tenant.cloud_run_url }}" target="_blank" class="btn btn-outline" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); padding: 12px 20px;">
-          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-          </svg>
-          Accès App
-       </a>
-    </div>
+    <a href="{{ tenant.cloud_run_url }}" target="_blank" class="btn btn-outline" style="background:rgba(255,255,255,0.03); border-color:rgba(255,255,255,0.1); gap:8px; border-radius:8px; height:fit-content; text-decoration:none;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+      Accès App
+    </a>
     {% endif %}
+    <button class="btn btn-primary" onclick="openDeployModal()" style="background:var(--accent); color:white; border:none; gap:8px; border-radius:8px; height:fit-content; box-shadow:0 4px 12px rgba(124,92,252,0.3);">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+      Déployer
+    </button>
   </div>
 </div>
 
-<!-- Stats Grid -->
-<div class="stats-grid" style="margin-bottom: 24px;">
-  <div class="stat-card">
-    <div class="stat-label">Déploiement</div>
-    <div class="stat-value" style="font-size: 26px;">
+<!-- KPIs -->
+<div class="kpis-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 32px;">
+  <div class="kpi-card" style="animation: fadeIn 0.4s ease; padding: 20px;">
+    <div class="kpi-title" style="display:flex; justify-content:space-between; align-items:center; opacity:0.8;">
+      Déploiement
+      <svg width="16" height="16" fill="none" stroke="{% if tenant.current_image_tag %}var(--success){% else %}var(--text-muted){% endif %}" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+    </div>
+    <div class="kpi-value" style="font-size: 24px; font-weight: 700; margin-top: 8px;">
       {% if tenant.current_image_tag %}
-        <span class="text-success" style="text-shadow: 0 0 10px rgba(6,214,160,0.3);">Actif</span>
+        <span style="color:var(--success);">Actif</span>
       {% else %}
-        <span class="text-muted">Inactif</span>
+        <span style="color:var(--text-muted);">Inactif</span>
       {% endif %}
     </div>
-    <div class="stat-sub flex items-center gap-2 mt-2">
+    <div style="font-size: 12px; color: var(--text-muted); margin-top: 8px; display:flex; align-items:center; gap:6px;">
       {% if tenant.current_image_tag %}
-        <span class="td-mono" style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-size: 11px;">{{ tenant.current_image_tag }}</span>
+        <span class="td-mono" style="background:rgba(255,255,255,0.05); padding:2px 6px; border-radius:4px; font-size:11px; border:1px solid rgba(255,255,255,0.05);">{{ tenant.current_image_tag }}</span>
       {% else %}
-        <span>En attente de déploiement</span>
+        En attente de déploiement
       {% endif %}
     </div>
   </div>
-  
-  <div class="stat-card">
-    <div class="stat-label">Projet & Région</div>
-    <div class="stat-value" style="font-size: 22px;">{{ tenant.cloud_run_region }}</div>
-    <div class="stat-sub td-mono mt-2" style="color: rgba(255,255,255,0.6);">{{ tenant.gcp_project_id }}</div>
+
+  <div class="kpi-card" style="animation: fadeIn 0.4s ease 0.1s backwards; padding: 20px;">
+    <div class="kpi-title" style="display:flex; justify-content:space-between; align-items:center; opacity:0.8;">
+      Projet GCP
+      <svg width="16" height="16" fill="none" stroke="#4cc9f0" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+    </div>
+    <div class="kpi-value td-mono" style="font-size: 14px; font-weight: 600; margin-top: 10px; word-break:break-all;">
+      {{ tenant.gcp_project_id }}
+    </div>
+    <div style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
+      Région : {{ tenant.cloud_run_region }}
+    </div>
   </div>
-  
-  <div class="stat-card">
-    <div class="stat-label">Service Cloud Run</div>
-    <div class="stat-value td-mono" style="font-size: 15px; word-break: break-all; margin-top: 4px; color: var(--text-primary);">
+
+  <div class="kpi-card" style="animation: fadeIn 0.4s ease 0.2s backwards; padding: 20px;">
+    <div class="kpi-title" style="display:flex; justify-content:space-between; align-items:center; opacity:0.8;">
+      Service Cloud Run
+      <svg width="16" height="16" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+    </div>
+    <div class="kpi-value td-mono" style="font-size: 14px; font-weight: 600; margin-top: 10px; word-break:break-all; line-height: 1.4;">
       {{ tenant.service_name }}
     </div>
-    <div class="stat-sub mt-2" style="font-size: 12px;">
+    <div style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
       Maj: {% if tenant.last_deployed_at %}{{ tenant.last_deployed_at|timesince }} ago{% else %}Jamais{% endif %}
     </div>
   </div>
-  
-  <div class="stat-card">
-    <div class="stat-label">Base de données</div>
-    <div class="stat-value" style="font-size: 22px;">{{ tenant.db_name|default:"—" }}</div>
-    <div class="stat-sub mt-2">PostgreSQL (Cloud SQL)</div>
+
+  <div class="kpi-card" style="animation: fadeIn 0.4s ease 0.3s backwards; padding: 20px;">
+    <div class="kpi-title" style="display:flex; justify-content:space-between; align-items:center; opacity:0.8;">
+      Base de données
+      <svg width="16" height="16" fill="none" stroke="var(--accent-warn)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
+    </div>
+    <div class="kpi-value" style="font-size: 20px; font-weight: 700; margin-top: 8px; word-break:break-all;">
+      {{ tenant.db_name|default:"—" }}
+    </div>
+    <div style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
+      PostgreSQL (Cloud SQL)
+    </div>
   </div>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 380px;gap:24px;align-items:start;">
-  <!-- Historique déploiements -->
-  <div class="card" style="box-shadow: 0 8px 32px rgba(0,0,0,0.2);">
-    <div class="card-header" style="background: rgba(255,255,255,0.02);">
-      <div class="card-title flex items-center gap-2">
-        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="text-accent"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+<!-- Main Grid -->
+<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; align-items: start;">
+  
+  <!-- Deployments -->
+  <div class="card" style="padding: 0; border: none; background: transparent; box-shadow: none; grid-column: 1 / span 2;">
+    <div class="card-header" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 0 0 16px 0; display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="margin:0; font-size:16px; display:flex; align-items:center; gap:8px;">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" class="text-muted"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
         Historique des déploiements
-      </div>
-      <span class="badge badge-archived text-sm">{{ deployments|length }} déploiements</span>
+      </h3>
+      <span class="badge" style="background:rgba(255,255,255,0.05); color:var(--text-muted);">{{ deployments|length }} déploiements</span>
     </div>
+    
     {% if deployments %}
-    <div class="table-container" style="border:none;border-radius:0;">
+    <div class="table-container" style="border:none; border-radius:0; background:transparent;">
       <table>
         <thead>
           <tr>
-            <th>Version</th>
+            <th>Version / Révision</th>
             <th>Statut</th>
             <th>Auteur</th>
             <th>Date</th>
@@ -131,30 +151,43 @@
         </thead>
         <tbody>
           {% for dep in deployments %}
-          <tr style="transition: all 0.2s;">
+          <tr>
             <td>
-              <span class="td-mono" style="background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 4px;">{{ dep.image_tag }}</span>
-              <div class="text-muted mt-1" style="font-size: 11px;">Rév: {{ dep.revision_name|default:"—"|truncatechars:15 }}</div>
-            </td>
-            <td>
-              <span class="badge badge-{{ dep.status }}">{{ dep.get_status_display }}</span>
-            </td>
-            <td>
-              <div class="flex items-center gap-2">
-                <div style="width:24px;height:24px;background:rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;">
-                  {{ dep.deployed_by|default:"U"|first|upper }}
-                </div>
-                <span class="text-sm" style="color: rgba(255,255,255,0.85);">{{ dep.deployed_by|default:"Système"|truncatechars:15 }}</span>
+              <div style="display:flex; flex-direction:column; gap:6px;">
+                <span class="td-mono" style="background:rgba(255,255,255,0.05); padding:2px 6px; border-radius:4px; font-size:12px; width:fit-content; border:1px solid rgba(255,255,255,0.05);">{{ dep.image_tag }}</span>
+                <div class="text-muted" style="font-size: 11px;">Rév: <span class="td-mono">{{ dep.revision_name|default:"—"|truncatechars:20 }}</span></div>
               </div>
             </td>
-            <td class="text-sm text-muted">{{ dep.started_at|timesince }} ago</td>
+            <td>
+              <span style="display:inline-flex; align-items:center; gap:6px;">
+                {% if dep.status == 'success' %}
+                  <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="color:var(--success);"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                  <span style="color:var(--success); font-size:13px;">Réussi</span>
+                {% elif dep.status == 'failed' %}
+                  <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="color:var(--danger);"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                  <span style="color:var(--danger); font-size:13px;">Échec</span>
+                {% else %}
+                  <span style="color:var(--text-muted); font-size:13px;">{{ dep.get_status_display }}</span>
+                {% endif %}
+              </span>
+            </td>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:20px; height:20px; background:rgba(255,255,255,0.1); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:9px; color:#fff;">
+                  {{ dep.deployed_by|default:"U"|first|upper }}
+                </div>
+                <span style="font-size:13px; color:var(--text-secondary);">{{ dep.deployed_by|default:"Système"|truncatechars:20 }}</span>
+              </div>
+            </td>
+            <td style="color:var(--text-muted); font-size:13px;">{{ dep.started_at|timesince }} ago</td>
             <td style="text-align: right;">
               {% if dep.revision_name and dep.status == 'success' %}
               <form method="post" action="{% url 'tenants:rollback' tenant.pk %}" onsubmit="return confirm('Voulez-vous effectuer un rollback vers la révision {{ dep.revision_name }} ?')" style="display:inline-block;">
                 {% csrf_token %}
                 <input type="hidden" name="revision_name" value="{{ dep.revision_name }}">
-                <button type="submit" class="btn btn-outline btn-sm" style="border-color: rgba(255,255,255,0.1); background: transparent;" title="Rollback">
-                  <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                <button type="submit" class="btn btn-outline" style="padding:4px 8px; border-radius:4px; font-size:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:var(--text-secondary);" title="Rollback">
+                  <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                  Restaurer
                 </button>
               </form>
               {% endif %}
@@ -165,60 +198,58 @@
       </table>
     </div>
     {% else %}
-    <div class="empty-state" style="padding: 60px 40px;">
-      <div class="icon" style="font-size: 56px; margin-bottom: 24px; filter: drop-shadow(0 0 20px rgba(255,255,255,0.2));">🚀</div>
-      <h3 style="font-size: 20px;">Aucun déploiement</h3>
-      <p style="color: rgba(255,255,255,0.5);">Lancez votre premier déploiement pour rendre ce tenant accessible.</p>
-      <button onclick="openModal('deploy-modal')" class="btn btn-primary mt-4">
-        Lancer un déploiement
-      </button>
+    <div class="empty-state" style="padding: 60px 40px; background:rgba(255,255,255,0.02); border-radius:12px; margin-top:16px;">
+      <div class="icon" style="font-size: 40px; margin-bottom: 16px;">🚀</div>
+      <h3 style="font-size: 16px; margin-bottom:8px;">Aucun déploiement</h3>
+      <p style="color: var(--text-muted); font-size:13px;">Lancez votre premier déploiement pour rendre ce tenant accessible.</p>
+      <button onclick="openDeployModal()" class="btn btn-primary" style="margin-top:16px; border-radius:6px;">Lancer un déploiement</button>
     </div>
     {% endif %}
   </div>
 
-  <!-- Panneau latéral édition -->
-  <div class="card" style="position: sticky; top: 96px;">
-    <div class="card-header" style="background: rgba(255,255,255,0.02);">
-      <div class="card-title flex items-center gap-2">
-        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="text-accent"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+  <!-- Edit Panel -->
+  <div class="card" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; grid-column: span 1; position: sticky; top: 32px;">
+    <div class="card-header" style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+      <h3 style="margin:0; font-size:15px; display:flex; align-items:center; gap:8px;">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" class="text-muted"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
         Paramètres du tenant
-      </div>
+      </h3>
     </div>
-    <div class="card-body">
+    <div class="card-body" style="padding: 24px;">
       <form method="post" action="{% url 'tenants:detail' tenant.pk %}">
         {% csrf_token %}
         <input type="hidden" name="update_tenant" value="1">
 
-        <div class="form-group mb-4">
-          <label class="form-label">Nom <span class="required">*</span></label>
-          <input type="text" name="name" class="form-input" value="{{ tenant.name }}" required style="background: rgba(0,0,0,0.2);">
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label style="display:block; font-size:13px; color:var(--text-muted); margin-bottom:8px;">Nom <span style="color:var(--danger);">*</span></label>
+          <input type="text" name="name" class="clean-input" value="{{ tenant.name }}" required>
         </div>
 
-        <div class="form-group mb-4">
-          <label class="form-label">Email de contact</label>
-          <input type="email" name="contact_email" class="form-input" value="{{ tenant.contact_email|default:'' }}" style="background: rgba(0,0,0,0.2);">
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label style="display:block; font-size:13px; color:var(--text-muted); margin-bottom:8px;">Email de contact</label>
+          <input type="email" name="contact_email" class="clean-input" value="{{ tenant.contact_email|default:'' }}">
         </div>
 
-        <div class="form-group mb-4">
-          <label class="form-label">Statut</label>
-          <select name="status" class="form-input" style="background: rgba(0,0,0,0.2);">
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label style="display:block; font-size:13px; color:var(--text-muted); margin-bottom:8px;">Statut</label>
+          <select name="status" class="clean-input">
             {% for val, label in status_choices %}
-            <option value="{{ val }}" {% if tenant.status == val %}selected{% endif %}>{{ label }}</option>
+            <option value="{{ val }}" {% if tenant.status == val %}selected{% endif %} style="background:#18181b; color:#fff;">{{ label }}</option>
             {% endfor %}
           </select>
         </div>
 
-        <div class="form-group mb-4">
-          <label class="form-label">Domaine personnalisé</label>
-          <input type="text" name="custom_domain" class="form-input" value="{{ tenant.custom_domain|default:'' }}" placeholder="acme.paramynd.com" style="background: rgba(0,0,0,0.2);">
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label style="display:block; font-size:13px; color:var(--text-muted); margin-bottom:8px;">Domaine personnalisé</label>
+          <input type="text" name="custom_domain" class="clean-input" value="{{ tenant.custom_domain|default:'' }}" placeholder="acme.paramynd.com">
         </div>
 
-        <div class="form-group mb-5">
-          <label class="form-label">Notes</label>
-          <textarea name="notes" rows="4" class="form-input" style="background: rgba(0,0,0,0.2); resize: vertical;">{{ tenant.notes }}</textarea>
+        <div class="form-group" style="margin-bottom: 24px;">
+          <label style="display:block; font-size:13px; color:var(--text-muted); margin-bottom:8px;">Notes</label>
+          <textarea name="notes" rows="3" class="clean-input" style="resize: vertical;">{{ tenant.notes }}</textarea>
         </div>
 
-        <button type="submit" class="btn btn-outline w-full justify-center" style="border-color: rgba(255,255,255,0.1); background: rgba(255,255,255,0.03);">
+        <button type="submit" class="btn btn-outline" style="width:100%; border-radius:6px; background:rgba(255,255,255,0.03); border-color:rgba(255,255,255,0.1); justify-content:center;">
           Enregistrer les modifications
         </button>
       </form>
@@ -226,76 +257,81 @@
   </div>
 </div>
 
-<!-- ── Modal de déploiement ─────────────────────────────── -->
-<div id="deploy-modal" class="modal-overlay">
-  <div class="modal" style="background: #101014; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 24px 64px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.05); border-radius: 16px;">
-    <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 24px;">
-      <div class="modal-title flex items-center gap-3">
-        <div style="width:36px;height:36px;background:rgba(124,92,252,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--accent);">
-          <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+<!-- Deploy Modal -->
+<div id="deploy-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); z-index:9999; align-items:center; justify-content:center; opacity:0; transition:opacity 0.2s ease;">
+  <div class="modal-box" style="background:rgba(18,18,22,0.98); border:1px solid rgba(255,255,255,0.08); border-radius:12px; width:540px; max-width:90%; box-shadow:0 30px 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.05); transform:scale(0.95); transition:transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); display:flex; flex-direction:column;">
+    
+    <div style="padding: 24px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="margin:0; font-size:18px; font-weight:600; display:flex; align-items:center; gap:12px;">
+        <div style="width:32px; height:32px; background:rgba(124,92,252,0.1); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--accent);">
+          <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
         </div>
-        Déployer {{ tenant.name }}
-      </div>
-      <button class="modal-close" onclick="closeModal('deploy-modal')" style="background: rgba(255,255,255,0.05); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">×</button>
+        Déployer {{ tenant.name|truncatechars:20 }}
+      </h3>
+      <button onclick="closeDeployModal()" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:4px;">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
     </div>
-    <div class="modal-body" style="padding: 24px;">
+
+    <div style="padding: 24px;">
       <form method="post" action="{% url 'tenants:deploy' tenant.pk %}" id="deploy-form">
         {% csrf_token %}
 
-        <div class="form-group mb-4">
-          <label class="form-label">Version à déployer <span class="required">*</span></label>
-          <select name="image_tag" class="form-input" required id="deploy-tag-select" style="background: rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.1);">
-            <option value="">— Sélectionner une version —</option>
+        <div style="margin-bottom: 24px;">
+          <label style="display:block; font-size:13px; color:var(--text-muted); margin-bottom:8px;">Version à déployer <span style="color:var(--danger);">*</span></label>
+          <select name="image_tag" class="clean-input" required id="deploy-tag-select">
+            <option value="" style="background:#18181b;">— Sélectionner une version —</option>
             {% for tag in available_tags %}
-            <option value="{{ tag.tag }}" {% if tenant.current_image_tag == tag.tag %}selected{% endif %}>
+            <option value="{{ tag.tag }}" style="background:#18181b;" {% if tenant.current_image_tag == tag.tag %}selected{% endif %}>
               {{ tag.tag }}{% if tenant.current_image_tag == tag.tag %} (actuel){% endif %}
             </option>
             {% endfor %}
           </select>
-          <div id="image-uri-preview" class="form-hint mt-2 td-mono" style="font-size: 11px; word-break: break-all; color: rgba(255,255,255,0.4);"></div>
+          <div id="image-uri-preview" class="td-mono" style="font-size: 11px; margin-top:8px; color:var(--text-muted); word-break:break-all;"></div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" class="mb-4">
-          <div class="form-group">
-            <label class="form-label text-sm">Min. instances</label>
-            <input type="number" name="min_instances" class="form-input" value="0" min="0" max="10" style="background: rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.1);">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px;">
+          <div>
+            <label style="display:block; font-size:13px; color:var(--text-muted); margin-bottom:8px;">Min. instances</label>
+            <input type="number" name="min_instances" class="clean-input" value="0" min="0" max="10">
           </div>
-          <div class="form-group">
-            <label class="form-label text-sm">Max. instances</label>
-            <input type="number" name="max_instances" class="form-input" value="10" min="1" max="100" style="background: rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.1);">
+          <div>
+            <label style="display:block; font-size:13px; color:var(--text-muted); margin-bottom:8px;">Max. instances</label>
+            <input type="number" name="max_instances" class="clean-input" value="10" min="1" max="100">
           </div>
-          <div class="form-group">
-            <label class="form-label text-sm">Mémoire</label>
-            <select name="memory" class="form-input" style="background: rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.1);">
-              <option value="256Mi">256 Mi</option>
-              <option value="512Mi" selected>512 Mi</option>
-              <option value="1Gi">1 Gi</option>
-              <option value="2Gi">2 Gi</option>
+          <div>
+            <label style="display:block; font-size:13px; color:var(--text-muted); margin-bottom:8px;">Mémoire</label>
+            <select name="memory" class="clean-input">
+              <option value="256Mi" style="background:#18181b;">256 Mi</option>
+              <option value="512Mi" style="background:#18181b;" selected>512 Mi</option>
+              <option value="1Gi" style="background:#18181b;">1 Gi</option>
+              <option value="2Gi" style="background:#18181b;">2 Gi</option>
             </select>
           </div>
-          <div class="form-group">
-            <label class="form-label text-sm">CPU</label>
-            <select name="cpu" class="form-input" style="background: rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.1);">
-              <option value="1" selected>1 vCPU</option>
-              <option value="2">2 vCPU</option>
-              <option value="4">4 vCPU</option>
+          <div>
+            <label style="display:block; font-size:13px; color:var(--text-muted); margin-bottom:8px;">CPU</label>
+            <select name="cpu" class="clean-input">
+              <option value="1" style="background:#18181b;" selected>1 vCPU</option>
+              <option value="2" style="background:#18181b;">2 vCPU</option>
+              <option value="4" style="background:#18181b;">4 vCPU</option>
             </select>
           </div>
         </div>
 
         {% if tenant.current_image_tag %}
-        <div class="alert alert-info" style="font-size:13px; background: rgba(56,189,248,0.05); border: 1px solid rgba(56,189,248,0.1); border-radius: 8px;">
-          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="text-info"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          Version actuellement en production : <span class="td-mono ml-1">{{ tenant.current_image_tag }}</span>
+        <div style="background:rgba(56,189,248,0.05); border:1px solid rgba(56,189,248,0.1); border-radius:8px; padding:12px 16px; display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-primary);">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="color:#38bdf8;"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Version actuelle: <span class="td-mono ml-1">{{ tenant.current_image_tag }}</span>
         </div>
         {% endif %}
 
       </form>
     </div>
-    <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.05); padding: 20px 24px; background: rgba(0,0,0,0.2);">
-      <button class="btn btn-outline" onclick="closeModal('deploy-modal')" style="background: transparent; border: none; color: rgba(255,255,255,0.6);">Annuler</button>
-      <button class="btn btn-primary" id="deploy-confirm-btn" onclick="submitDeploy()" style="padding: 10px 24px; box-shadow: 0 4px 15px rgba(124,92,252,0.4);">
-        Confirmer le déploiement
+
+    <div style="padding: 20px 24px; border-top: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.2); display:flex; justify-content:flex-end; gap:12px; border-radius:0 0 12px 12px;">
+      <button class="btn btn-outline" onclick="closeDeployModal()" style="border-radius:6px; background:transparent; border-color:transparent; color:var(--text-secondary);">Annuler</button>
+      <button class="btn btn-primary" id="deploy-confirm-btn" onclick="submitDeploy()" style="border-radius:6px; background:var(--accent); color:white; border:none; box-shadow:0 4px 12px rgba(124,92,252,0.3);">
+        Déployer la version
       </button>
     </div>
   </div>
@@ -305,7 +341,6 @@
 
 {% block scripts %}
 <script>
-  // Tags data pour l'aperçu de l'URI
   const tagsData = {
     {% for tag in available_tags %}
     "{{ tag.tag }}": "{{ tag.uri }}",
@@ -318,51 +353,47 @@
   if (select) {
     select.addEventListener('change', function() {
       const uri = tagsData[this.value];
-      preview.textContent = uri ? `Source: ${uri}` : '';
+      preview.textContent = uri ? `URI: ${uri}` : '';
     });
   }
 
-  function openModal(id) {
-    const modal = document.getElementById(id);
-    modal.classList.add('open');
+  function openDeployModal() {
+    const modal = document.getElementById('deploy-modal');
+    const box = modal.querySelector('.modal-box');
+    modal.style.display = 'flex';
+    void modal.offsetWidth; // force reflow
+    modal.style.opacity = '1';
+    box.style.transform = 'scale(1)';
     document.body.style.overflow = 'hidden';
-    
-    // Tiny animation logic
-    const modalContent = modal.querySelector('.modal');
-    modalContent.style.opacity = '0';
-    modalContent.style.transform = 'scale(0.95) translateY(10px)';
-    
-    setTimeout(() => {
-      modalContent.style.transition = 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-      modalContent.style.opacity = '1';
-      modalContent.style.transform = 'scale(1) translateY(0)';
-    }, 10);
   }
 
-  function closeModal(id) {
-    const modal = document.getElementById(id);
-    const modalContent = modal.querySelector('.modal');
-    
-    modalContent.style.opacity = '0';
-    modalContent.style.transform = 'scale(0.95) translateY(10px)';
-    
+  function closeDeployModal() {
+    const modal = document.getElementById('deploy-modal');
+    const box = modal.querySelector('.modal-box');
+    modal.style.opacity = '0';
+    box.style.transform = 'scale(0.95)';
     setTimeout(() => {
-      modal.classList.remove('open');
+      modal.style.display = 'none';
       document.body.style.overflow = '';
     }, 200);
   }
 
+  document.getElementById('deploy-modal').addEventListener('mousedown', function(e) {
+    if (e.target === this) {
+      closeDeployModal();
+    }
+  });
+
   function submitDeploy() {
-    const tag = document.getElementById('deploy-tag-select').value;
+    const tag = select.value;
     if (!tag) {
       alert('Veuillez sélectionner une version à déployer.');
       return;
     }
     const btn = document.getElementById('deploy-confirm-btn');
     btn.disabled = true;
-    btn.innerHTML = '<span style="display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;margin-right:8px;"></span> Déploiement en cours…';
+    btn.innerHTML = '<span style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;margin-right:8px;"></span> Déploiement...';
     
-    // Add keyframes if not exists
     if (!document.getElementById('spin-anim')) {
       const style = document.createElement('style');
       style.id = 'spin-anim';
@@ -372,14 +403,5 @@
     
     document.getElementById('deploy-form').submit();
   }
-
-  // Fermer le modal en cliquant en dehors
-  document.querySelectorAll('.modal-overlay').forEach(overlay => {
-    overlay.addEventListener('click', function(e) {
-      if (e.target === this) {
-        closeModal(this.id);
-      }
-    });
-  });
 </script>
 {% endblock %}
