@@ -9,7 +9,7 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
-def list_available_tags(limit: int = 50) -> List[Dict]:
+def list_available_tags(limit: int = 10) -> List[Dict]:
     """
     Liste les tags Docker disponibles dans Artifact Registry.
     Retourne une liste de {'tag': str, 'digest': str, 'created': str, 'uri': str}

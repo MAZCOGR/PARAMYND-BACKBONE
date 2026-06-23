@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Supprimer Utilisateur | Paramynd Admin{% endblock %}
+
+{% block breadcrumb_title %}Utilisateurs <span>/ Supprimer</span>{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 500px; margin: 0 auto; border-color: rgba(239, 71, 111, 0.3);">
+  <div class="card-header" style="background: rgba(239, 71, 111, 0.05);">
+    <h2 class="card-title" style="color: var(--danger-color);">Confirmer la suppression</h2>
+  </div>
+  <div class="card-body">
+    <p style="margin-bottom: 1.5rem; font-size: 1.05rem; color: var(--text-color);">
+      Êtes-vous sûr de vouloir supprimer l'utilisateur <strong>{{ user_obj.email }}</strong> ?
+    </p>
+    <div style="padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 8px; margin-bottom: 2rem;">
+      <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">Nom: <span style="color:var(--text-color);">{{ user_obj.get_full_name }}</span></div>
+      <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">Rôle: <span style="color:var(--text-color);">{{ user_obj.get_role_display }}</span></div>
+      <div style="font-size: 0.9rem; color: var(--text-muted);">Inscription: <span style="color:var(--text-color);">{{ user_obj.date_joined|date:"d/m/Y H:i" }}</span></div>
+    </div>
+    
+    <form method="post" action="">
+      {% csrf_token %}
+      <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+        <a href="{% url 'accounts:user_list' %}" class="btn" style="background: transparent; border: 1px solid var(--border-color);">Annuler</a>
+        <button type="submit" class="btn alert-danger" style="background: var(--danger-color); color: white; border: none;">Oui, supprimer définitivement</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

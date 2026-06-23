@@ -40,6 +40,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     email       = models.EmailField(unique=True, verbose_name='Email')
     first_name  = models.CharField(max_length=100, blank=True, verbose_name='Prénom')
     last_name   = models.CharField(max_length=100, blank=True, verbose_name='Nom')
+    phone_number = models.CharField(max_length=20, blank=True, null=True, verbose_name='Numéro de téléphone')
     role        = models.CharField(
         max_length=20,
         choices=Role.choices,
@@ -99,3 +100,19 @@ class User(AbstractBaseUser, PermissionsMixin):
             Role.VIEWER:     'badge-viewer',
         }
         return badges.get(self.role, 'badge-default')
+
+from django.contrib.auth.models import Group
+
+class GroupAccess(models.Model):
+    """
+    Matrice d'accès pour définir dynamiquement quels groupes ont accès à quels modules.
+    """
+    group = models.OneToOneField(Group, on_delete=models.CASCADE, related_name='access')
+    can_access_tenants = models.BooleanField(default=False, verbose_name="Clients (Tenants)")
+    can_access_builds = models.BooleanField(default=False, verbose_name="Builds & Images")
+    can_access_monitoring = models.BooleanField(default=False, verbose_name="Monitoring")
+    can_access_users = models.BooleanField(default=False, verbose_name="Gestion des Utilisateurs")
+    can_access_roles = models.BooleanField(default=False, verbose_name="Matrice des Rôles")
+
+    def __str__(self):
+        return f"Accès de {self.group.name}"

@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Matrice des Rôles | Paramynd Admin{% endblock %}
+
+{% block breadcrumb_title %}Matrice des <span>Rôles</span>{% endblock %}
+
+{% block content %}
+<div class="card" style="background: var(--card-bg, #0A0A0A); border: 1px solid var(--border-color, rgba(255,255,255,0.08)); border-radius: 6px; padding: 20px; margin-bottom: 25px;">
+    <h3 style="color: var(--text-color, #fff); margin-top: 0; margin-bottom: 15px; font-size: 14px;">Créer un nouveau rôle personnalisé</h3>
+    <form method="post" action="{% url 'accounts:role_matrix' %}" style="display: flex; gap: 15px; align-items: center;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_group">
+        <input type="text" name="new_group_name" placeholder="Ex: Support Client" required
+               style="background: rgba(0,0,0,0.3); color: var(--text-color, #fff); border: 1px solid var(--border-color, rgba(255,255,255,0.2)); padding: 10px 15px; border-radius: 6px; flex: 1; max-width: 300px; font-size: 13px; outline: none; transition: 0.2s;">
+        <button type="submit" style="background: var(--accent-color, #7C5CFC); color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; transition: 0.2s;">
+            + Ajouter
+        </button>
+    </form>
+</div>
+
+<!-- Matrice des droits -->
+<div class="card" style="background: var(--card-bg, #0A0A0A); border: 1px solid var(--border-color, rgba(255,255,255,0.08)); border-radius: 6px; padding: 0; overflow: hidden;">
+    <form method="post" action="{% url 'accounts:role_matrix' %}" style="margin: 0;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save_matrix">
+        
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: center;">
+                <thead>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02);">
+                        <th style="padding: 15px; text-align: left; color: var(--text-muted, #888); font-size: 12px; border-right: 1px solid rgba(255,255,255,0.05); min-width: 250px;">Modules \ Rôles</th>
+                        {% for group in groups %}
+                        <th style="padding: 15px; color: var(--accent-color, #7C5CFC); font-size: 13px; font-weight: 600; min-width: 120px;">
+                            {{ group.name }}
+                        </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- LIGNE: Tenants -->
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 15px; text-align: left; color: var(--text-color, #fff); font-size: 13px; border-right: 1px solid rgba(255,255,255,0.05);">🏢 Clients (Tenants)</td>
+                        {% for group in groups %}
+                        <td style="padding: 15px;">
+                            <input type="checkbox" name="tenants_{{ group.id }}" {% if group.access.can_access_tenants %}checked{% endif %} style="accent-color: var(--accent-color, #7C5CFC); width: 16px; height: 16px; cursor: pointer;">
+                        </td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- LIGNE: Builds -->
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 15px; text-align: left; color: var(--text-color, #fff); font-size: 13px; border-right: 1px solid rgba(255,255,255,0.05);">🚀 Builds & Images</td>
+                        {% for group in groups %}
+                        <td style="padding: 15px;">
+                            <input type="checkbox" name="builds_{{ group.id }}" {% if group.access.can_access_builds %}checked{% endif %} style="accent-color: var(--accent-color, #7C5CFC); width: 16px; height: 16px; cursor: pointer;">
+                        </td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- LIGNE: Monitoring -->
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 15px; text-align: left; color: var(--text-color, #fff); font-size: 13px; border-right: 1px solid rgba(255,255,255,0.05);">📊 Monitoring</td>
+                        {% for group in groups %}
+                        <td style="padding: 15px;">
+                            <input type="checkbox" name="monitoring_{{ group.id }}" {% if group.access.can_access_monitoring %}checked{% endif %} style="accent-color: var(--accent-color, #7C5CFC); width: 16px; height: 16px; cursor: pointer;">
+                        </td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- LIGNE: Users -->
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 15px; text-align: left; color: var(--text-color, #fff); font-size: 13px; border-right: 1px solid rgba(255,255,255,0.05);">👥 Gestion des Utilisateurs</td>
+                        {% for group in groups %}
+                        <td style="padding: 15px;">
+                            <input type="checkbox" name="users_{{ group.id }}" {% if group.access.can_access_users %}checked{% endif %} style="accent-color: var(--accent-color, #7C5CFC); width: 16px; height: 16px; cursor: pointer;">
+                        </td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- LIGNE: Matrice des Roles -->
+                    <tr>
+                        <td style="padding: 15px; text-align: left; color: var(--text-color, #fff); font-size: 13px; border-right: 1px solid rgba(255,255,255,0.05);">🔐 Matrice des Rôles</td>
+                        {% for group in groups %}
+                        <td style="padding: 15px;">
+                            <input type="checkbox" name="roles_{{ group.id }}" {% if group.access.can_access_roles %}checked{% endif %} style="accent-color: var(--accent-color, #7C5CFC); width: 16px; height: 16px; cursor: pointer;">
+                        </td>
+                        {% endfor %}
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div style="padding: 20px; background: rgba(255,255,255,0.02); text-align: right; border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
+            <p style="text-align: left; color: var(--text-muted, #888); font-size: 11px; margin: 0;">
+                Note : Le rôle "Super Admin" n'apparaît pas ici car il possède nativement tous les droits en permanence.
+            </p>
+            <button type="submit" class="btn" style="background: var(--success-color, #10b981); color: #fff; border: none; padding: 10px 20px;">
+                Enregistrer la Matrice
+            </button>
+        </div>
+    </form>
+</div>
+
+<style>
+    input[name="new_group_name"]:focus {
+        border-color: var(--accent-color, #7C5CFC) !important;
+        box-shadow: 0 0 0 3px rgba(124, 92, 252, 0.15) !important;
+    }
+</style>
+{% endblock %}

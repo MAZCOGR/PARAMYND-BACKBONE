@@ -7,10 +7,15 @@ services:
       - .env
     ports:
       - "8002:8080"
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/tmp/adc.json
+      - GOOGLE_CLOUD_PROJECT=${GCP_PROJECT_ID}
     volumes:
       - .:/app
       - static_volume:/app/staticfiles
       - media_volume:/app/media
+      - ${APPDATA}/gcloud/application_default_credentials.json:/tmp/adc.json:ro
+      - c:/paramynd:/app/paramynd_repo:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
     command: ["/bin/sh", "-c", "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8080"]

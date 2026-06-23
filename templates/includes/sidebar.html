@@ -1,0 +1,333 @@
+{% load admin_extras %}
+<aside class="sidebar admin-sidebar" id="katira-sidebar">
+    <div class="sidebar-header">
+        <div class="brand-logo">
+            <span class="logo-icon">🧠</span>
+            <span class="brand-name">Paramynd</span>
+        </div>
+        <span class="admin-tag">ADMIN</span>
+    </div>
+
+    <div class="sidebar-nav-container">
+
+        <!-- ══ VUE D'ENSEMBLE ══ -->
+        {% if request.user|has_module_access:'tenants' %}
+        <div class="sidebar-sect" data-sect="overview" onclick="toggleSidebarSect(this)">
+            <span>Vue d'ensemble</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+        <div class="nav-sect-group" data-sect-body="overview">
+            <a href="{% url 'tenants:list' %}" class="nav-item single {% if request.resolver_match.namespace == 'tenants' and 'build' not in request.resolver_match.url_name %}active{% endif %}">
+                <span class="icon-box">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                </span>
+                <span class="nav-text">Clients (Tenants)</span>
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- ══ DEPLOIEMENTS ══ -->
+        {% if request.user|has_module_access:'builds' %}
+        <div class="sidebar-sect" data-sect="deployments" onclick="toggleSidebarSect(this)">
+            <span>Déploiements & Cloud</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+        <div class="nav-sect-group" data-sect-body="deployments">
+            <a href="{% url 'tenants:builds' %}" class="nav-item single {% if 'build' in request.resolver_match.url_name %}active{% endif %}">
+                <span class="icon-box">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
+                    </svg>
+                </span>
+                <span class="nav-text">Builds & Images</span>
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- ══ OBSERVABILITE ══ -->
+        {% if request.user|has_module_access:'monitoring' %}
+        <div class="sidebar-sect" data-sect="monitoring" onclick="toggleSidebarSect(this)">
+            <span>Observabilité</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+        <div class="nav-sect-group" data-sect-body="monitoring">
+            <a href="{% url 'monitoring:logs' %}" class="nav-item single {% if request.resolver_match.namespace == 'monitoring' %}active{% endif %}">
+                <span class="icon-box">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </span>
+                <span class="nav-text">Monitoring</span>
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- ══ ADMINISTRATION ══ -->
+        {% if request.user|has_module_access:'users' or request.user|has_module_access:'roles' or request.user.is_superuser %}
+        <div class="sidebar-sect" data-sect="administration" onclick="toggleSidebarSect(this)">
+            <span>Administration</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+        <div class="nav-sect-group" data-sect-body="administration">
+            
+            {% if request.user|has_module_access:'users' or request.user|has_module_access:'roles' %}
+            <div id="grp-admin" class="nav-group {% if request.resolver_match.namespace == 'accounts' %}open{% endif %}">
+                <div class="nav-item trigger" onclick="toggleGroup(this)">
+                    <span class="icon-box">
+                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
+                    </span>
+                    <span class="nav-text">Accès & Sécurité</span>
+                    <svg class="chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+                </div>
+                <div class="group-items">
+                    {% if request.user|has_module_access:'users' %}
+                    <a href="{% url 'accounts:user_list' %}" class="sub-item {% if 'user' in request.resolver_match.url_name %}active{% endif %}">Gestion Utilisateurs</a>
+                    {% endif %}
+                    {% if request.user|has_module_access:'roles' %}
+                    <a href="{% url 'accounts:role_matrix' %}" class="sub-item {% if request.resolver_match.url_name == 'role_matrix' %}active{% endif %}">Matrice des Rôles</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if request.user.is_superuser %}
+            <a href="/admin/" class="nav-item single">
+                <span class="icon-box">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                        <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                </span>
+                <span class="nav-text">Django Admin</span>
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+    </div>
+
+    <!-- FOOTER -->
+    <div class="sidebar-footer">
+        <div class="user-card" style="display: flex; align-items: center; justify-content: space-between; padding: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="user-avatar" style="width: 32px; height: 32px; background: var(--accent-color, #7C5CFC); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                    {{ request.user.first_name|first|upper|default:request.user.email|first|upper }}
+                </div>
+                <div class="user-info" style="display: flex; flex-direction: column;">
+                    <span class="name" style="font-weight: 600; font-size: 0.9rem; color: var(--text-color, #fff);">{{ request.user.get_short_name }}</span>
+                    <span class="email" style="font-size: 0.75rem; color: var(--text-muted, #888);">{% if request.user.groups.first %}{{ request.user.groups.first.name }}{% else %}{{ request.user.role }}{% endif %}</span>
+                </div>
+            </div>
+            <a href="{% url 'accounts:logout' %}" title="Déconnexion" style="color: var(--text-muted, #888); text-decoration: none;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+            </a>
+        </div>
+    </div>
+</aside>
+
+<script>
+const STORAGE_KEY = 'admin_sidebar_state';
+
+function getSavedState() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+    catch(e) { return {}; }
+}
+
+function saveState() {
+    var state = {};
+    document.querySelectorAll('.sidebar-sect[data-sect]').forEach(function(sect) {
+        state[sect.dataset.sect] = sect.classList.contains('collapsed');
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function applyState() {
+    var saved = getSavedState();
+    var activeEl = document.querySelector('.sub-item.active, .nav-item.single.active');
+    var activeSectKey = null;
+    if (activeEl) {
+        var body = activeEl.closest('.nav-sect-group[data-sect-body]');
+        if (body) activeSectKey = body.dataset.sectBody;
+    }
+
+    document.querySelectorAll('.sidebar-sect[data-sect]').forEach(function(sect) {
+        var key = sect.dataset.sect;
+        var body = document.querySelector('.nav-sect-group[data-sect-body="' + key + '"]');
+        if (!body) return;
+        if (key === activeSectKey) {
+            sect.classList.remove('collapsed');
+            body.classList.remove('collapsed');
+        } else if (saved[key] === true) {
+            sect.classList.add('collapsed');
+            body.classList.add('collapsed');
+        } else {
+            sect.classList.remove('collapsed');
+            body.classList.remove('collapsed');
+        }
+    });
+}
+
+function toggleSidebarSect(sectEl) {
+    var key = sectEl.dataset.sect;
+    var body = document.querySelector('.nav-sect-group[data-sect-body="' + key + '"]');
+    var activeEl = body && body.querySelector('.sub-item.active, .nav-item.single.active');
+    if (activeEl && !sectEl.classList.contains('collapsed')) return;
+    sectEl.classList.toggle('collapsed');
+    if (body) body.classList.toggle('collapsed');
+    saveState();
+}
+
+function toggleGroup(trigger) {
+    trigger.parentElement.classList.toggle('open');
+}
+
+applyState();
+document.addEventListener('htmx:afterSettle', applyState);
+</script>
+
+<style>
+/* Sidebar Modern CSS Ported from La Geniale */
+.admin-sidebar {
+    width: 260px;
+    background: #0A0A0A;
+    border-right: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow-y: auto;
+}
+.sidebar-header {
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.brand-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 18px;
+    color: #fff;
+}
+.admin-tag {
+    background: rgba(124, 92, 252, 0.15);
+    color: #7C5CFC;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 3px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+}
+.sidebar-sect {
+    padding: 15px 20px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #666;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    user-select: none;
+}
+.sidebar-sect svg {
+    transition: transform 0.2s ease;
+}
+.sidebar-sect.collapsed svg {
+    transform: rotate(180deg);
+}
+.nav-sect-group {
+    padding: 0 10px;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+.nav-sect-group.collapsed {
+    max-height: 0 !important;
+}
+.nav-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    margin-bottom: 4px;
+    border-radius: 8px;
+    color: #999;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.nav-item:hover {
+    background: rgba(255,255,255,0.03);
+    color: #fff;
+}
+.nav-item.active {
+    background: rgba(124, 92, 252, 0.1);
+    color: #7C5CFC;
+}
+.nav-item.active .icon-box {
+    color: #7C5CFC;
+}
+.icon-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    color: #666;
+    transition: color 0.2s ease;
+}
+.nav-text {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+}
+.nav-group {
+    margin-bottom: 4px;
+}
+.nav-group .chevron {
+    transition: transform 0.2s ease;
+    color: #555;
+}
+.nav-group.open .chevron {
+    transform: rotate(90deg);
+}
+.group-items {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    padding-left: 36px;
+}
+.nav-group.open .group-items {
+    max-height: 300px;
+}
+.sub-item {
+    display: block;
+    padding: 8px 0;
+    color: #888;
+    text-decoration: none;
+    font-size: 13px;
+    transition: color 0.2s ease;
+}
+.sub-item:hover {
+    color: #fff;
+}
+.sub-item.active {
+    color: #7C5CFC;
+    font-weight: 600;
+}
+.sidebar-footer {
+    margin-top: auto;
+    padding: 10px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+}
+</style>

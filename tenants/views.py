@@ -11,7 +11,7 @@ from functools import wraps
 
 from .models import Tenant, Deployment, TenantStatus, DeploymentStatus
 from .forms import TenantCreateForm, TenantUpdateForm, DeployForm
-from .services import artifact_registry, cloud_run, cloud_build
+from .services import artifact_registry, cloud_run, cloud_build, git_service
 
 
 def admin_required(view_func):
@@ -259,13 +259,33 @@ def tenant_status_view(request, pk):
 
 @login_required
 def builds_view(request):
-    """Page des builds Cloud Build et des tags disponibles."""
-    builds = cloud_build.list_recent_builds()
-    available_tags = artifact_registry.list_available_tags()
-
+    """Page des builds Cloud Build (chargement initial de la coquille vide)."""
     context = {
         'page_title': 'Builds — Paramynd Admin',
-        'builds': builds,
-        'available_tags': available_tags,
     }
     return render(request, 'tenants/builds.html', context)
+
+@login_required
+def builds_content_view(request):
+    """Renvoie les fragments HTML contenant les données de build et les tags (asynchrone)."""
+    builds = cloud_build.list_recent_builds()
+    recent_commits = git_service.get_recent_commits()
+
+    # Calculate KPIs
+    success_count = sum(1 for b in builds if b['status'] == 'SUCCESS')
+    total_builds = len(builds)
+    success_rate = round((success_count / total_builds) * 100) if total_builds > 0 else 0
+    
+    kpis = {
+        'success_rate': success_rate,
+        'total_tags': len(recent_commits),
+        'total_builds_fetched': total_builds,
+        'latest_status': builds[0]['status'] if builds else 'N/A'
+    }
+
+    context = {
+        'builds': builds,
+        'recent_commits': recent_commits,
+        'kpis': kpis,
+    }
+    return render(request, 'tenants/partials/builds_content.html', context)

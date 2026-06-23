@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} | Paramynd Admin{% endblock %}
+
+{% block breadcrumb_title %}Utilisateurs <span>/ {% if user_obj %}Modifier{% else %}Nouveau{% endif %}</span>{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 0 auto;">
+  <div class="card-header">
+    <h2 class="card-title">{{ title }}</h2>
+  </div>
+  <div class="card-body">
+    <form method="post" action="">
+      {% csrf_token %}
+      
+      <div style="display:flex; flex-direction:column; gap:1.25rem;">
+        {% for field in form %}
+          <div style="display:flex; flex-direction:column; gap:0.4rem;">
+            <label for="{{ field.id_for_label }}" style="font-weight:500; font-size:0.9rem; color:var(--text-color);">
+              {{ field.label }}
+              {% if field.field.required %}<span style="color:var(--danger-color);">*</span>{% endif %}
+            </label>
+            
+            {% if field.field.widget.input_type == 'checkbox' %}
+              <div style="display:flex; align-items:center; gap:0.5rem; margin-top:0.5rem;">
+                {{ field }}
+                <span style="color:var(--text-muted); font-size:0.85rem;">Cocher pour activer ce champ</span>
+              </div>
+            {% elif field.field.widget.__class__.__name__ == 'CheckboxSelectMultiple' %}
+              <div style="background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem;">
+                <div style="display: grid; gap: 0.5rem;">
+                  {{ field }}
+                </div>
+              </div>
+              <style>
+                #{{ field.id_for_label }} label { display: flex; align-items: center; gap: 0.5rem; color: var(--text-color); font-size: 0.9rem; }
+                #{{ field.id_for_label }} input[type="checkbox"] { accent-color: var(--accent-color); width: 16px; height: 16px; }
+              </style>
+            {% else %}
+              <div style="width: 100%;">
+                {{ field }}
+              </div>
+              <style>
+                #{{ field.id_for_label }} {
+                  width: 100%;
+                  background: rgba(0,0,0,0.2);
+                  border: 1px solid var(--border-color);
+                  border-radius: 8px;
+                  padding: 0.75rem 1rem;
+                  color: var(--text-color);
+                  font-family: inherit;
+                  font-size: 0.95rem;
+                  transition: all 0.2s ease;
+                }
+                #{{ field.id_for_label }}:focus {
+                  outline: none;
+                  border-color: var(--accent-color);
+                  box-shadow: 0 0 0 3px rgba(124, 92, 252, 0.15);
+                }
+              </style>
+            {% endif %}
+
+            {% if field.help_text %}
+              <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.2rem;">{{ field.help_text|safe }}</div>
+            {% endif %}
+            {% if field.errors %}
+              <div style="color:var(--danger-color); font-size:0.85rem; margin-top:0.2rem;">
+                {{ field.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+
+      <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: flex-end;">
+        <a href="{% url 'accounts:user_list' %}" class="btn" style="background: transparent; border: 1px solid var(--border-color);">Annuler</a>
+        <button type="submit" class="btn" style="background: var(--accent-color); color: white;">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
