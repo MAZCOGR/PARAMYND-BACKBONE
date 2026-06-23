@@ -1,179 +1,85 @@
 {% extends "base.html" %}
 
 {% block title %}Monitoring — Paramynd Admin{% endblock %}
-{% block breadcrumb_title %}Paramynd <span>/ Monitoring</span>{% endblock %}
 
 {% block extra_head %}
 <style>
-  /* Premium Log Viewer CSS */
-  .monitoring-header {
-    margin-bottom: 24px;
-    background: rgba(30, 30, 36, 0.6);
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 16px;
-    padding: 24px;
-    backdrop-filter: blur(12px);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  /* Hide the topbar completely as requested in builds */
+  .topbar { display: none !important; }
+
+  /* Premium Select (Combobox) */
+  .glass-select {
+    background: rgba(18, 18, 22, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 13px;
+    outline: none;
+    transition: all 0.2s ease;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 14px;
+    padding-right: 36px;
   }
-  .monitoring-header h1 {
-    font-size: 1.5rem;
+  .glass-select:hover, .glass-select:focus {
+    border-color: rgba(124, 92, 252, 0.5);
+    background: rgba(18, 18, 22, 0.8);
+  }
+
+  /* Status Colors */
+  .log-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
     font-weight: 600;
-    margin: 0 0 8px 0;
-    color: #fff;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .monitoring-header p {
-    color: var(--text-muted, #9ca3af);
-    margin: 0;
-    font-size: 0.95rem;
-  }
-  
-  .filter-form {
-    display: flex;
-    gap: 16px;
-    align-items: flex-end;
-    flex-wrap: wrap;
-    margin-top: 24px;
-  }
-  
-  /* Console Box */
-  .premium-console {
-    background: #09090b; /* Very dark background */
-    border: 1px solid #27272a;
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
-    display: flex;
-    flex-direction: column;
-    height: 65vh; /* Fixed height for scrolling */
-  }
-  
-  .console-toolbar {
-    background: #18181b;
-    padding: 12px 20px;
-    border-bottom: 1px solid #27272a;
-    display: flex;
-    align-items: center;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.85rem;
-    color: #a1a1aa;
-    gap: 12px;
-  }
-  
-  .window-controls {
-    display: flex;
-    gap: 6px;
-  }
-  .window-dot { width: 12px; height: 12px; border-radius: 50%; }
-  .dot-r { background: #ef4444; }
-  .dot-y { background: #f59e0b; }
-  .dot-g { background: #22c55e; }
-  
-  .console-title {
-    font-weight: 500;
-    color: #e4e4e7;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  
-  .status-indicator {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #22c55e;
-    box-shadow: 0 0 12px #22c55e;
-    animation: pulse 2s infinite;
-  }
-  
-  @keyframes pulse {
-    0% { opacity: 1; box-shadow: 0 0 12px #22c55e; }
-    50% { opacity: 0.5; box-shadow: 0 0 4px #22c55e; }
-    100% { opacity: 1; box-shadow: 0 0 12px #22c55e; }
-  }
-  
-  .console-body {
-    padding: 16px 20px;
-    overflow-y: auto;
-    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
-    font-size: 0.85rem;
-    line-height: 1.6;
-    flex: 1;
-    color: #d4d4d8;
-    scroll-behavior: smooth;
-  }
-  
-  /* Custom Scrollbar for console */
-  .console-body::-webkit-scrollbar { width: 10px; }
-  .console-body::-webkit-scrollbar-track { background: #09090b; }
-  .console-body::-webkit-scrollbar-thumb { background: #27272a; border-radius: 5px; border: 2px solid #09090b; }
-  .console-body::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
-  
-  .log-line {
-    display: flex;
-    gap: 16px;
-    padding: 4px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.02);
-  }
-  .log-line:hover { background: rgba(255,255,255,0.02); }
-  
-  .log-ts {
-    color: #52525b;
-    min-width: 170px;
-    user-select: none;
-    font-size: 0.8rem;
-  }
-  
-  .log-sev {
-    font-weight: 600;
-    min-width: 70px;
-    text-align: center;
-    border-radius: 4px;
-    padding: 2px 6px;
-    font-size: 0.75rem;
+    text-transform: uppercase;
     letter-spacing: 0.5px;
   }
+  .bg-INFO { background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.2); }
+  .bg-WARNING { background: rgba(251, 191, 36, 0.1); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.2); }
+  .bg-ERROR { background: rgba(248, 113, 113, 0.1); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.2); }
+  .bg-CRITICAL { background: rgba(255, 0, 0, 0.15); color: #ff0000; border: 1px solid rgba(255, 0, 0, 0.3); box-shadow: 0 0 8px rgba(255,0,0,0.2); }
+  .bg-DEBUG { background: rgba(156, 163, 175, 0.1); color: #9ca3af; border: 1px solid rgba(156, 163, 175, 0.2); }
+  .bg-DEFAULT { background: rgba(161, 161, 170, 0.1); color: #a1a1aa; border: 1px solid rgba(161, 161, 170, 0.2); }
   
-  .log-sev.INFO { color: #38bdf8; background: rgba(56, 189, 248, 0.1); }
-  .log-sev.WARNING { color: #fbbf24; background: rgba(251, 191, 36, 0.1); }
-  .log-sev.ERROR { color: #f87171; background: rgba(248, 113, 113, 0.1); }
-  .log-sev.CRITICAL { color: #ff0000; background: rgba(255, 0, 0, 0.15); font-weight: bold; text-shadow: 0 0 5px rgba(255,0,0,0.5); }
-  .log-sev.DEBUG { color: #9ca3af; background: rgba(156, 163, 175, 0.1); }
-  .log-sev.DEFAULT { color: #a1a1aa; background: rgba(161, 161, 170, 0.1); }
-  
-  .log-msg {
-    flex: 1;
+  .td-mono-log {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 12px;
+    color: #e4e4e7;
+    white-space: pre-wrap;
     word-break: break-all;
-  }
-  
-  .empty-console {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    color: #52525b;
-    gap: 16px;
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="monitoring-header fade-in">
-  <h1>
-    <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="color: #7c5cfc;">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-    </svg>
-    Centre de Monitoring
-  </h1>
-  <p>Consultez les logs en temps réel de votre infrastructure (Backbone) et de vos instances Cloud Run (SaaS Clients).</p>
+<div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 24px;">
+  <div>
+    <h1>Monitoring & Logs</h1>
+    <p>Consultez les logs en temps réel de votre infrastructure et des SaaS déployés.</p>
+  </div>
+  <div style="display:flex; align-items:center; gap:16px;">
+    {% if selected_service %}
+    <button class="btn btn-outline" style="background:rgba(255,255,255,0.03); border-color:rgba(255,255,255,0.1); gap:8px; border-radius:8px; height:fit-content;" onclick="refreshLogs()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+      Rafraîchir
+    </button>
+    {% endif %}
+  </div>
+</div>
 
-  <form method="get" action="{% url 'monitoring:logs' %}" class="filter-form">
+<div class="card" style="padding: 20px; animation: fadeIn 0.4s ease; border: 1px solid rgba(255,255,255,0.05); background: rgba(18, 18, 22, 0.6); backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0,0,0,0.2); margin-bottom: 24px;">
+  <form method="get" action="{% url 'monitoring:logs' %}" class="flex gap-3 items-end flex-wrap" style="margin: 0;">
     <div class="form-group" style="min-width: 280px; margin: 0;">
-      <label class="form-label" style="color: #d1d5db;">Service ou Tenant</label>
-      <select name="service" class="form-input" onchange="this.form.submit()" style="background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.1);">
+      <label class="form-label" style="color: var(--text-secondary); font-size: 12px; margin-bottom: 6px; display: block;">Service ou Tenant</label>
+      <select name="service" class="glass-select" style="width: 100%;" onchange="this.form.submit()">
         <option value="">— Sélectionner un environnement —</option>
         <optgroup label="Infrastructure Centrale">
           <option value="paramynd-admin" {% if selected_service == 'paramynd-admin' %}selected{% endif %}>Cloud Run Backbone</option>
@@ -188,98 +94,80 @@
       </select>
     </div>
 
-    <div class="form-group" style="min-width: 160px; margin: 0;">
-      <label class="form-label" style="color: #d1d5db;">Sévérité</label>
-      <select name="severity" class="form-input" onchange="this.form.submit()" style="background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.1);">
+    <div class="form-group" style="min-width: 180px; margin: 0;">
+      <label class="form-label" style="color: var(--text-secondary); font-size: 12px; margin-bottom: 6px; display: block;">Niveau de Sévérité</label>
+      <select name="severity" class="glass-select" style="width: 100%;" onchange="this.form.submit()">
         {% for val, label in severity_choices %}
         <option value="{{ val }}" {% if severity_filter == val %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
       </select>
     </div>
-
-    {% if selected_service %}
-    <div class="form-group" style="margin: 0; margin-left: auto;">
-      <button type="button" onclick="refreshLogs()" class="btn btn-primary" style="display: flex; align-items: center; gap: 8px;">
-        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-        </svg>
-        Rafraîchir
-      </button>
-    </div>
-    {% endif %}
   </form>
 </div>
 
-<!-- Console de logs Premium -->
+<!-- Table Container matching builds.html -->
 {% if selected_service %}
-<div class="premium-console fade-in" style="animation-delay: 0.1s;">
-  <div class="console-toolbar">
-    <div class="window-controls">
-      <div class="window-dot dot-r"></div>
-      <div class="window-dot dot-y"></div>
-      <div class="window-dot dot-g"></div>
-    </div>
-    <div class="console-title" style="margin-left: 12px;">
-      <div class="status-indicator"></div>
-      <span>{{ selected_service }}</span>
-    </div>
-    <div style="margin-left: auto; display: flex; gap: 16px; align-items: center;">
-      <span>{{ logs|length }} entrée{{ logs|length|pluralize }}</span>
-      {% if severity_filter %}
-      <span style="background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">
-        Filtre : {{ severity_filter }}
-      </span>
-      {% endif %}
+<div class="card" style="padding: 0; animation: fadeIn 0.4s ease 0.1s backwards; border: none; background: transparent; box-shadow: none;">
+  <div class="card-header" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 20px; display: block;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div class="card-title">Flux de Logs</div>
+      <span class="badge" style="background:rgba(124, 92, 252, 0.1); color:var(--accent); border: 1px solid rgba(124, 92, 252, 0.2);">{{ selected_service }}</span>
     </div>
   </div>
-
-  <div class="console-body" id="log-body">
-    {% if logs %}
-      {% for log in logs %}
-      <div class="log-line">
-        <span class="log-ts">{{ log.timestamp|truncatechars:23 }}</span>
-        <span class="log-sev {{ log.severity }}">{{ log.severity }}</span>
-        <span class="log-msg">{{ log.message }}</span>
-      </div>
-      {% endfor %}
-    {% else %}
-      <div class="empty-console">
-        <svg width="48" height="48" fill="none" stroke="#27272a" stroke-width="1.5" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-        </svg>
-        <span>Aucun log disponible pour les filtres actuels.</span>
-      </div>
-    {% endif %}
+  
+  {% if logs %}
+  <div class="table-container table-scroll-limit" style="border:none; border-radius:0; background:transparent;">
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 150px;">Date & Heure</th>
+          <th style="width: 100px;">Niveau</th>
+          <th>Message</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td style="white-space:nowrap; vertical-align: top;">
+            <div style="display:flex; flex-direction:column; gap:2px; line-height: 1.2;">
+              <strong style="color:var(--text-primary); font-size:13px;">{{ log.timestamp|slice:"0:10" }}</strong>
+              <span style="color:var(--text-muted); font-size:11px;">{{ log.timestamp|slice:"11:23" }}</span>
+            </div>
+          </td>
+          <td style="vertical-align: top;">
+            <span class="log-badge bg-{{ log.severity|default:'DEFAULT' }}">{{ log.severity }}</span>
+          </td>
+          <td class="td-mono-log">
+            {{ log.message }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
+  {% else %}
+  <div class="empty-state" style="padding:40px;">
+    <div class="icon">🔍</div>
+    <h3>Aucun log trouvé</h3>
+    <p>Il n'y a aucune entrée correspondant à vos critères.</p>
+  </div>
+  {% endif %}
 </div>
 
 {% else %}
-<div class="premium-console fade-in" style="height: 400px; justify-content: center; align-items: center; background: rgba(9, 9, 11, 0.5); animation-delay: 0.1s;">
-  <div class="empty-console">
-    <svg width="64" height="64" fill="none" stroke="#27272a" stroke-width="1" viewBox="0 0 24 24" style="margin-bottom: 16px;">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-    </svg>
-    <h3 style="margin: 0; color: #e4e4e7; font-weight: 500;">En attente de connexion</h3>
-    <p style="margin: 0; color: #a1a1aa; font-size: 0.9rem;">Sélectionnez une instance dans le menu ci-dessus pour afficher le flux de logs.</p>
-  </div>
+<div class="empty-state" style="padding:80px 40px; animation: fadeIn 0.4s ease 0.1s backwards;">
+  <div class="icon" style="opacity: 0.5;">📡</div>
+  <h3>En attente de connexion</h3>
+  <p>Sélectionnez un environnement dans le filtre ci-dessus pour afficher ses logs Cloud Run.</p>
 </div>
 {% endif %}
+
 {% endblock %}
 
 {% block scripts %}
-{% if selected_service %}
 <script>
   function refreshLogs() {
     window.location.reload();
   }
-
-  // Auto-scroll vers le bas de la console
-  document.addEventListener('DOMContentLoaded', () => {
-    const logBody = document.getElementById('log-body');
-    if (logBody) {
-      logBody.scrollTop = logBody.scrollHeight;
-    }
-  });
 </script>
-{% endif %}
 {% endblock %}
