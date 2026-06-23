@@ -168,10 +168,21 @@ function toggleGroup(trigger) {
 .nav-item:hover {
     color: #fff;
     transform: scale(0.98); 
+    background: transparent !important;
 }
 .nav-item.active {
-    color: #fff;
-    font-weight: 600;
+    font-weight: 700;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+.nav-item.active .nav-text {
+    background: linear-gradient(120deg, #7c5cfc 0%, #a78bfa 40%, #06d6a0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.nav-item.active::before {
+    display: none !important;
 }
 .nav-text {
     flex: 1;

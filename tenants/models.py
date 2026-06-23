@@ -118,3 +118,36 @@ class Deployment(models.Model):
         if self.completed_at and self.started_at:
             return (self.completed_at - self.started_at).total_seconds()
         return None
+
+
+class GitCommitRecord(models.Model):
+    """Cache en base de données de l'historique Git."""
+    hash = models.CharField(max_length=40, primary_key=True, verbose_name="Hash complet")
+    short_hash = models.CharField(max_length=10, verbose_name="Hash court")
+    message = models.TextField(verbose_name="Message du commit")
+    author = models.CharField(max_length=255, verbose_name="Auteur")
+    date_str = models.CharField(max_length=100, verbose_name="Date string")
+    branch = models.CharField(max_length=255, blank=True, null=True, verbose_name="Branche")
+    fetched_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'tenants_git_commit'
+        verbose_name = 'Commit Git'
+        ordering = ['-fetched_at']
+
+
+class CloudBuildRecord(models.Model):
+    """Cache en base de données de l'historique Cloud Build."""
+    build_id = models.CharField(max_length=100, primary_key=True, verbose_name="ID du build")
+    status = models.CharField(max_length=50, verbose_name="Statut")
+    created_str = models.CharField(max_length=100, verbose_name="Créé le")
+    duration = models.CharField(max_length=50, verbose_name="Durée")
+    commit_sha = models.CharField(max_length=40, blank=True, null=True, verbose_name="Commit SHA")
+    branch_name = models.CharField(max_length=255, blank=True, null=True, verbose_name="Nom de branche")
+    tags = models.JSONField(default=list, verbose_name="Tags")
+    fetched_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'tenants_cloud_build'
+        verbose_name = 'Cloud Build'
+        ordering = ['-fetched_at']

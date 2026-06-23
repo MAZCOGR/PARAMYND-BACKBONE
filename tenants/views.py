@@ -4,12 +4,13 @@ tenants/views.py — Vues Django pour la gestion des tenants
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_http_methods, require_POST
 from django.utils import timezone
+from django.db.models import Count
 from functools import wraps
 
-from .models import Tenant, Deployment, TenantStatus, DeploymentStatus
+from .models import Tenant, Deployment, TenantStatus, DeploymentStatus, GitCommitRecord, CloudBuildRecord
 from .forms import TenantCreateForm, TenantUpdateForm, DeployForm
 from .services import artifact_registry, cloud_run, cloud_build, git_service
 
@@ -259,37 +260,51 @@ def tenant_status_view(request, pk):
 
 @login_required
 def builds_view(request):
-    """Page des builds Cloud Build (chargement initial de la coquille vide)."""
+    """Page principale des builds. Charge instantanément depuis la DB."""
+    recent_commits = GitCommitRecord.objects.all()[:10]
+    builds = CloudBuildRecord.objects.all()[:10]
+    
+    total_tags = recent_commits.count()
+    
+    # Calculate KPIs in memory to avoid extra queries on small sets
+    success_count = sum(1 for b in builds if b.status == 'SUCCESS')
+    total_builds = builds.count()
+    success_rate = round((success_count / total_builds) * 100) if total_builds > 0 else 0
+    latest_status = builds[0].status if total_builds > 0 else 'N/A'
+
     context = {
-        'page_title': 'Builds — Paramynd Admin',
+        'recent_commits': recent_commits,
+        'builds': builds,
+        'total_tags': total_tags,
+        'success_rate': success_rate,
+        'latest_status': latest_status,
     }
     return render(request, 'tenants/builds.html', context)
 
 @login_required
-def builds_git_content_view(request):
-    """Renvoie les données Git en premier (très rapide)."""
-    recent_commits = git_service.get_recent_commits()
-    total_tags = len(recent_commits)
+def builds_sync_view(request):
+    """Point d'entrée asynchrone HTMX. Vérifie s'il y a de nouveaux commits ou builds."""
+    from tenants.services.sync_service import sync_builds_and_commits
+    has_changes = sync_builds_and_commits()
     
+    if not has_changes:
+        return HttpResponse(status=204)
+
+    # Si changements, on récupère les nouvelles données pour redessiner la page
+    recent_commits = GitCommitRecord.objects.all()[:10]
+    builds = CloudBuildRecord.objects.all()[:10]
+    
+    total_tags = recent_commits.count()
+    success_count = sum(1 for b in builds if b.status == 'SUCCESS')
+    total_builds = builds.count()
+    success_rate = round((success_count / total_builds) * 100) if total_builds > 0 else 0
+    latest_status = builds[0].status if total_builds > 0 else 'N/A'
+
     context = {
         'recent_commits': recent_commits,
-        'total_tags': total_tags,
-    }
-    return render(request, 'tenants/partials/builds_git_content.html', context)
-
-@login_required
-def builds_cloud_content_view(request):
-    """Renvoie l'historique Cloud Build (plus lent) et les KPIs restants."""
-    builds = cloud_build.list_recent_builds()
-    
-    success_count = sum(1 for b in builds if b['status'] == 'SUCCESS')
-    total_builds = len(builds)
-    success_rate = round((success_count / total_builds) * 100) if total_builds > 0 else 0
-    latest_status = builds[0]['status'] if builds else 'N/A'
-    
-    context = {
         'builds': builds,
+        'total_tags': total_tags,
         'success_rate': success_rate,
         'latest_status': latest_status,
     }
-    return render(request, 'tenants/partials/builds_cloud_content.html', context)
+    return render(request, 'tenants/partials/builds_sync_update.html', context)
