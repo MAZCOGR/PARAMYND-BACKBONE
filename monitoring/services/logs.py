@@ -9,12 +9,11 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
-def get_tenant_logs(tenant_slug: str, limit: int = 100, severity: str = None) -> List[Dict]:
+def get_service_logs(service_name: str, limit: int = 100, severity: str = None) -> List[Dict]:
     """
-    Récupère les logs Cloud Run d'un tenant via Cloud Logging.
+    Récupère les logs Cloud Run d'un service via Cloud Logging.
     Retourne une liste de {'timestamp': str, 'severity': str, 'message': str}
     """
-    service_name = f"paramynd-{tenant_slug}"
 
     try:
         from google.cloud import logging as gcloud_logging
