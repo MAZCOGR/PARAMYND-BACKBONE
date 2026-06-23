@@ -7,9 +7,11 @@ import subprocess
 import datetime
 from typing import List, Dict
 
+from django.conf import settings
+
 logger = logging.getLogger(__name__)
 
-REPO_PATH = "/app/paramynd_repo"
+REPO_PATH = str(settings.BASE_DIR)
 
 def get_recent_commits(limit: int = 10) -> List[Dict]:
     """
