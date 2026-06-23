@@ -11,15 +11,19 @@
 {% endblock %}
 
 {% block content %}
-<div class="page-header">
+<div class="page-header" style="display:flex; justify-content:space-between; align-items:center;">
   <div>
     <h1>Builds & Images Docker</h1>
     <p>Tags disponibles dans Artifact Registry et historique Cloud Build.</p>
   </div>
+  <div id="sync-indicator">
+    <div hx-get="{% url 'tenants:builds_sync' %}" hx-trigger="load" hx-swap="outerHTML" hx-target="#sync-indicator">
+      <span class="badge" style="background:rgba(255,255,255,0.05); color:var(--text-muted); font-size:12px; padding:6px 12px;">
+        <span class="spin" style="display:inline-block; font-size:14px; margin-right:4px;">⟳</span> Synchronisation...
+      </span>
+    </div>
+  </div>
 </div>
-
-<!-- Trigger invisible pour la synchronisation asynchrone -->
-<div hx-get="{% url 'tenants:builds_sync' %}" hx-trigger="load" hx-swap="none"></div>
 
 <div style="display:grid;grid-template-columns:220px 1fr 1fr;gap:24px;align-items:start;">
   

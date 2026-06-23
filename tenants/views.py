@@ -288,7 +288,9 @@ def builds_sync_view(request):
     has_changes = sync_builds_and_commits()
     
     if not has_changes:
-        return HttpResponse(status=204)
+        # On remplace l'indicateur par "À jour"
+        html = '<div id="sync-indicator"><span class="badge" style="background:rgba(6,214,160,0.1); color:var(--success); font-size:12px; padding:6px 12px; animation: fadeIn 0.4s ease;">✓ À jour</span></div>'
+        return HttpResponse(html)
 
     # Si changements, on récupère les nouvelles données pour redessiner la page
     recent_commits = GitCommitRecord.objects.all()[:10]

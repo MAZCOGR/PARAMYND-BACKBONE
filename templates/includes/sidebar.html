@@ -104,7 +104,7 @@ function toggleGroup(trigger) {
 </script>
 
 <style>
-/* Ultra-Minimal Apple HIG Inspired Sidebar CSS */
+/* Apple HIG Inspired Typography & Sidebar CSS */
 .admin-sidebar {
     width: 250px;
     background: rgba(18, 18, 20, 0.85); /* Translucent background */
@@ -114,7 +114,9 @@ function toggleGroup(trigger) {
     flex-direction: column;
     height: 100vh;
     overflow-y: auto;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 .sidebar-header {
     padding: 30px 20px 20px;
@@ -126,28 +128,28 @@ function toggleGroup(trigger) {
     display: flex;
     align-items: center;
     gap: 10px;
-    font-weight: 700;
-    font-size: 20px;
+    font-weight: 800; /* Bold title for HIG feeling */
+    font-size: 22px;
     color: #fff;
-    letter-spacing: -0.5px;
+    letter-spacing: -0.04em; /* Tighter tracking for large text */
 }
 .admin-tag {
     color: #8C72FF;
     font-size: 10px;
     font-weight: 800;
-    letter-spacing: 1px;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
 }
 .sidebar-sect {
-    padding: 24px 20px 8px;
+    padding: 28px 20px 10px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    color: rgba(235, 235, 245, 0.4); 
+    color: rgba(235, 235, 245, 0.5); 
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.8px;
+    letter-spacing: 0.08em; /* Looser tracking for small caps */
     cursor: default;
     user-select: none;
 }
@@ -163,7 +165,7 @@ function toggleGroup(trigger) {
     color: rgba(235, 235, 245, 0.7); 
     text-decoration: none;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 .nav-item:hover {
     color: #fff;
@@ -180,6 +182,7 @@ function toggleGroup(trigger) {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    display: inline-block;
 }
 .nav-item.active::before {
     display: none !important;
@@ -188,7 +191,7 @@ function toggleGroup(trigger) {
     flex: 1;
     font-size: 15px;
     font-weight: 500;
-    letter-spacing: -0.3px;
+    letter-spacing: -0.015em; /* Apple iOS body text tracking */
 }
 .nav-group {
     margin-bottom: 4px;
@@ -216,22 +219,27 @@ function toggleGroup(trigger) {
     color: rgba(235, 235, 245, 0.6);
     text-decoration: none;
     font-size: 14px;
-    letter-spacing: -0.2px;
-    transition: all 0.2s ease;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 .sub-item:hover {
     color: #fff;
     transform: translateX(4px); 
 }
 .sub-item.active {
-    color: #fff;
-    font-weight: 600;
+    font-weight: 700;
+    background: linear-gradient(120deg, #7c5cfc 0%, #a78bfa 40%, #06d6a0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    display: inline-block;
 }
 .sidebar-footer {
     margin-top: auto;
     padding: 20px 12px;
 }
 .user-avatar {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 </style>
