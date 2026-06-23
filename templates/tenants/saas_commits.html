@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Versions SaaS — Paramynd Admin{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Hide the topbar completely as requested */
+  .topbar { display: none !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start;">
+  <div>
+    <h1>Versions & Déploiements : SaaS Paramynd</h1>
+    <p>Historique des commits du dépôt SaaS (MAZCOGR/PARAMYND) pour déploiement sur les tenants clients.</p>
+  </div>
+  <div style="display:flex; align-items:center; gap:16px;">
+    <a href="{% url 'tenants:list' %}" class="btn btn-outline btn-sm" style="height:fit-content;">← Retour</a>
+    <div id="saas-sync-indicator" style="display:none;">
+      <div hx-get="{% url 'tenants:saas_commits_sync' %}" hx-trigger="load" hx-swap="outerHTML" hx-target="#saas-sync-indicator"></div>
+    </div>
+  </div>
+</div>
+
+<div class="builds-grid" style="grid-template-columns: 1fr; margin-top:24px;">
+  
+  <div id="saas-table-container">
+    <style>
+      #saas-table-container table td, #saas-table-container table th {
+        padding: 12px 20px !important;
+        vertical-align: middle;
+      }
+    </style>
+    <div class="card" style="padding: 0; animation: fadeIn 0.4s ease; border: none; background: transparent; box-shadow: none;">
+      <!-- KPIs Containers (en haut du tableau) -->
+      <div id="kpi-group" class="kpis-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        
+        <!-- KPI 1: Total Commits -->
+        <div class="kpi-card" style="animation: fadeIn 0.4s ease; padding: 20px;">
+          <div class="kpi-title" style="display:flex; justify-content:space-between; align-items:center; opacity:0.8;">
+            Commits SaaS
+            <svg width="16" height="16" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+          </div>
+          <div class="kpi-value" style="font-size: 28px; font-weight: 700; margin-top: 8px;">{{ total_commits }}</div>
+          <div style="font-size: 12px; color: var(--success); margin-top: 4px;">↑ +{{ commits_this_month }} ce mois-ci</div>
+        </div>
+
+        <!-- KPI 2: Dernier Update -->
+        <div class="kpi-card" style="animation: fadeIn 0.4s ease 0.1s backwards; padding: 20px;">
+          <div class="kpi-title" style="display:flex; justify-content:space-between; align-items:center; opacity:0.8;">
+            Dernière Version
+            <svg width="16" height="16" fill="none" stroke="#4cc9f0" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </div>
+          <div class="kpi-value" style="font-size: 28px; font-weight: 700; margin-top: 8px;">
+            {% if recent_commits %}{{ recent_commits.0.short_date }}{% else %}--{% endif %}
+          </div>
+          <div style="font-size: 12px; color: var(--success); margin-top: 4px;">Synchronisation active</div>
+        </div>
+
+        <!-- KPI 3: Tenants -->
+        <div class="kpi-card" style="animation: fadeIn 0.4s ease 0.2s backwards; padding: 20px;">
+          <div class="kpi-title" style="display:flex; justify-content:space-between; align-items:center; opacity:0.8;">
+            Tenants Actifs
+            <svg width="16" height="16" fill="none" stroke="var(--success)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+          </div>
+          <div class="kpi-value" style="font-size: 28px; font-weight: 700; margin-top: 8px;">{{ active_tenants }}</div>
+          <div style="font-size: 12px; color: var(--success); margin-top: 4px;">↑ +{{ tenants_this_month }} ce mois-ci</div>
+        </div>
+
+        <!-- KPI 4: Succès -->
+        <div class="kpi-card" style="animation: fadeIn 0.4s ease 0.3s backwards; padding: 20px;">
+          <div class="kpi-title" style="display:flex; justify-content:space-between; align-items:center; opacity:0.8;">
+            Déploiements réussis
+            <svg width="16" height="16" fill="none" stroke="var(--success)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </div>
+          <div class="kpi-value" style="font-size: 28px; font-weight: 700; margin-top: 8px;">{{ success_rate }}<span style="font-size:16px; font-weight:500; color:var(--text-muted);">%</span></div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Sur {{ total_recent_deployments }} déploiements récents (30j)</div>
+        </div>
+
+      </div>
+      
+      {% if recent_commits %}
+      <div class="table-container table-scroll-limit" style="border:none; border-radius:0; background:transparent;">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Auteur</th>
+              <th>Message</th>
+              <th>Type</th>
+              <th>Tests CI</th>
+              <th>Commit / Branche</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for commit in recent_commits %}
+            <tr>
+              <td style="white-space:nowrap;">
+                <div style="display:flex; flex-direction:column; gap:2px; line-height: 1;">
+                  <strong style="color:var(--text-primary); font-size:13px;">{{ commit.short_date }}</strong>
+                  <span style="color:var(--text-muted); font-size:11px;">{{ commit.short_time }}</span>
+                </div>
+              </td>
+              <td>
+                <span style="color:var(--text-primary); font-weight:500;">{{ commit.author }}</span>
+              </td>
+              <td>
+                <span style="color:var(--text-secondary);">{{ commit.message }}</span>
+              </td>
+              <td>
+                {% if commit.tag %}
+                <span style="display:inline-flex; align-items:center; background:rgba(6, 214, 160, 0.1); color:var(--success); padding:4px 8px; border-radius:12px; font-size:12px; font-weight:600; border:1px solid rgba(6, 214, 160, 0.2);">
+                  <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
+                  Version ({{ commit.tag }})
+                </span>
+                {% else %}
+                <span style="display:inline-flex; align-items:center; background:rgba(255, 255, 255, 0.05); color:var(--text-muted); padding:4px 8px; border-radius:12px; font-size:12px; font-weight:500; border:1px solid rgba(255, 255, 255, 0.1);">
+                  Historique
+                </span>
+                {% endif %}
+              </td>
+              <td>
+                <span style="display:inline-flex; align-items:center; color:var(--success); font-size:13px; font-weight:500; gap:4px;">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+                  Passés
+                </span>
+              </td>
+              <td>
+                <div style="display:flex; flex-direction:row; align-items:center; gap:8px;">
+                  {% if commit.branch %}
+                  <span style="display:inline-flex; align-items:center; background:rgba(124, 92, 252, 0.1); color:var(--accent); padding:2px 8px; border-radius:12px; font-size:12px; font-weight:600; border:1px solid rgba(124, 92, 252, 0.2);">
+                    <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
+                    {{ commit.branch }}
+                  </span>
+                  {% endif %}
+                  <span class="td-mono" style="display:inline-flex; align-items:center; gap:4px; color:var(--text-muted);">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                    {{ commit.short_hash }}
+                  </span>
+                </div>
+              </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state" style="padding:40px;">
+        <div class="icon">🔍</div>
+        <h3>Aucun commit trouvé</h3>
+        <p>Le dépôt SaaS n'a pas encore de commits ou n'est pas synchronisé.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

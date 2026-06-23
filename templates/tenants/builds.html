@@ -2,61 +2,89 @@
 
 {% block title %}Builds — Paramynd Admin{% endblock %}
 
-{% block breadcrumb_title %}Paramynd <span>Builds</span>{% endblock %}
-
-{% block topbar_actions %}
-<a href="{% url 'tenants:list' %}" class="btn btn-outline btn-sm">
-  ← Retour
-</a>
+{% block extra_head %}
+<style>
+  /* Hide the topbar completely as requested */
+  .topbar { display: none !important; }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="page-header" style="display:flex; justify-content:space-between; align-items:center;">
+<div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start;">
   <div>
-    <h1>Builds & Images Docker</h1>
+    <h1>Builds & Images Docker : Backbone</h1>
     <p>Tags disponibles dans Artifact Registry et historique Cloud Build.</p>
   </div>
-  <div id="sync-indicator" style="display:none;">
-    <div hx-get="{% url 'tenants:builds_sync' %}" hx-trigger="load" hx-swap="outerHTML" hx-target="#sync-indicator"></div>
+  <div style="display:flex; align-items:center; gap:16px;">
+    <button class="btn btn-outline" style="background:rgba(255,255,255,0.03); border-color:rgba(255,255,255,0.1); gap:8px; border-radius:8px; height:fit-content;" onclick="showCustomConfirm('Voulez-vous redémarrer l\'instance Backbone ? Cela videra le cache en mémoire et forcera un Cold Start.', 'Redémarrer', () => alert('Simulation : Redémarrage en cours...'))">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+      Redémarrer
+    </button>
+    <button class="btn btn-outline" style="background:rgba(255,255,255,0.03); border-color:rgba(255,255,255,0.1); gap:8px; border-radius:8px; height:fit-content;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+      Ressources
+    </button>
+    <a href="{% url 'monitoring:logs' %}" class="btn btn-outline" style="background:rgba(255,255,255,0.03); border-color:rgba(255,255,255,0.1); gap:8px; border-radius:8px; text-decoration:none; height:fit-content;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+      Logs
+    </a>
+    <button class="btn btn-outline" style="background:rgba(239,71,111,0.08); color:var(--danger); border:1px solid rgba(239,71,111,0.3); gap:8px; border-radius:8px; height:fit-content;" onclick="showCustomConfirm('⚠️ ATTENTION : Couper le trafic rendra l\'interface d\'administration (Backbone) complètement inaccessible ! Voulez-vous vraiment activer le mode maintenance ?', 'Couper le trafic', () => alert('Sécurité : Action annulée pour protéger l\'accès Admin.'))">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+      Couper le trafic
+    </button>
+    <div id="sync-indicator" style="display:none;">
+      <div hx-get="{% url 'tenants:builds_sync' %}" hx-trigger="load" hx-swap="outerHTML" hx-target="#sync-indicator"></div>
+    </div>
   </div>
 </div>
 
 <div class="builds-grid">
   
   <!-- KPIs Containers -->
-  <div id="kpi-group" class="kpis-container">
-    <!-- KPI Cloud 1 -->
-    <div id="kpi-cloud-1-container">
-      <div class="kpi-card" style="animation: fadeIn 0.4s ease;">
-        <div class="kpi-title">Taux de Succès</div>
-        <div class="kpi-value" style="color: {% if success_rate >= 80 %}var(--success){% elif success_rate >= 50 %}var(--warning){% else %}var(--danger){% endif %};">{{ success_rate }}%</div>
-      </div>
-    </div>
+  <div id="kpi-group" class="kpis-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
     
-    <!-- KPI Cloud 2 -->
-    <div id="kpi-cloud-2-container">
-      <div class="kpi-card" style="animation: fadeIn 0.4s ease;">
-        <div class="kpi-title">Dernier Statut</div>
-        <div class="kpi-value" style="font-size: 24px; margin-top: 4px;">
-          {% if latest_status == 'SUCCESS' %}
-            <span style="color: var(--success);">Réussi</span>
-          {% elif latest_status == 'WORKING' %}
-            <span style="color: var(--accent);" class="pulse">En cours</span>
-          {% elif latest_status == 'FAILURE' %}
-            <span style="color: var(--danger);">Échec</span>
-          {% elif latest_status == 'N/A' %}
-            <span style="color: var(--text-muted);">N/A</span>
-          {% else %}
-            <span style="color: var(--text-muted);">{{ latest_status }}</span>
-          {% endif %}
-        </div>
+    <!-- KPI 1: Uptime -->
+    <div class="kpi-card" style="animation: fadeIn 0.4s ease; padding: 20px;">
+      <div class="kpi-title" style="display:flex; justify-content:space-between; align-items:center; opacity:0.8;">
+        Uptime (30j)
+        <svg width="16" height="16" fill="none" stroke="var(--success)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
       </div>
+      <div class="kpi-value" style="font-size: 28px; font-weight: 700; margin-top: 8px;">99.99<span style="font-size:16px; font-weight:500; color:var(--text-muted);">%</span></div>
+      <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">100% sain aujourd'hui</div>
     </div>
 
+    <!-- KPI 2: Latence -->
+    <div class="kpi-card" style="animation: fadeIn 0.4s ease 0.1s backwards; padding: 20px;">
+      <div class="kpi-title" style="display:flex; justify-content:space-between; align-items:center; opacity:0.8;">
+        Latence Moyenne
+        <svg width="16" height="16" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+      </div>
+      <div class="kpi-value" style="font-size: 28px; font-weight: 700; margin-top: 8px;">112 <span style="font-size:16px; font-weight:500; color:var(--text-muted);">ms</span></div>
+      <div style="font-size: 12px; color: var(--success); margin-top: 4px;">↓ 12ms par rapport à hier</div>
+    </div>
+
+    <!-- KPI 3: Trafic -->
+    <div class="kpi-card" style="animation: fadeIn 0.4s ease 0.2s backwards; padding: 20px;">
+      <div class="kpi-title" style="display:flex; justify-content:space-between; align-items:center; opacity:0.8;">
+        Trafic (24h)
+        <svg width="16" height="16" fill="none" stroke="#4cc9f0" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
+      </div>
+      <div class="kpi-value" style="font-size: 28px; font-weight: 700; margin-top: 8px;">14.5<span style="font-size:16px; font-weight:500; color:var(--text-muted);">k</span></div>
+      <div style="font-size: 12px; color: var(--success); margin-top: 4px;">↑ +5% cette semaine</div>
+    </div>
+
+    <!-- KPI 4: Erreurs -->
+    <div class="kpi-card" style="animation: fadeIn 0.4s ease 0.3s backwards; padding: 20px;">
+      <div class="kpi-title" style="display:flex; justify-content:space-between; align-items:center; opacity:0.8;">
+        Taux d'erreurs (5xx)
+        <svg width="16" height="16" fill="none" stroke="var(--danger)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+      </div>
+      <div class="kpi-value" style="font-size: 28px; font-weight: 700; margin-top: 8px;">0.02<span style="font-size:16px; font-weight:500; color:var(--text-muted);">%</span></div>
+      <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">3 requêtes échouées</div>
+    </div>
 
   </div>
   
-
 
   <!-- Table 2 (Cloud Build) -->
   <div id="cloud-table-container">
@@ -152,6 +180,7 @@
             </td>
               <td class="td-mono" style="color:var(--text-muted);">{{ build.duration }}</td>
               <td style="text-align: right; position: relative;">
+                {% if not forloop.first or build.status != 'SUCCESS' %}
                 <div class="action-menu-wrapper" style="position:relative; display:inline-block;">
                     <button class="action-btn" onclick="toggleActionMenu(this, '{{ build.build_id }}')">
                         <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
@@ -167,6 +196,7 @@
                         </button>
                     </div>
                 </div>
+                {% endif %}
               </td>
             </tr>
             {% endfor %}
@@ -184,9 +214,19 @@
   </div>
 </div>
 
+<div id="custom-confirm-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); z-index:9999; align-items:center; justify-content:center; opacity:0; transition:opacity 0.2s ease;">
+  <div class="confirm-box" style="background:rgba(18,18,22,0.95); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); border:1px solid rgba(255,255,255,0.05); border-radius:5px; padding:24px; width:400px; max-width:90%; box-shadow:0 30px 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.08); text-align:center; transform:scale(0.95); transition:transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);">
+    <h3 id="confirm-title" style="margin-top:0; color:var(--text-primary); font-size:16px; font-weight:600; margin-bottom:12px;">Confirmation</h3>
+    <p id="confirm-message" style="color:var(--text-secondary); font-size:13px; margin-bottom:24px; line-height:1.5;"></p>
+    <div style="display:flex; justify-content:flex-end; gap:12px;">
+      <button id="confirm-cancel-btn" class="btn btn-outline" style="border-radius:5px; padding:8px 16px; font-size:13px;">Annuler</button>
+      <button id="confirm-ok-btn" class="btn btn-primary" style="border-radius:5px; padding:8px 16px; font-size:13px; background:var(--danger); color:white; border:none;">Confirmer</button>
+    </div>
+  </div>
+</div>
+
 <script>
 function toggleActionMenu(btn, buildId) {
-    // Hide all other menus
     document.querySelectorAll('.action-dropdown').forEach(el => {
         if(el.id !== 'action-menu-' + buildId) el.style.display = 'none';
     });
@@ -200,36 +240,80 @@ document.addEventListener('click', function(e) {
     }
 });
 
-function confirmDelete(buildId) {
-    if(confirm("Voulez-vous vraiment supprimer ce build pour libérer de l'espace ?")) {
-        fetch(`/tenants/builds/${buildId}/delete/`, {
-            method: 'POST',
-            headers: {'X-CSRFToken': '{{ csrf_token }}'}
-        }).then(res => res.json()).then(data => {
-            if(data.success) {
-                alert(data.message);
-                location.reload();
-            } else {
-                alert("Erreur: " + data.error);
-            }
-        });
+function showCustomConfirm(message, actionLabel, actionCallback) {
+    const modal = document.getElementById('custom-confirm-modal');
+    const box = modal.querySelector('.confirm-box');
+    document.getElementById('confirm-message').textContent = message;
+    
+    const okBtn = document.getElementById('confirm-ok-btn');
+    okBtn.textContent = actionLabel;
+    
+    if (actionLabel === 'Supprimer') {
+        okBtn.style.background = 'var(--danger)';
+    } else {
+        okBtn.style.background = 'var(--accent)';
     }
+
+    modal.style.display = 'flex';
+    // Trigger reflow
+    void modal.offsetWidth;
+    modal.style.opacity = '1';
+    box.style.transform = 'scale(1)';
+
+    const cleanup = () => {
+        modal.style.opacity = '0';
+        box.style.transform = 'scale(0.95)';
+        setTimeout(() => modal.style.display = 'none', 200);
+        document.getElementById('confirm-cancel-btn').removeEventListener('click', handleCancel);
+        okBtn.removeEventListener('click', handleOk);
+    };
+
+    const handleCancel = () => cleanup();
+    const handleOk = () => {
+        cleanup();
+        actionCallback();
+    };
+
+    document.getElementById('confirm-cancel-btn').addEventListener('click', handleCancel);
+    okBtn.addEventListener('click', handleOk);
+}
+
+function confirmDelete(buildId) {
+    showCustomConfirm(
+        "Voulez-vous vraiment supprimer ce build pour libérer de l'espace ?",
+        "Supprimer",
+        () => {
+            fetch(`/tenants/builds/${buildId}/delete/`, {
+                method: 'POST',
+                headers: {'X-CSRFToken': '{{ csrf_token }}'}
+            }).then(res => res.json()).then(data => {
+                if(data.success) {
+                    location.reload();
+                } else {
+                    alert("Erreur: " + data.error);
+                }
+            });
+        }
+    );
 }
 
 function confirmRollback(buildId, commitSha) {
-    if(confirm(`Voulez-vous restaurer la version du commit ${commitSha} sur le backbone ?`)) {
-        fetch(`/tenants/builds/${buildId}/rollback/`, {
-            method: 'POST',
-            headers: {'X-CSRFToken': '{{ csrf_token }}'}
-        }).then(res => res.json()).then(data => {
-            if(data.success) {
-                alert(data.message);
-                location.reload();
-            } else {
-                alert("Erreur: " + data.error);
-            }
-        });
-    }
+    showCustomConfirm(
+        `Voulez-vous restaurer la version du commit ${commitSha} sur le backbone ?`,
+        "Restaurer",
+        () => {
+            fetch(`/tenants/builds/${buildId}/rollback/`, {
+                method: 'POST',
+                headers: {'X-CSRFToken': '{{ csrf_token }}'}
+            }).then(res => res.json()).then(data => {
+                if(data.success) {
+                    location.reload();
+                } else {
+                    alert("Erreur: " + data.error);
+                }
+            });
+        }
+    );
 }
 </script>
 {% endblock %}

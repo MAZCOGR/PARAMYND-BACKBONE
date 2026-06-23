@@ -1,153 +1,258 @@
 {% extends "base.html" %}
 
 {% block title %}Tenants — Paramynd Admin{% endblock %}
-{% block breadcrumb_title %}Paramynd <span>/ Tenants</span>{% endblock %}
 
-{% block topbar_actions %}
-  <a href="{% url 'tenants:create' %}" class="btn btn-primary btn-sm">
-    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-    </svg>
-    Nouveau tenant
-  </a>
+{% block extra_head %}
+<style>
+  /* Hide the topbar completely as requested */
+  .topbar { display: none !important; }
+</style>
 {% endblock %}
 
 {% block content %}
-<!-- Stats -->
-<div class="stats-grid">
-  <div class="stat-card">
-    <div class="stat-label">Total clients</div>
-    <div class="stat-value">{{ stats.total }}</div>
-    <div class="stat-sub">instances enregistrées</div>
+<div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start;">
+  <div>
+    <h1>Tenants & Clients</h1>
+    <p>Gestion de vos instances Cloud Run et clients déployés.</p>
   </div>
-  <div class="stat-card">
-    <div class="stat-label">Actifs</div>
-    <div class="stat-value" style="color: var(--success)">{{ stats.active }}</div>
-    <div class="stat-sub">Cloud Run en ligne</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-label">Provisionnement</div>
-    <div class="stat-value" style="color: var(--info)">{{ stats.provisioning }}</div>
-    <div class="stat-sub">en cours de déploiement</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-label">En erreur</div>
-    <div class="stat-value" style="color: var(--danger)">{{ stats.failed }}</div>
-    <div class="stat-sub">nécessitent attention</div>
-  </div>
-</div>
-
-<!-- Recherche & Filtres -->
-<div class="search-bar">
-  <form method="get" action="{% url 'tenants:list' %}" class="flex gap-2 items-center w-full">
-    <div class="search-input-wrap">
-      <svg class="search-icon" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+  <div style="display:flex; align-items:center; gap:16px;">
+    <a href="{% url 'tenants:create' %}" class="btn btn-primary" style="height:fit-content; border-radius:5px; gap:8px;">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
       </svg>
-      <input type="text" name="q" value="{{ search }}" placeholder="Rechercher un client…" class="form-input">
-    </div>
-
-    <div class="filter-pills">
-      <a href="{% url 'tenants:list' %}{% if search %}?q={{ search }}{% endif %}" class="pill {% if not status_filter %}active{% endif %}">Tous</a>
-      {% for val, label in status_choices %}
-      <a href="?status={{ val }}{% if search %}&q={{ search }}{% endif %}" class="pill {% if status_filter == val %}active{% endif %}">{{ label }}</a>
-      {% endfor %}
-    </div>
-
-    <button type="submit" class="btn btn-outline btn-sm">Filtrer</button>
-  </form>
-</div>
-
-<!-- Table tenants -->
-{% if tenants %}
-<div class="table-container fade-in">
-  <table>
-    <thead>
-      <tr>
-        <th>Nom</th>
-        <th>Slug</th>
-        <th>Statut</th>
-        <th>Version déployée</th>
-        <th>URL Cloud Run</th>
-        <th>Dernier déploiement</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for tenant in tenants %}
-      <tr>
-        <td>
-          <a href="{% url 'tenants:detail' tenant.pk %}" class="td-primary" style="color: var(--text-primary)">
-            {{ tenant.name }}
-          </a>
-          {% if tenant.contact_email %}
-          <div class="text-sm text-muted mt-1">{{ tenant.contact_email }}</div>
-          {% endif %}
-        </td>
-        <td><span class="td-mono">{{ tenant.slug }}</span></td>
-        <td>
-          <span class="badge badge-{{ tenant.status }}">{{ tenant.get_status_display }}</span>
-        </td>
-        <td>
-          {% if tenant.current_image_tag %}
-          <span class="code-tag">{{ tenant.current_image_tag }}</span>
-          {% else %}
-          <span class="text-muted">—</span>
-          {% endif %}
-        </td>
-        <td>
-          {% if tenant.cloud_run_url %}
-          <a href="{{ tenant.cloud_run_url }}" target="_blank" class="url-link">
-            <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-            </svg>
-            {{ tenant.cloud_run_url|truncatechars:35 }}
-          </a>
-          {% else %}
-          <span class="text-muted">Non déployé</span>
-          {% endif %}
-        </td>
-        <td>
-          {% if tenant.last_deployed_at %}
-          <span class="text-sm text-muted">{{ tenant.last_deployed_at|timesince }} ago</span>
-          {% else %}
-          <span class="text-muted">—</span>
-          {% endif %}
-        </td>
-        <td>
-          <div class="flex gap-2">
-            <a href="{% url 'tenants:detail' tenant.pk %}" class="btn btn-outline btn-sm">Gérer</a>
-          </div>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-{% else %}
-<div class="card">
-  <div class="empty-state">
-    <div class="icon">🏢</div>
-    <h3>Aucun client{% if search or status_filter %} correspondant{% endif %}</h3>
-    <p>
-      {% if search or status_filter %}
-      Modifiez vos filtres ou créez un nouveau tenant.
-      {% else %}
-      Commencez par créer votre premier tenant client.
-      {% endif %}
-    </p>
-    {% if not search and not status_filter %}
-    <div class="mt-4">
-      <a href="{% url 'tenants:create' %}" class="btn btn-primary">
-        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-        </svg>
-        Créer un tenant
-      </a>
-    </div>
-    {% endif %}
+      Nouveau tenant
+    </a>
   </div>
 </div>
-{% endif %}
 
+<div class="builds-grid" style="grid-template-columns: 1fr; margin-top:24px;">
+  <div id="tenants-container">
+    <div class="card" style="padding: 0; animation: fadeIn 0.4s ease; border: none; background: transparent; box-shadow: none;">
+      
+      <!-- KPIs Containers -->
+      <div id="kpi-group" class="kpis-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        
+        <!-- KPI 1: Total -->
+        <div class="kpi-card" style="animation: fadeIn 0.4s ease; padding: 20px;">
+          <div class="kpi-title" style="display:flex; justify-content:space-between; align-items:center; opacity:0.8;">
+            Total clients
+            <svg width="16" height="16" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+          </div>
+          <div class="kpi-value" style="font-size: 28px; font-weight: 700; margin-top: 8px;">{{ stats.total }}</div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">instances enregistrées</div>
+        </div>
+
+        <!-- KPI 2: Actifs -->
+        <div class="kpi-card" style="animation: fadeIn 0.4s ease 0.1s backwards; padding: 20px;">
+          <div class="kpi-title" style="display:flex; justify-content:space-between; align-items:center; opacity:0.8;">
+            Actifs
+            <svg width="16" height="16" fill="none" stroke="var(--success)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+          </div>
+          <div class="kpi-value" style="font-size: 28px; font-weight: 700; margin-top: 8px; color: var(--success);">{{ stats.active }}</div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Cloud Run en ligne</div>
+        </div>
+
+        <!-- KPI 3: Provisionnement -->
+        <div class="kpi-card" style="animation: fadeIn 0.4s ease 0.2s backwards; padding: 20px;">
+          <div class="kpi-title" style="display:flex; justify-content:space-between; align-items:center; opacity:0.8;">
+            Provisionnement
+            <svg width="16" height="16" fill="none" stroke="var(--info)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+          </div>
+          <div class="kpi-value" style="font-size: 28px; font-weight: 700; margin-top: 8px; color: var(--info);">{{ stats.provisioning }}</div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">en cours de déploiement</div>
+        </div>
+
+        <!-- KPI 4: Erreur -->
+        <div class="kpi-card" style="animation: fadeIn 0.4s ease 0.3s backwards; padding: 20px;">
+          <div class="kpi-title" style="display:flex; justify-content:space-between; align-items:center; opacity:0.8;">
+            En erreur
+            <svg width="16" height="16" fill="none" stroke="var(--danger)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+          </div>
+          <div class="kpi-value" style="font-size: 28px; font-weight: 700; margin-top: 8px; color: var(--danger);">{{ stats.failed }}</div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">nécessitent attention</div>
+        </div>
+      </div>
+
+      <!-- Recherche & Filtres -->
+      <div style="margin-bottom: 24px; animation: fadeIn 0.4s ease 0.4s backwards;">
+        <form id="filters-form" method="get" action="{% url 'tenants:list' %}" 
+              hx-get="{% url 'tenants:list' %}" 
+              hx-target="#table-wrapper" 
+              hx-select="#table-wrapper" 
+              hx-swap="outerHTML" 
+              hx-push-url="true" 
+              hx-trigger="change from:input[type='radio'], keyup changed delay:400ms from:#search-input"
+              class="flex items-center w-full" 
+              style="padding: 0;">
+          
+          <div class="search-input-wrap" style="width: 300px; position:relative;">
+            <svg class="search-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted);">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <input type="text" id="search-input" name="q" value="{{ search }}" placeholder="Rechercher un client…" class="form-input" style="width:100%; padding-left:36px; padding-top:8px; padding-bottom:8px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:5px; color:var(--text-primary);">
+          </div>
+
+          <!-- Séparateur pour pousser les filtres à droite -->
+          <div style="flex-grow: 1;"></div>
+
+          <div class="filter-pills" id="filter-pills" style="display:flex; gap:8px;">
+            <label class="pill {% if not status_filter %}active{% endif %}" style="padding:6px 12px; border-radius:5px; border:1px solid rgba(255,255,255,0.1); cursor:pointer; color:var(--text-primary); margin:0;">
+              <input type="radio" name="status" value="" {% if not status_filter %}checked{% endif %} style="display:none;" onchange="updatePills(this)">
+              Tous
+            </label>
+            {% for val, label in status_choices %}
+            <label class="pill {% if status_filter == val %}active{% endif %}" style="padding:6px 12px; border-radius:5px; border:1px solid rgba(255,255,255,0.1); cursor:pointer; color:var(--text-primary); margin:0;">
+              <input type="radio" name="status" value="{{ val }}" {% if status_filter == val %}checked{% endif %} style="display:none;" onchange="updatePills(this)">
+              {{ label }}
+            </label>
+            {% endfor %}
+          </div>
+        </form>
+      </div>
+
+      <script>
+        function updatePills(radio) {
+          const pills = document.querySelectorAll('#filter-pills .pill');
+          pills.forEach(p => {
+            p.classList.remove('active');
+            p.style.background = 'transparent';
+            p.style.borderColor = 'rgba(255,255,255,0.1)';
+          });
+          const activeLabel = radio.closest('.pill');
+          activeLabel.classList.add('active');
+          activeLabel.style.background = 'var(--accent)';
+          activeLabel.style.borderColor = 'var(--accent)';
+        }
+        
+        // Initialiser l'état actif au chargement de la page
+        document.addEventListener('DOMContentLoaded', () => {
+          const checked = document.querySelector('#filter-pills input:checked');
+          if(checked) updatePills(checked);
+        });
+      </script>
+
+      <!-- Table tenants -->
+      <div id="table-wrapper">
+        <div class="table-container table-scroll-limit" style="border:none; border-radius:0; background:transparent;">
+          <table>
+            <thead>
+              <tr>
+                <th style="padding: 12px 20px;">Nom</th>
+                <th style="padding: 12px 20px;">Slug</th>
+                <th style="padding: 12px 20px;">Statut</th>
+                <th style="padding: 12px 20px;">Version déployée</th>
+                <th style="padding: 12px 20px;">URL Cloud Run</th>
+                <th style="padding: 12px 20px;">Dernier déploiement</th>
+                <th style="padding: 12px 20px; text-align:right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if tenants %}
+                {% for tenant in tenants %}
+                <tr>
+                  <td style="padding: 12px 20px;">
+                    <div style="display:flex; flex-direction:column; gap:2px;">
+                      <a href="{% url 'tenants:detail' tenant.pk %}" style="color:var(--text-primary); font-weight:600; text-decoration:none; font-size:14px;">
+                        {{ tenant.name }}
+                      </a>
+                      {% if tenant.contact_email %}
+                      <span style="color:var(--text-muted); font-size:12px;">{{ tenant.contact_email }}</span>
+                      {% endif %}
+                    </div>
+                  </td>
+                  <td style="padding: 12px 20px;">
+                    <span class="td-mono" style="display:inline-flex; align-items:center; gap:4px; color:var(--text-muted); background:rgba(255,255,255,0.03); padding:4px 8px; border-radius:5px; border:1px solid rgba(255,255,255,0.05);">
+                      {{ tenant.slug }}
+                    </span>
+                  </td>
+                  <td style="padding: 12px 20px;">
+                    {% if tenant.status == 'active' %}
+                      <span style="display:inline-flex; align-items:center; background:rgba(6, 214, 160, 0.1); color:var(--success); padding:4px 8px; border-radius:5px; font-size:12px; font-weight:600; border:1px solid rgba(6, 214, 160, 0.2);">
+                        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        {{ tenant.get_status_display }}
+                      </span>
+                    {% elif tenant.status == 'provisioning' %}
+                      <span style="display:inline-flex; align-items:center; background:rgba(76, 201, 240, 0.1); color:var(--info); padding:4px 8px; border-radius:5px; font-size:12px; font-weight:600; border:1px solid rgba(76, 201, 240, 0.2);">
+                        <span class="spin" style="margin-right:4px; display:inline-block;">⟳</span>
+                        {{ tenant.get_status_display }}
+                      </span>
+                    {% elif tenant.status == 'failed' %}
+                      <span style="display:inline-flex; align-items:center; background:rgba(239, 71, 111, 0.1); color:var(--danger); padding:4px 8px; border-radius:5px; font-size:12px; font-weight:600; border:1px solid rgba(239, 71, 111, 0.2);">
+                        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                        {{ tenant.get_status_display }}
+                      </span>
+                    {% else %}
+                      <span style="display:inline-flex; align-items:center; background:rgba(255, 255, 255, 0.05); color:var(--text-muted); padding:4px 8px; border-radius:5px; font-size:12px; font-weight:500; border:1px solid rgba(255, 255, 255, 0.1);">
+                        {{ tenant.get_status_display }}
+                      </span>
+                    {% endif %}
+                  </td>
+                  <td style="padding: 12px 20px;">
+                    {% if tenant.current_image_tag %}
+                    <span style="display:inline-flex; align-items:center; background:rgba(124, 92, 252, 0.1); color:var(--accent); padding:2px 8px; border-radius:5px; font-size:12px; font-weight:600; border:1px solid rgba(124, 92, 252, 0.2);">
+                      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
+                      {{ tenant.current_image_tag }}
+                    </span>
+                    {% else %}
+                    <span style="color:var(--text-muted);">-</span>
+                    {% endif %}
+                  </td>
+                  <td style="padding: 12px 20px;">
+                    {% if tenant.cloud_run_url %}
+                    <a href="{{ tenant.cloud_run_url }}" target="_blank" style="display:inline-flex; align-items:center; gap:4px; color:var(--info); text-decoration:none; font-size:13px; background:rgba(76, 201, 240, 0.05); padding:4px 8px; border-radius:5px; border:1px solid rgba(76, 201, 240, 0.1);">
+                      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                      </svg>
+                      {{ tenant.cloud_run_url|truncatechars:35 }}
+                    </a>
+                    {% else %}
+                    <span style="color:var(--text-muted); font-size:13px;">Non déployé</span>
+                    {% endif %}
+                  </td>
+                  <td style="padding: 12px 20px;">
+                    {% if tenant.last_deployed_at %}
+                    <span style="color:var(--text-secondary); font-size:13px;">{{ tenant.last_deployed_at|timesince }} ago</span>
+                    {% else %}
+                    <span style="color:var(--text-muted);">-</span>
+                    {% endif %}
+                  </td>
+                  <td style="padding: 12px 20px; text-align:right;">
+                    <a href="{% url 'tenants:detail' tenant.pk %}" class="btn btn-outline btn-sm" style="border-radius:5px;">Gérer</a>
+                  </td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="7" style="padding: 0;">
+                    <div class="empty-state" style="padding:60px 20px; border:none; text-align:center;">
+                      <div class="icon">🏢</div>
+                      <h3>Aucun client{% if search or status_filter %} correspondant{% endif %}</h3>
+                      <p style="color:var(--text-muted); margin-top:8px;">
+                        {% if search or status_filter %}
+                        Modifiez vos filtres ou créez un nouveau tenant.
+                        {% else %}
+                        Commencez par créer votre premier tenant client.
+                        {% endif %}
+                      </p>
+                      {% if not search and not status_filter %}
+                      <div style="margin-top:24px;">
+                        <a href="{% url 'tenants:create' %}" class="btn btn-primary" style="border-radius:5px; gap:8px;">
+                          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                          </svg>
+                          Créer un tenant
+                        </a>
+                      </div>
+                      {% endif %}
+                    </div>
+                  </td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

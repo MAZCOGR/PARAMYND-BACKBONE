@@ -16,24 +16,53 @@ def sync_builds_and_commits() -> bool:
     has_changes = False
 
     try:
-        # 1. Sync Git Commits
+        # 1. Sync Git Commits (Backbone)
         recent_commits = git_service.get_recent_commits(limit=10)
-        db_hashes = list(GitCommitRecord.objects.values_list('hash', flat=True))
-        api_hashes = [c['hash'] for c in recent_commits]
+        db_hashes = set(GitCommitRecord.objects.values_list('hash', flat=True))
+        api_hashes = set(c['hash'] for c in recent_commits)
         
         if db_hashes != api_hashes:
-            has_changes = True
-            GitCommitRecord.objects.all().delete()
-            # We recreate them to keep chronological order
-            for commit in recent_commits:
-                GitCommitRecord.objects.create(
-                    hash=commit['hash'],
-                    short_hash=commit['short_hash'],
-                    message=commit['message'],
-                    author=commit['author'],
-                    date_str=commit['date'],
-                    branch=commit['branch']
-                )
+            is_mock = any(c['author'] == 'Alex' for c in recent_commits)
+            if not is_mock or len(db_hashes) == 0:
+                has_changes = True
+                GitCommitRecord.objects.all().delete()
+                # Insert oldest first so newest gets highest fetched_at
+                for commit in reversed(recent_commits):
+                    GitCommitRecord.objects.create(
+                        hash=commit['hash'],
+                        short_hash=commit['short_hash'],
+                        message=commit['message'],
+                        author=commit['author'],
+                        date_str=commit['date'],
+                        commit_date_iso=commit.get('commit_date_iso'),
+                        branch=commit['branch'],
+                        tag=commit.get('tag')
+                    )
+
+        # 1.5 Sync Git Commits (SaaS)
+        from tenants.models import SaaSGitCommitRecord
+        saas_recent_commits = git_service.get_saas_commits(limit=10)
+        saas_db_hashes = set(SaaSGitCommitRecord.objects.values_list('hash', flat=True))
+        saas_api_hashes = set(c['hash'] for c in saas_recent_commits)
+        
+        # Don't overwrite real data with mock data if we already have real data
+        is_saas_mock = any(c['author'] == 'Alex' for c in saas_recent_commits)
+        if saas_db_hashes != saas_api_hashes:
+            if not is_saas_mock or len(saas_db_hashes) == 0:
+                has_changes = True
+                SaaSGitCommitRecord.objects.all().delete()
+                # Insert oldest first so newest gets highest fetched_at
+                for commit in reversed(saas_recent_commits):
+                    SaaSGitCommitRecord.objects.create(
+                        hash=commit['hash'],
+                        short_hash=commit['short_hash'],
+                        message=commit['message'],
+                        author=commit['author'],
+                        date_str=commit['date'],
+                        commit_date_iso=commit.get('commit_date_iso'),
+                        branch=commit['branch'],
+                        tag=commit.get('tag')
+                    )
 
         # 2. Sync Cloud Builds
         recent_builds = cloud_build.list_recent_builds(limit=10)
@@ -51,7 +80,8 @@ def sync_builds_and_commits() -> bool:
                     duration=build['duration'],
                     commit_sha=build['commit_sha'],
                     branch_name=build['branch_name'],
-                    tags=build['tags']
+                    tags=build['tags'],
+                    images=build.get('images', [])
                 )
 
     except Exception as e:

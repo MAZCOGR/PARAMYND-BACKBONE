@@ -22,3 +22,4 @@ google-cloud-run==0.10.14
 google-cloud-artifact-registry==1.13.1
 google-cloud-build==3.25.0
 google-cloud-logging==3.11.3
+twilio==8.1.0  

@@ -8,10 +8,23 @@ from .models import Tenant, TenantStatus
 class TenantCreateForm(forms.ModelForm):
     """Formulaire de création d'un tenant."""
 
+    admin_password = forms.CharField(
+        label="Mot de passe admin",
+        widget=forms.PasswordInput(attrs={'class': 'form-input', 'id': 'id_admin_password', 'placeholder': '••••••••'}),
+        required=True,
+        help_text="Mot de passe initial pour le compte administrateur du tenant."
+    )
+    admin_password_confirm = forms.CharField(
+        label="Confirmer le mot de passe",
+        widget=forms.PasswordInput(attrs={'class': 'form-input', 'id': 'id_admin_password_confirm', 'placeholder': '••••••••'}),
+        required=True
+    )
+
     class Meta:
         model = Tenant
         fields = [
             'name', 'slug', 'contact_email',
+            'admin_password', 'admin_password_confirm',
             'gcp_project_id', 'cloud_run_region',
             'cloud_sql_instance', 'db_name',
             'custom_domain', 'notes',

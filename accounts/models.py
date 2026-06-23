@@ -56,6 +56,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     avatar      = models.ImageField(upload_to='avatars/', null=True, blank=True)
     notes       = models.TextField(blank=True, verbose_name='Notes internes')
 
+    # OTP Verification
+    email_verified = models.BooleanField(default=False, verbose_name='Email vérifié')
+    phone_verified = models.BooleanField(default=False, verbose_name='Téléphone vérifié')
+    email_verification_code = models.CharField(max_length=6, null=True, blank=True)
+    phone_verification_code = models.CharField(max_length=6, null=True, blank=True)
+
     objects = UserManager()
 
     USERNAME_FIELD = 'email'

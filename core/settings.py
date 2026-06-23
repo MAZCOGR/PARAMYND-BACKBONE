@@ -231,9 +231,22 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ==============================================================================
-# EMAIL
+# EMAIL (POSTMARK / SMTP)
 # ==============================================================================
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = env('EMAIL_HOST', default='smtp.postmarkapp.com')
+EMAIL_PORT = env.int('EMAIL_PORT', default=587)
+EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
+EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@paramynd.com')
+
+# ==============================================================================
+# SMS (TWILIO)
+# ==============================================================================
+TWILIO_ACCOUNT_SID = env('TWILIO_ACCOUNT_SID', default='')
+TWILIO_AUTH_TOKEN = env('TWILIO_AUTH_TOKEN', default='')
+TWILIO_FROM_NUMBER = env('TWILIO_FROM_NUMBER', default='')
 
 # ==============================================================================
 # SESSION

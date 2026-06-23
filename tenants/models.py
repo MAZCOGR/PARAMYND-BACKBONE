@@ -127,13 +127,15 @@ class GitCommitRecord(models.Model):
     message = models.TextField(verbose_name="Message du commit")
     author = models.CharField(max_length=255, verbose_name="Auteur")
     date_str = models.CharField(max_length=100, verbose_name="Date string")
+    commit_date_iso = models.DateTimeField(blank=True, null=True, verbose_name="Date ISO du commit")
     branch = models.CharField(max_length=255, blank=True, null=True, verbose_name="Branche")
+    tag = models.CharField(max_length=255, blank=True, null=True, verbose_name="Tag")
     fetched_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = 'tenants_git_commit'
         verbose_name = 'Commit Git'
-        ordering = ['-fetched_at']
+        ordering = ['-commit_date_iso']
 
 
 class CloudBuildRecord(models.Model):
@@ -145,9 +147,29 @@ class CloudBuildRecord(models.Model):
     commit_sha = models.CharField(max_length=40, blank=True, null=True, verbose_name="Commit SHA")
     branch_name = models.CharField(max_length=255, blank=True, null=True, verbose_name="Nom de branche")
     tags = models.JSONField(default=list, verbose_name="Tags")
+    images = models.JSONField(default=list, verbose_name="Images Docker")
     fetched_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = 'tenants_cloud_build'
         verbose_name = 'Cloud Build'
         ordering = ['-fetched_at']
+
+
+class SaaSGitCommitRecord(models.Model):
+    """Cache en base de données de l'historique Git du SaaS."""
+    hash = models.CharField(max_length=40, primary_key=True, verbose_name="Hash complet")
+    short_hash = models.CharField(max_length=10, verbose_name="Hash court")
+    message = models.TextField(verbose_name="Message du commit")
+    author = models.CharField(max_length=255, verbose_name="Auteur")
+    date_str = models.CharField(max_length=100, verbose_name="Date string")
+    commit_date_iso = models.DateTimeField(blank=True, null=True, verbose_name="Date ISO du commit")
+    branch = models.CharField(max_length=255, blank=True, null=True, verbose_name="Branche")
+    tag = models.CharField(max_length=255, blank=True, null=True, verbose_name="Tag")
+    fetched_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'tenants_saas_git_commit'
+        verbose_name = 'Commit Git SaaS'
+        ordering = ['-commit_date_iso']
+

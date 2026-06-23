@@ -26,7 +26,10 @@
         </div>
         <div class="nav-sect-group">
             <a href="{% url 'tenants:builds' %}" class="nav-item single {% if 'build' in request.resolver_match.url_name %}active{% endif %}">
-                <span class="nav-text">Builds & Images</span>
+                <span class="nav-text">Backbone</span>
+            </a>
+            <a href="{% url 'tenants:saas_commits' %}" class="nav-item single {% if 'saas_commits' in request.resolver_match.url_name %}active{% endif %}">
+                <span class="nav-text">SaaS</span>
             </a>
         </div>
         {% endif %}

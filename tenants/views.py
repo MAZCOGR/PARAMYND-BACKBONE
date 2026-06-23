@@ -269,9 +269,12 @@ def builds_view(request):
         except:
             return datetime.datetime.min
 
-    builds_list = list(CloudBuildRecord.objects.all()[:20])
+    builds_list = list(CloudBuildRecord.objects.all()[:30])
     builds_list.sort(key=lambda x: parse_dt(x.created_str), reverse=True)
-    builds = builds_list[:10]
+    
+    from django.core.cache import cache
+    hidden_builds = cache.get('hidden_builds', set())
+    builds = [b for b in builds_list if b.build_id not in hidden_builds][:10]
 
     # Attach git commit info and format dates
     all_commits = {c.hash: c for c in GitCommitRecord.objects.all()}
@@ -317,8 +320,7 @@ def builds_sync_view(request):
     has_changes = sync_builds_and_commits()
     
     if not has_changes:
-        # On remplace l'indicateur par "À jour"
-        html = '<div id="sync-indicator"><span class="badge" style="background:rgba(6,214,160,0.1); color:var(--success); font-size:12px; padding:6px 12px; animation: fadeIn 0.4s ease;">✓ À jour</span></div>'
+        html = '<div id="sync-indicator" style="display:none;"></div>'
         return HttpResponse(html)
 
     # Si changements, on récupère les nouvelles données pour redessiner la page
@@ -330,9 +332,12 @@ def builds_sync_view(request):
         except:
             return datetime.datetime.min
 
-    builds_list = list(CloudBuildRecord.objects.all()[:20])
+    builds_list = list(CloudBuildRecord.objects.all()[:30])
     builds_list.sort(key=lambda x: parse_dt(x.created_str), reverse=True)
-    builds = builds_list[:10]
+    
+    from django.core.cache import cache
+    hidden_builds = cache.get('hidden_builds', set())
+    builds = [b for b in builds_list if b.build_id not in hidden_builds][:10]
     
     # Attach git commit info and format dates
     all_commits = {c.hash: c for c in GitCommitRecord.objects.all()}
@@ -372,13 +377,39 @@ def builds_sync_view(request):
 @login_required
 @require_POST
 def builds_delete_view(request, build_id):
-    """Supprime un enregistrement de build (mock suppression Artifact Registry)."""
+    """Supprime un enregistrement de build et son image correspondante dans Artifact Registry."""
+    import subprocess
+    import logging
+    logger = logging.getLogger(__name__)
+
     try:
-        build = CloudBuildRecord.objects.get(build_id=build_id)
-        build.delete()
-        return JsonResponse({'success': True, 'message': 'Build supprimé.'})
-    except CloudBuildRecord.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Build introuvable.'})
+        from django.core.cache import cache
+        hidden_builds = cache.get('hidden_builds', set())
+        hidden_builds.add(build_id)
+        cache.set('hidden_builds', hidden_builds, None)
+        
+        build = CloudBuildRecord.objects.filter(build_id=build_id).first()
+        if build:
+            # Delete images from GCP if present
+            if build.images:
+                for image_uri in build.images:
+                    try:
+                        # Command: gcloud artifacts docker images delete IMAGE_URI --delete-tags --quiet
+                        logger.info(f"Deleting image from GCP: {image_uri}")
+                        result = subprocess.run(
+                            ['gcloud', 'artifacts', 'docker', 'images', 'delete', image_uri, '--delete-tags', '--quiet'],
+                            capture_output=True, text=True
+                        )
+                        if result.returncode != 0:
+                            logger.error(f"Error deleting image {image_uri}: {result.stderr}")
+                    except Exception as sub_e:
+                        logger.error(f"Exception calling gcloud: {sub_e}")
+                        
+            build.delete()
+            
+        return JsonResponse({'success': True, 'message': 'Build et images supprimés avec succès.'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
 
 @login_required
 @require_POST
@@ -387,4 +418,123 @@ def builds_rollback_view(request, build_id):
     # Ici, nous mettrions le code pour déplacer le trafic Cloud Run
     # vers la révision correspondant à l'image construite.
     return JsonResponse({'success': True, 'message': f'Rollback vers la révision de {build_id} simulé avec succès.'})
+
+# ──────────────────────────────────────────────
+# SAAS COMMITS
+# ──────────────────────────────────────────────
+
+@login_required
+def saas_commits_view(request):
+    """Page principale des commits SaaS."""
+    from tenants.models import SaaSGitCommitRecord, Tenant, TenantStatus, Deployment, DeploymentStatus
+    from django.utils import timezone
+    import datetime
+
+    recent_commits = SaaSGitCommitRecord.objects.all()[:50]
+    total_commits = recent_commits.count()
+
+    now = timezone.now()
+    commits_this_month = SaaSGitCommitRecord.objects.filter(
+        commit_date_iso__year=now.year,
+        commit_date_iso__month=now.month
+    ).count()
+
+    active_tenants = Tenant.objects.filter(status=TenantStatus.ACTIVE).count()
+    tenants_this_month = Tenant.objects.filter(
+        status=TenantStatus.ACTIVE,
+        created_at__year=now.year,
+        created_at__month=now.month
+    ).count()
+    
+    thirty_days_ago = now - datetime.timedelta(days=30)
+    recent_deployments = Deployment.objects.filter(started_at__gte=thirty_days_ago)
+    total_recent = recent_deployments.count()
+    if total_recent > 0:
+        success_count = sum(1 for d in recent_deployments if d.status == DeploymentStatus.SUCCESS)
+        success_rate = int((success_count / total_recent) * 100)
+    else:
+        success_rate = 100
+
+    for c in recent_commits:
+        parts = c.date_str.split(' ')
+        if len(parts) == 2:
+            date_part, time_part = parts
+            c.short_date = date_part[:5]  # '23/06'
+            c.short_time = time_part
+        else:
+            c.short_date = c.date_str
+            c.short_time = ""
+
+    context = {
+        'recent_commits': recent_commits,
+        'total_commits': total_commits,
+        'commits_this_month': commits_this_month,
+        'active_tenants': active_tenants,
+        'tenants_this_month': tenants_this_month,
+        'success_rate': success_rate,
+        'total_recent_deployments': total_recent,
+        'page_title': 'SaaS Commits — Paramynd Admin',
+    }
+    return render(request, 'tenants/saas_commits.html', context)
+
+@login_required
+def saas_commits_sync_view(request):
+    """Point d'entrée asynchrone HTMX pour SaaS."""
+    from tenants.services.sync_service import sync_builds_and_commits
+    has_changes = sync_builds_and_commits()
+    
+    if not has_changes:
+        html = '<div id="saas-sync-indicator" style="display:none;"></div>'
+        return HttpResponse(html)
+
+    from tenants.models import SaaSGitCommitRecord, Tenant, TenantStatus, Deployment, DeploymentStatus
+    from django.utils import timezone
+    import datetime
+
+    recent_commits = SaaSGitCommitRecord.objects.all()[:50]
+    total_commits = recent_commits.count()
+
+    now = timezone.now()
+    commits_this_month = SaaSGitCommitRecord.objects.filter(
+        commit_date_iso__year=now.year,
+        commit_date_iso__month=now.month
+    ).count()
+
+    active_tenants = Tenant.objects.filter(status=TenantStatus.ACTIVE).count()
+    tenants_this_month = Tenant.objects.filter(
+        status=TenantStatus.ACTIVE,
+        created_at__year=now.year,
+        created_at__month=now.month
+    ).count()
+    
+    thirty_days_ago = now - datetime.timedelta(days=30)
+    recent_deployments = Deployment.objects.filter(started_at__gte=thirty_days_ago)
+    total_recent = recent_deployments.count()
+    if total_recent > 0:
+        success_count = sum(1 for d in recent_deployments if d.status == DeploymentStatus.SUCCESS)
+        success_rate = int((success_count / total_recent) * 100)
+    else:
+        success_rate = 100
+
+    for c in recent_commits:
+        parts = c.date_str.split(' ')
+        if len(parts) == 2:
+            date_part, time_part = parts
+            c.short_date = date_part[:5]  # '23/06'
+            c.short_time = time_part
+        else:
+            c.short_date = c.date_str
+            c.short_time = ""
+
+    context = {
+        'recent_commits': recent_commits,
+        'total_commits': total_commits,
+        'commits_this_month': commits_this_month,
+        'active_tenants': active_tenants,
+        'tenants_this_month': tenants_this_month,
+        'success_rate': success_rate,
+        'total_recent_deployments': total_recent,
+    }
+    return render(request, 'tenants/partials/saas_commits_sync_update.html', context)
+
 

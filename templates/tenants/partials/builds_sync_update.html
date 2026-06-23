@@ -1,32 +1,7 @@
 <!-- Indication de fin de synchronisation silencieuse -->
 <div id="sync-indicator" style="display:none;"></div>
 
-<!-- Mise à jour des KPIs Cloud -->
-<div id="kpi-cloud-1-container" hx-swap-oob="true">
-  <div class="kpi-card">
-    <div class="kpi-title">Taux de Succès</div>
-    <div class="kpi-value" style="color: {% if success_rate >= 80 %}var(--success){% elif success_rate >= 50 %}var(--warning){% else %}var(--danger){% endif %};">{{ success_rate }}%</div>
-  </div>
-</div>
 
-<div id="kpi-cloud-2-container" hx-swap-oob="true">
-  <div class="kpi-card">
-    <div class="kpi-title">Dernier Statut</div>
-    <div class="kpi-value" style="font-size: 24px; margin-top: 4px;">
-      {% if latest_status == 'SUCCESS' %}
-        <span style="color: var(--success);">Réussi</span>
-      {% elif latest_status == 'WORKING' %}
-        <span style="color: var(--accent);" class="pulse">En cours</span>
-      {% elif latest_status == 'FAILURE' %}
-        <span style="color: var(--danger);">Échec</span>
-      {% elif latest_status == 'N/A' %}
-        <span style="color: var(--text-muted);">N/A</span>
-      {% else %}
-        <span style="color: var(--text-muted);">{{ latest_status }}</span>
-      {% endif %}
-    </div>
-  </div>
-</div>
 
 
 
@@ -125,6 +100,7 @@
             </td>
             <td class="td-mono" style="color:var(--text-muted);">{{ build.duration }}</td>
             <td style="text-align: right; position: relative;">
+              {% if not forloop.first or build.status != 'SUCCESS' %}
               <div class="action-menu-wrapper" style="position:relative; display:inline-block;">
                   <button class="action-btn" onclick="toggleActionMenu(this, '{{ build.build_id }}')">
                       <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
@@ -140,6 +116,7 @@
                       </button>
                   </div>
               </div>
+              {% endif %}
             </td>
           </tr>
           {% endfor %}
