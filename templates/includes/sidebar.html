@@ -1,9 +1,7 @@
 {% load admin_extras %}
 <aside class="sidebar admin-sidebar" id="katira-sidebar">
     <div class="sidebar-header">
-        <div class="brand-logo">
-            <span class="brand-name">Paramynd</span>
-        </div>
+        <div class="brand-logo">Paramynd</div>
         <span class="admin-tag">ADMIN</span>
     </div>
 
@@ -104,11 +102,11 @@ function toggleGroup(trigger) {
 </script>
 
 <style>
-/* Apple HIG Inspired Typography & Sidebar CSS */
+/* Apple HIG Inspired Typography & Sidebar CSS - Compact Edition */
 .admin-sidebar {
-    width: 250px;
-    background: rgba(18, 18, 20, 0.85); /* Translucent background */
-    backdrop-filter: blur(24px); /* Glassmorphism effect */
+    width: 220px; /* Reduced width for compactness */
+    background: rgba(18, 18, 20, 0.85);
+    backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     display: flex;
     flex-direction: column;
@@ -119,49 +117,46 @@ function toggleGroup(trigger) {
     -moz-osx-font-smoothing: grayscale;
 }
 .sidebar-header {
-    padding: 30px 20px 20px;
+    padding: 20px 16px 12px; /* Significantly reduced top padding */
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    align-items: baseline;
+    gap: 8px; /* Tightly pack logo and tag */
 }
 .brand-logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-weight: 800; /* Bold title for HIG feeling */
-    font-size: 22px;
+    font-weight: 800;
+    font-size: 18px; /* Slightly smaller */
     color: #fff;
-    letter-spacing: -0.04em; /* Tighter tracking for large text */
+    letter-spacing: -0.04em;
 }
 .admin-tag {
     color: #8C72FF;
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 800;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
 }
 .sidebar-sect {
-    padding: 28px 20px 10px;
+    padding: 16px 16px 6px; /* Tighter section headers */
     display: flex;
     justify-content: space-between;
     align-items: center;
     color: rgba(235, 235, 245, 0.5); 
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.08em; /* Looser tracking for small caps */
+    letter-spacing: 0.06em;
     cursor: default;
     user-select: none;
 }
 .nav-sect-group {
-    padding: 0 12px;
+    padding: 0 8px; /* Reduced side padding */
 }
 .nav-item {
     display: flex;
     align-items: center;
-    padding: 8px 12px;
+    padding: 6px 10px; /* Tighter vertical padding */
     margin-bottom: 2px;
-    border-radius: 8px;
+    border-radius: 6px; /* Smaller border radius for compact items */
     color: rgba(235, 235, 245, 0.7); 
     text-decoration: none;
     cursor: pointer;
@@ -189,12 +184,12 @@ function toggleGroup(trigger) {
 }
 .nav-text {
     flex: 1;
-    font-size: 15px;
+    font-size: 14px; /* Reduced for compactness */
     font-weight: 500;
-    letter-spacing: -0.015em; /* Apple iOS body text tracking */
+    letter-spacing: -0.01em;
 }
 .nav-group {
-    margin-bottom: 4px;
+    margin-bottom: 2px;
 }
 .nav-group .chevron {
     transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
@@ -208,17 +203,17 @@ function toggleGroup(trigger) {
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
-    padding-left: 12px;
+    padding-left: 10px;
 }
 .nav-group.open .group-items {
     max-height: 300px;
 }
 .sub-item {
     display: block;
-    padding: 8px 12px;
+    padding: 6px 10px; /* Tighter padding */
     color: rgba(235, 235, 245, 0.6);
     text-decoration: none;
-    font-size: 14px;
+    font-size: 13px; /* Slightly smaller than main item */
     font-weight: 500;
     letter-spacing: -0.01em;
     transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
@@ -237,7 +232,7 @@ function toggleGroup(trigger) {
 }
 .sidebar-footer {
     margin-top: auto;
-    padding: 20px 12px;
+    padding: 12px 10px;
 }
 .user-avatar {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
