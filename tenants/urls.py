@@ -12,4 +12,6 @@ urlpatterns = [
     path('<uuid:pk>/status/', views.tenant_status_view, name='status'),
     path('builds/', views.builds_view, name='builds'),
     path('builds/sync/', views.builds_sync_view, name='builds_sync'),
+    path('builds/<str:build_id>/delete/', views.builds_delete_view, name='builds_delete'),
+    path('builds/<str:build_id>/rollback/', views.builds_rollback_view, name='builds_rollback'),
 ]

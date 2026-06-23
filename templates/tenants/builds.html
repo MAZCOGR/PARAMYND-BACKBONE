@@ -53,73 +53,10 @@
       </div>
     </div>
 
-    <!-- KPI Git -->
-    <div id="kpi-git-container">
-      <div class="kpi-card" style="animation: fadeIn 0.4s ease;">
-        <div class="kpi-title">Commits Détectés</div>
-        <div class="kpi-value">{{ total_tags }}</div>
-      </div>
-    </div>
+
   </div>
   
-  <!-- Table 1 (Git) -->
-  <div id="git-table-container">
-    <div class="card" style="padding: 0; animation: fadeIn 0.4s ease; border: none; background: transparent; box-shadow: none;">
-      <div class="card-header" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 20px; display: block;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <div class="card-title">Derniers Commits</div>
-          <span id="git-sync-badge" class="badge pulse" style="background:rgba(255,183,3,0.1); color:var(--warning); transition: all 0.4s ease;">Git Local</span>
-        </div>
-        <p style="color: white; font-size: 13px; margin-top: 8px; opacity: 0.8;">Cet historique liste les modifications locales apportées au code source de votre instance, qui ont déclenché ou déclencheront un déploiement.</p>
-      </div>
-      
-      {% if recent_commits %}
-      <div class="table-container table-scroll-limit" style="border:none; border-radius:0; background:transparent;">
-        <table>
-          <thead>
-            <tr>
-              <th>Hash</th>
-              <th>Message</th>
-              <th>Auteur</th>
-              <th>Branche</th>
-              <th>Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for commit in recent_commits %}
-            <tr>
-              <td class="td-mono">
-                <span style="display:inline-flex; align-items:center; gap:8px;">
-                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="color:var(--text-muted);"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                  {{ commit.short_hash }}
-                </span>
-              </td>
-              <td class="td-primary" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:250px;" title="{{ commit.message }}">{{ commit.message }}</td>
-              <td style="white-space:nowrap;">{{ commit.author }}</td>
-              <td>
-                {% if commit.branch %}
-                <span class="badge" style="background:rgba(124, 92, 252, 0.1); color:var(--accent);">{{ commit.branch }}</span>
-                {% else %}
-                <span style="color:var(--text-muted);">-</span>
-                {% endif %}
-              </td>
-              <td style="white-space:nowrap; color:var(--text-muted);">{{ commit.date_str|truncatechars:17 }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% else %}
-      <div class="empty-state" style="padding:40px;">
-        <div class="icon">
-          <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-        </div>
-        <h3>Aucun commit trouvé</h3>
-        <p>Le dépôt git n'est pas initialisé ou est vide.</p>
-      </div>
-      {% endif %}
-    </div>
-  </div>
+
 
   <!-- Table 2 (Cloud Build) -->
   <div id="cloud-table-container">
@@ -127,7 +64,7 @@
       <div class="card-header" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 20px; display: block;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div class="card-title">Historique Cloud Build</div>
-          <span id="cloud-sync-badge" class="badge pulse" style="background:rgba(255,183,3,0.1); color:var(--warning); transition: all 0.4s ease;">Cloud Build</span>
+          <span id="cloud-sync-badge" class="badge" style="background:rgba(6,214,160,0.1); color:var(--success); transition: background 0.4s ease;">Cloud Build</span>
         </div>
         <p style="color: white; font-size: 13px; margin-top: 8px; opacity: 0.8;">Suivez en temps réel la compilation de vos images Docker sur l'infrastructure Google Cloud et vérifiez le statut de chaque déploiement.</p>
       </div>
@@ -137,17 +74,23 @@
         <table>
           <thead>
             <tr>
+              <th>Création</th>
               <th>Statut</th>
               <th>ID</th>
               <th>Branche / Commit</th>
-              <th>Création</th>
               <th>Durée</th>
-              <th>Tags</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
             {% for build in builds %}
             <tr>
+              <td style="white-space:nowrap;">
+                <div style="display:flex; flex-direction:column; gap:2px; line-height: 1;">
+                  <strong style="color:var(--text-primary); font-size:13px;">{{ build.short_date }}</strong>
+                  <span style="color:var(--text-muted); font-size:11px;">{{ build.short_time }}</span>
+                </div>
+              </td>
               <td>
                 <span style="display:inline-flex; align-items:center; gap:8px;">
                   {% if build.status == 'SUCCESS' %}
@@ -165,30 +108,64 @@
                   {% endif %}
                 </span>
               </td>
-              <td class="td-mono">{{ build.build_id|truncatechars:10 }}</td>
+              <td class="td-mono">{{ build.build_id }}</td>
               <td>
+              <div style="display:flex; flex-direction:row; align-items:center; gap:8px;">
                 {% if build.branch_name %}
-                  <span class="badge" style="background:rgba(124, 92, 252, 0.1); color:var(--accent);">{{ build.branch_name }}</span>
+                <span style="display:inline-flex; align-items:center; background:rgba(124, 92, 252, 0.1); color:var(--accent); padding:2px 8px; border-radius:12px; font-size:12px; font-weight:600; border:1px solid rgba(124, 92, 252, 0.2);">
+                  <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
+                  {{ build.branch_name }}
+                </span>
                 {% endif %}
+                
                 {% if build.commit_sha %}
-                  <span class="td-mono" style="margin-left:8px;" title="Commit {{ build.commit_sha }}">
-                    <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="display:inline; margin-right:2px;"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                    {{ build.commit_sha|truncatechars:8 }}
-                  </span>
+                  <div class="commit-hover-wrapper">
+                    <span class="td-mono" style="display:inline-flex; align-items:center; gap:4px; color:var(--text-muted);">
+                      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                      {{ build.commit_sha|slice:":7" }}
+                    </span>
+                    
+                    {% if build.git_commit %}
+                    <div class="commit-glass-panel">
+                      <div class="glass-header">
+                        <strong>{{ build.git_commit.author }}</strong>
+                        <span>{{ build.git_commit.date_str }}</span>
+                      </div>
+                      <div class="glass-body">
+                        {{ build.git_commit.message }}
+                      </div>
+                    </div>
+                    {% endif %}
+                  </div>
                 {% endif %}
+
+                {% if forloop.first and build.status == 'SUCCESS' %}
+                <span class="live-badge">
+                  <span class="pulse-dot"></span> LIVE
+                </span>
+                {% endif %}
+                
                 {% if not build.branch_name and not build.commit_sha %}
                   <span style="color:var(--text-muted);">-</span>
                 {% endif %}
-              </td>
-              <td style="white-space:nowrap; color:var(--text-muted);">{{ build.created_str|truncatechars:16 }}</td>
-              <td style="white-space:nowrap;">⏱ {{ build.duration }}</td>
-              <td>
-                <div style="display:flex; flex-wrap:wrap; gap:4px;">
-                  {% for tag in build.tags %}
-                    {% if tag != build.commit_sha and tag != build.branch_name %}
-                    <span class="code-tag">{{ tag }}</span>
-                    {% endif %}
-                  {% endfor %}
+              </div>
+            </td>
+              <td class="td-mono" style="color:var(--text-muted);">{{ build.duration }}</td>
+              <td style="text-align: right; position: relative;">
+                <div class="action-menu-wrapper" style="position:relative; display:inline-block;">
+                    <button class="action-btn" onclick="toggleActionMenu(this, '{{ build.build_id }}')">
+                        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
+                    </button>
+                    <div id="action-menu-{{ build.build_id }}" class="action-dropdown" style="display:none;">
+                        <button class="dropdown-item danger" onclick="confirmDelete('{{ build.build_id }}')">
+                            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            Supprimer
+                        </button>
+                        <button class="dropdown-item" onclick="confirmRollback('{{ build.build_id }}', '{{ build.commit_sha|slice:":7" }}')">
+                            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                            Restaurer version
+                        </button>
+                    </div>
                 </div>
               </td>
             </tr>
@@ -205,6 +182,54 @@
       {% endif %}
     </div>
   </div>
-
 </div>
+
+<script>
+function toggleActionMenu(btn, buildId) {
+    // Hide all other menus
+    document.querySelectorAll('.action-dropdown').forEach(el => {
+        if(el.id !== 'action-menu-' + buildId) el.style.display = 'none';
+    });
+    const menu = document.getElementById('action-menu-' + buildId);
+    menu.style.display = menu.style.display === 'none' ? 'flex' : 'none';
+}
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.action-menu-wrapper')) {
+        document.querySelectorAll('.action-dropdown').forEach(el => el.style.display = 'none');
+    }
+});
+
+function confirmDelete(buildId) {
+    if(confirm("Voulez-vous vraiment supprimer ce build pour libérer de l'espace ?")) {
+        fetch(`/tenants/builds/${buildId}/delete/`, {
+            method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token }}'}
+        }).then(res => res.json()).then(data => {
+            if(data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert("Erreur: " + data.error);
+            }
+        });
+    }
+}
+
+function confirmRollback(buildId, commitSha) {
+    if(confirm(`Voulez-vous restaurer la version du commit ${commitSha} sur le backbone ?`)) {
+        fetch(`/tenants/builds/${buildId}/rollback/`, {
+            method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token }}'}
+        }).then(res => res.json()).then(data => {
+            if(data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert("Erreur: " + data.error);
+            }
+        });
+    }
+}
+</script>
 {% endblock %}

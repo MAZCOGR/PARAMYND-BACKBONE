@@ -262,13 +262,42 @@ def tenant_status_view(request, pk):
 def builds_view(request):
     """Page principale des builds. Charge instantanément depuis la DB."""
     recent_commits = GitCommitRecord.objects.all()[:10]
-    builds = CloudBuildRecord.objects.all()[:10]
-    
+    import datetime
+    def parse_dt(s):
+        try:
+            return datetime.datetime.strptime(s, "%d/%m/%Y %H:%M")
+        except:
+            return datetime.datetime.min
+
+    builds_list = list(CloudBuildRecord.objects.all()[:20])
+    builds_list.sort(key=lambda x: parse_dt(x.created_str), reverse=True)
+    builds = builds_list[:10]
+
+    # Attach git commit info and format dates
+    all_commits = {c.hash: c for c in GitCommitRecord.objects.all()}
+    for b in builds:
+        b.git_commit = all_commits.get(b.commit_sha)
+        if not b.git_commit and b.commit_sha:
+            for chash, c in all_commits.items():
+                if chash.startswith(b.commit_sha):
+                    b.git_commit = c
+                    break
+        
+        # Parse '23/06/2026 04:11' to '23/06' and '04:11'
+        parts = b.created_str.split(' ')
+        if len(parts) == 2:
+            date_part, time_part = parts
+            b.short_date = date_part[:5]  # '23/06'
+            b.short_time = time_part
+        else:
+            b.short_date = b.created_str
+            b.short_time = ""
+
     total_tags = recent_commits.count()
     
     # Calculate KPIs in memory to avoid extra queries on small sets
     success_count = sum(1 for b in builds if b.status == 'SUCCESS')
-    total_builds = builds.count()
+    total_builds = len(builds)
     success_rate = round((success_count / total_builds) * 100) if total_builds > 0 else 0
     latest_status = builds[0].status if total_builds > 0 else 'N/A'
 
@@ -294,11 +323,40 @@ def builds_sync_view(request):
 
     # Si changements, on récupère les nouvelles données pour redessiner la page
     recent_commits = GitCommitRecord.objects.all()[:10]
-    builds = CloudBuildRecord.objects.all()[:10]
+    import datetime
+    def parse_dt(s):
+        try:
+            return datetime.datetime.strptime(s, "%d/%m/%Y %H:%M")
+        except:
+            return datetime.datetime.min
+
+    builds_list = list(CloudBuildRecord.objects.all()[:20])
+    builds_list.sort(key=lambda x: parse_dt(x.created_str), reverse=True)
+    builds = builds_list[:10]
+    
+    # Attach git commit info and format dates
+    all_commits = {c.hash: c for c in GitCommitRecord.objects.all()}
+    for b in builds:
+        b.git_commit = all_commits.get(b.commit_sha)
+        if not b.git_commit and b.commit_sha:
+            for chash, c in all_commits.items():
+                if chash.startswith(b.commit_sha):
+                    b.git_commit = c
+                    break
+                    
+        # Parse '23/06/2026 04:11' to '23/06' and '04:11'
+        parts = b.created_str.split(' ')
+        if len(parts) == 2:
+            date_part, time_part = parts
+            b.short_date = date_part[:5]  # '23/06'
+            b.short_time = time_part
+        else:
+            b.short_date = b.created_str
+            b.short_time = ""
     
     total_tags = recent_commits.count()
     success_count = sum(1 for b in builds if b.status == 'SUCCESS')
-    total_builds = builds.count()
+    total_builds = len(builds)
     success_rate = round((success_count / total_builds) * 100) if total_builds > 0 else 0
     latest_status = builds[0].status if total_builds > 0 else 'N/A'
 
@@ -310,3 +368,23 @@ def builds_sync_view(request):
         'latest_status': latest_status,
     }
     return render(request, 'tenants/partials/builds_sync_update.html', context)
+
+@login_required
+@require_POST
+def builds_delete_view(request, build_id):
+    """Supprime un enregistrement de build (mock suppression Artifact Registry)."""
+    try:
+        build = CloudBuildRecord.objects.get(build_id=build_id)
+        build.delete()
+        return JsonResponse({'success': True, 'message': 'Build supprimé.'})
+    except CloudBuildRecord.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Build introuvable.'})
+
+@login_required
+@require_POST
+def builds_rollback_view(request, build_id):
+    """Effectue un rollback vers le commit associé à ce build (mock Cloud Run)."""
+    # Ici, nous mettrions le code pour déplacer le trafic Cloud Run
+    # vers la révision correspondant à l'image construite.
+    return JsonResponse({'success': True, 'message': f'Rollback vers la révision de {build_id} simulé avec succès.'})
+
