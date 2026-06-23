@@ -53,14 +53,29 @@ def list_recent_builds(limit: int = 10) -> List[Dict]:
             if not branch_name and b.source and b.source.repo_source:
                 branch_name = b.source.repo_source.branch_name
 
+            # Format creation date nicely
+            created_str = b.create_time.strftime("%d/%m/%Y %H:%M") if hasattr(b.create_time, 'strftime') else str(b.create_time)[:16]
+            
+            # Format duration nicely (e.g. "1 min 23 s")
+            duration_str = 'N/A'
+            if b.finish_time and b.start_time:
+                td = b.finish_time - b.start_time
+                total_seconds = int(td.total_seconds())
+                minutes = total_seconds // 60
+                seconds = total_seconds % 60
+                if minutes > 0:
+                    duration_str = f"{minutes} min {seconds} s"
+                else:
+                    duration_str = f"{seconds} s"
+
             result.append({
                 'id': b.id,
                 'status': b.status.name,
                 'tags': list(b.tags),
                 'commit_sha': commit_sha,
                 'branch_name': branch_name,
-                'created': str(b.create_time),
-                'duration': str(b.finish_time - b.start_time) if b.finish_time and b.start_time else 'N/A',
+                'created': created_str,
+                'duration': duration_str,
                 'images': list(b.images),
             })
             
@@ -78,8 +93,8 @@ def list_recent_builds(limit: int = 10) -> List[Dict]:
                 'tags': ['v1.3.0'],
                 'commit_sha': 'a1b2c3d',
                 'branch_name': 'main',
-                'created': '2025-01-20T10:00:00Z',
-                'duration': '0:02:34',
+                'created': '20/01/2025 10:00',
+                'duration': '2 min 34 s',
                 'images': [f"europe-west9-docker.pkg.dev/{settings.GCP_PROJECT_ID}/paramynd/app:v1.3.0"],
             },
             {
@@ -88,8 +103,8 @@ def list_recent_builds(limit: int = 10) -> List[Dict]:
                 'tags': ['v1.2.1'],
                 'commit_sha': 'e4f5g6h',
                 'branch_name': 'develop',
-                'created': '2025-01-10T14:30:00Z',
-                'duration': '0:02:12',
+                'created': '10/01/2025 14:30',
+                'duration': '2 min 12 s',
                 'images': [f"europe-west9-docker.pkg.dev/{settings.GCP_PROJECT_ID}/paramynd/app:v1.2.1"],
             },
         ]

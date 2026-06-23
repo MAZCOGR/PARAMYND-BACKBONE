@@ -4,6 +4,7 @@ Récupérer l'historique Git du projet Paramynd.
 """
 import logging
 import subprocess
+import datetime
 from typing import List, Dict
 
 logger = logging.getLogger(__name__)
@@ -37,12 +38,19 @@ def get_recent_commits(limit: int = 10) -> List[Dict]:
                 if '->' in branch_display:
                     branch_display = branch_display.split('->')[-1].strip()
 
+                try:
+                    # ISO 8601 parsing
+                    dt = datetime.datetime.fromisoformat(date.replace('Z', '+00:00'))
+                    formatted_date = dt.strftime("%d/%m/%Y %H:%M")
+                except ValueError:
+                    formatted_date = date[:16]
+
                 commits.append({
                     'hash': commit_hash,
                     'short_hash': commit_hash[:8],
                     'message': message,
                     'author': author,
-                    'date': date,
+                    'date': formatted_date,
                     'branch': branch_display,
                 })
         
@@ -59,7 +67,7 @@ def get_recent_commits(limit: int = 10) -> List[Dict]:
                 'short_hash': 'a1b2c3d4',
                 'message': 'feat: initialisation du projet',
                 'author': 'Alex',
-                'date': '2026-06-23T10:00:00+00:00',
+                'date': '23/06/2026 10:00',
                 'branch': 'main',
             },
             {
@@ -67,7 +75,7 @@ def get_recent_commits(limit: int = 10) -> List[Dict]:
                 'short_hash': 'b2c3d4e5',
                 'message': 'fix: correction du bug css',
                 'author': 'Alex',
-                'date': '2026-06-22T14:30:00+00:00',
+                'date': '22/06/2026 14:30',
                 'branch': '',
             },
         ]
