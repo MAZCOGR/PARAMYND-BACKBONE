@@ -20,6 +20,10 @@ DEBUG = env('DEBUG', default=True)
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[]) + [
     'localhost',
     '127.0.0.1',
+    'paramynd.com',
+    'www.paramynd.com',
+    'paramynd.web.app',
+    'paramynd-admin-343192497073.europe-west9.run.app',
     'paramynd-admin.com',
     'admin.paramynd.com',
 ]
@@ -29,6 +33,10 @@ CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8002',
     'http://127.0.0.1:8001',
     'http://127.0.0.1:8002',
+    'https://paramynd.com',
+    'https://www.paramynd.com',
+    'https://paramynd.web.app',
+    'https://paramynd-admin-343192497073.europe-west9.run.app',
     'https://admin.paramynd.com',
 ]
 
@@ -49,6 +57,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
+    'oauth2_provider',
 
     # Paramynd Admin apps
     'accounts',
@@ -168,6 +177,7 @@ LOGOUT_REDIRECT_URL = '/auth/login/'
 # ==============================================================================
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_THROTTLE_CLASSES': [

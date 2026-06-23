@@ -19,6 +19,9 @@ urlpatterns = [
     # API REST
     path('api/auth/', include('accounts.api_urls', namespace='api_accounts')),
     path('api/v1/tenants/', include('tenants.api_urls', namespace='api_tenants')),
+
+    # OAuth2
+    path('o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
 ]
 
 if settings.DEBUG:

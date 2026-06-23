@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base_public.html" %}
 {% load static %}
 
 {% block title %}Paramynd Admin — Control Plane{% endblock %}
@@ -15,7 +15,7 @@
 
 :root {
   --r: 5px;              /* border-radius universel */
-  --r-lg: 12px;          /* cartes larges */
+  --r-lg: 5px;          /* cartes larges */
   --black: #050507;
   --black-2: #0d0d12;
   --surface: rgba(255,255,255,0.045);
@@ -292,9 +292,11 @@ img { max-width: 100%; }
 .steps-visual {
   position: relative; height: 460px;
   border-radius: var(--r-lg);
-  background: var(--black-2);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   overflow: hidden;
-  box-shadow: var(--shadow-lg), var(--shadow-glow);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), var(--shadow-glow);
 }
 
 /* Animated pipeline visual */
@@ -367,17 +369,20 @@ img { max-width: 100%; }
   gap: 16px;
 }
 .bento-card {
-  background: var(--black-2);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: none;
   border-radius: var(--r-lg);
   padding: 36px 32px;
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease), background 0.3s;
   overflow: hidden; position: relative;
 }
 .bento-card:hover {
   transform: translateY(-4px);
-  box-shadow: var(--shadow-lg), 0 0 40px rgba(124,92,252,0.08);
-  background: #111118;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2), 0 0 40px rgba(124,92,252,0.15);
+  background: rgba(255, 255, 255, 0.12);
 }
 /* Subtle top accent line */
 .bento-card::before {
@@ -415,22 +420,25 @@ img { max-width: 100%; }
 /* ════════════════════════════════
    INTEGRATIONS
    ════════════════════════════════ */
-.integ-section { background: rgba(13,13,18,0.72); }
+.integ-section { background: transparent; }
 .integ-grid {
   display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
 }
 .integ-card {
-  background: var(--black);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: none;
   border-radius: var(--r-lg);
   padding: 28px 20px;
   text-align: center;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease), background 0.2s;
 }
 .integ-card:hover {
   transform: translateY(-4px);
-  box-shadow: var(--shadow-md), 0 0 0 1px rgba(124,92,252,0.2);
-  background: #0d0d12;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15), 0 0 20px rgba(124,92,252,0.15);
+  background: rgba(255, 255, 255, 0.11);
 }
 .integ-emoji { font-size: 30px; margin-bottom: 12px; display: block; }
 .integ-name { font-size: 14px; font-weight: 700; color: var(--white); margin-bottom: 4px; }
@@ -673,7 +681,7 @@ img { max-width: 100%; }
 </section>
 
 <!-- ══════════════ FEATURES — BENTO ══════════════ -->
-<section class="section" id="features" style="background: rgba(13,13,18,0.78);">
+<section class="section" id="features">
   <div class="section-inner">
     <div class="reveal">
       <div class="section-eyebrow">Fonctionnalités</div>
@@ -831,7 +839,7 @@ img { max-width: 100%; }
   </div>
   <div class="footer-links">
     <a href="{% url 'accounts:login' %}">Connexion</a>
-    <a href="{% url 'dashboard:home' %}">Dashboard</a>
+    <a href="{% url 'tenants:list' %}">Dashboard</a>
     <a href="{% url 'admin:index' %}">Admin</a>
   </div>
 </footer>

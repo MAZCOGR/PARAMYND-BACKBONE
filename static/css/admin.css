@@ -837,12 +837,14 @@ select option { background: var(--bg-elevated); }
 }
 
 .login-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: none;
+  border-radius: 5px;
   padding: 40px;
   width: 380px;
-  box-shadow: var(--shadow);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   position: relative;
   z-index: 1;
 }
