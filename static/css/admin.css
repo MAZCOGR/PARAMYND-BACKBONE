@@ -233,7 +233,7 @@ a:hover { color: var(--text-primary); }
 .page-content {
   padding: 32px;
   flex: 1;
-  max-width: 1200px;
+  max-width: 1600px;
   margin: 0 auto;
   width: 100%;
 }
@@ -375,9 +375,9 @@ a:hover { color: var(--text-primary); }
 /* ── Badges ────────────────────────────────────────────────── */
 .badge {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 5px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.5px;
   text-transform: uppercase;
@@ -675,8 +675,8 @@ select option { background: var(--black-2); }
 .kpi-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 16px;
-  padding: 20px;
+  border-radius: 5px;
+  padding: 16px;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 4px 16px rgba(0,0,0,0.2);
@@ -717,9 +717,9 @@ select option { background: var(--black-2); }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px;
+  padding: 8px 12px;
   background: rgba(255, 255, 255, 0.02);
-  border-radius: 12px;
+  border-radius: 5px;
   transition: background 0.2s ease, transform 0.2s ease;
 }
 .list-item:hover {
@@ -733,9 +733,9 @@ select option { background: var(--black-2); }
   flex: 1;
 }
 .list-item-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 5px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -759,13 +759,13 @@ select option { background: var(--black-2); }
 .list-item-title {
   font-weight: 600;
   color: var(--text-light);
-  font-size: 14px;
+  font-size: 13px;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 .list-item-subtitle {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
 }
 .list-item-actions {

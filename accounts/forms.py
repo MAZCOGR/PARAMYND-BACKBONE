@@ -19,7 +19,7 @@ class UserAdminCreationForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ('email', 'first_name', 'last_name', 'phone_number', 'is_active')
+        fields = ('email', 'password', 'first_name', 'last_name', 'phone_number', 'is_active', 'groups')
 
     def save(self, commit=True):
         # Save the provided password in hashed format
@@ -46,7 +46,7 @@ class UserAdminChangeForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ('email', 'first_name', 'last_name', 'phone_number', 'is_active')
+        fields = ('email', 'first_name', 'last_name', 'phone_number', 'is_active', 'groups')
 
     def save(self, commit=True):
         user = super().save(commit=False)
