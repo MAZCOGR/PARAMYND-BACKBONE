@@ -530,7 +530,14 @@ def saas_commits_view(request):
     else:
         success_rate = 100
 
+    from .services import artifact_registry
+    ar_tags = artifact_registry.list_available_tags(limit=100)
+    ar_tag_names = {t['tag'] for t in ar_tags}
+
     for c in recent_commits:
+        primary_tag = c.tag if c.tag else c.short_hash
+        c.is_ready = primary_tag in ar_tag_names
+        
         parts = c.date_str.split(' ')
         if len(parts) == 2:
             date_part, time_part = parts
@@ -591,7 +598,14 @@ def saas_commits_sync_view(request):
     else:
         success_rate = 100
 
+    from .services import artifact_registry
+    ar_tags = artifact_registry.list_available_tags(limit=100)
+    ar_tag_names = {t['tag'] for t in ar_tags}
+
     for c in recent_commits:
+        primary_tag = c.tag if c.tag else c.short_hash
+        c.is_ready = primary_tag in ar_tag_names
+        
         parts = c.date_str.split(' ')
         if len(parts) == 2:
             date_part, time_part = parts
