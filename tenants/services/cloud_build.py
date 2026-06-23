@@ -26,10 +26,6 @@ def list_recent_builds(limit: int = 10) -> List[Dict]:
         result = []
         
         for b in all_builds:
-            # We only care about builds that produce images
-            if not b.images and not (b.results and b.results.images):
-                continue
-                
             substitutions = b.substitutions or {}
             commit_sha = substitutions.get('COMMIT_SHA', '')
             branch_name = substitutions.get('BRANCH_NAME', '')
@@ -45,6 +41,9 @@ def list_recent_builds(limit: int = 10) -> List[Dict]:
                 
             if not is_backbone_build:
                 continue
+                
+            # Les builds du backbone peuvent ne pas avoir de 'images' définies si déployés via buildpacks
+            # Nous retirons donc la condition stricte sur b.images pour ces builds.
             
             # fallback if not in substitutions but in source
             if not commit_sha and b.source and b.source.repo_source:
