@@ -36,12 +36,11 @@ def list_recent_builds(limit: int = 10) -> List[Dict]:
             repo_name = substitutions.get('REPO_NAME', '')
             trigger_name = substitutions.get('TRIGGER_NAME', '')
             
-            # On veut afficher les builds du projet public 'paramynd' (pas le backbone)
+            # On veut afficher tous les builds liés à paramynd (y compris admin/backbone)
             is_paramynd_build = False
             search_str = f"{repo_name} {trigger_name} {str(b.tags)} {str(b.images)} {str(substitutions)}".lower()
             
-            # On vérifie que 'paramynd' est présent, mais on exclut le backbone/admin
-            if 'paramynd' in search_str and 'paramynd-admin' not in search_str and 'paramynd-backbone' not in search_str:
+            if 'paramynd' in search_str:
                 is_paramynd_build = True
                 
             if not is_paramynd_build:
