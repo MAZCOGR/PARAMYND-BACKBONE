@@ -54,6 +54,15 @@ def tenant_list_view(request):
         'failed': Tenant.objects.filter(status=TenantStatus.FAILED).count(),
     }
 
+    # Formulaire de création pour le modal
+    from .forms import TenantCreateForm
+    from django.conf import settings
+    form = TenantCreateForm(initial={
+        'gcp_project_id': settings.GCP_PROJECT_ID,
+        'cloud_run_region': settings.GCP_REGION,
+        'cloud_sql_instance': getattr(settings, 'CLOUD_SQL_INSTANCE', ''),
+    })
+
     context = {
         'page_title': 'Tenants — Paramynd Admin',
         'tenants': tenants,
@@ -62,6 +71,7 @@ def tenant_list_view(request):
         'status_filter': status_filter,
         'search': search,
         'total_filtered': tenants.count(),
+        'form': form,
     }
     return render(request, 'tenants/list.html', context)
 
@@ -84,7 +94,18 @@ def tenant_create_view(request):
                 tenant.cloud_sql_instance = getattr(settings, 'CLOUD_SQL_INSTANCE', '')
             tenant.save()
             messages.success(request, f"Tenant « {tenant.name} » créé avec succès. Vous pouvez maintenant le déployer.")
+            
+            if request.headers.get('HX-Request'):
+                from django.http import HttpResponse
+                from django.urls import reverse
+                response = HttpResponse(status=204)
+                response['HX-Redirect'] = reverse('tenants:detail', kwargs={'pk': tenant.pk})
+                return response
+                
             return redirect('tenants:detail', pk=tenant.pk)
+        else:
+            if request.headers.get('HX-Request'):
+                return render(request, 'tenants/partials/create_form.html', {'form': form})
     else:
         from django.conf import settings
         form = TenantCreateForm(initial={
@@ -256,8 +277,28 @@ def tenant_deploy_view(request, pk):
                 from .models import DomainStatus
                 tenant.domain_status = DomainStatus.PENDING
                 tenant.dns_records = domain_result.get('records', [])
+                
+                # Cloudflare Auto-DNS pour les sous-domaines paramynd.com
+                domain_notice = ""
                 dm_mock = " (mode mock)" if domain_result.get('mock') else ""
-                domain_notice = f" Domaine personnalisé configuré{dm_mock}."
+                
+                if tenant.custom_domain.endswith('.paramynd.com'):
+                    from .services import cloudflare
+                    # Trouver la cible (normalement ghs.googlehosted.com.)
+                    target = "ghs.googlehosted.com."
+                    for rec in tenant.dns_records:
+                        if rec.get('type') == 'CNAME':
+                            target = rec.get('rrdata', target)
+                            break
+                            
+                    cf_success = cloudflare.create_dns_record(tenant.custom_domain, target)
+                    if cf_success:
+                        tenant.domain_status = DomainStatus.ACTIVE
+                        domain_notice = f" Domaine et DNS Cloudflare configurés instantanément{dm_mock}."
+                    else:
+                        domain_notice = f" Domaine configuré, mais l'auto-DNS a échoué. Configuration manuelle requise."
+                else:
+                    domain_notice = f" Domaine personnalisé configuré{dm_mock}. DNS externe à vérifier."
             else:
                 from .models import DomainStatus
                 tenant.domain_status = DomainStatus.FAILED

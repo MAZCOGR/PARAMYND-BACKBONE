@@ -2,7 +2,7 @@
 <aside class="sidebar admin-sidebar" id="katira-sidebar">
     <div class="sidebar-header">
         <div class="brand-logo">Paramynd</div>
-        <span class="admin-tag">ADMIN</span>
+        <span class="admin-tag">BACKBONE</span>
     </div>
 
     <div class="sidebar-nav-container">
@@ -112,21 +112,22 @@ function toggleGroup(trigger) {
     border-right: 1px solid rgba(255, 255, 255, 0.05); /* Subtle separator */
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    height: 133.33vh;
     overflow-y: auto;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
 .sidebar-header {
-    padding: 20px 16px 12px; /* Significantly reduced top padding */
+    padding: 20px 16px 12px;
     display: flex;
-    align-items: baseline;
-    gap: 8px; /* Tightly pack logo and tag */
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
 }
 .brand-logo {
     font-weight: 800;
-    font-size: 18px; /* Slightly smaller */
+    font-size: 34px;
     color: #fff;
     letter-spacing: -0.04em;
 }

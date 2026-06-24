@@ -16,12 +16,12 @@
     <p>Gestion de vos instances Cloud Run et clients déployés.</p>
   </div>
   <div style="display:flex; align-items:center; gap:16px;">
-    <a href="{% url 'tenants:create' %}" class="btn btn-primary" style="height:fit-content; border-radius:5px; gap:8px;">
+    <button onclick="openModal()" class="btn btn-primary" style="height:fit-content; border-radius:5px; gap:8px; cursor:pointer; border:none;">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
       </svg>
       Nouveau tenant
-    </a>
+    </button>
   </div>
 </div>
 
@@ -236,12 +236,12 @@
                       </p>
                       {% if not search and not status_filter %}
                       <div style="margin-top:24px;">
-                        <a href="{% url 'tenants:create' %}" class="btn btn-primary" style="border-radius:5px; gap:8px;">
+                        <button onclick="openModal()" class="btn btn-primary" style="border-radius:5px; gap:8px; cursor:pointer; border:none;">
                           <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
                           </svg>
                           Créer un tenant
-                        </a>
+                        </button>
                       </div>
                       {% endif %}
                     </div>
@@ -255,4 +255,68 @@
     </div>
   </div>
 </div>
+
+<!-- Glassmorphic Modal Overlay -->
+<div id="create-tenant-modal" style="display:none; position:fixed; inset:0; background:transparent; z-index:9999; align-items:center; justify-content:center; opacity:0; transition:opacity 0.3s ease;">
+  <div class="modal-box" style="background:rgba(20,20,24,0.98); border:1px solid rgba(255,255,255,0.08); border-radius:5px; width:720px; max-width:90%; box-shadow: 0 30px 60px rgba(0,0,0,0.8); transform:scale(0.95) translateY(10px); transition:all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); display:flex; flex-direction:column; overflow:hidden;">
+    
+    <!-- Header -->
+    <div style="padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%);">
+      <div style="display:flex; align-items:center; gap:16px;">
+        <div style="width:40px; height:40px; background:linear-gradient(135deg, var(--accent), #9d7cff); border-radius:5px; display:flex; align-items:center; justify-content:center; color:white; box-shadow: 0 4px 12px rgba(124,92,252,0.4);">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+          </svg>
+        </div>
+        <div>
+          <h3 style="margin:0; font-size:20px; font-weight:600; color:white; letter-spacing:-0.5px;">Créer un tenant</h3>
+          <p style="margin:4px 0 0 0; font-size:13px; color:var(--text-muted);">Enregistre un nouveau client et configure son instance Cloud Run</p>
+        </div>
+      </div>
+      <button type="button" onclick="closeModal()" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.05); color:var(--text-muted); cursor:pointer; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:5px; transition:all 0.2s;">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <!-- Body & Footer (loaded via partial form) -->
+    <div id="modal-form-container">
+      {% include "tenants/partials/create_form.html" %}
+    </div>
+  </div>
+</div>
+
+<script>
+  function openModal() {
+    const modal = document.getElementById('create-tenant-modal');
+    const box = modal.querySelector('.modal-box');
+    modal.style.display = 'flex';
+    void modal.offsetWidth; // force reflow
+    modal.style.opacity = '1';
+    box.style.transform = 'scale(1) translateY(0)';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    const modal = document.getElementById('create-tenant-modal');
+    const box = modal.querySelector('.modal-box');
+    modal.style.opacity = '0';
+    box.style.transform = 'scale(0.95) translateY(10px)';
+    setTimeout(() => {
+      modal.style.display = 'none';
+      document.body.style.overflow = '';
+    }, 200);
+  }
+
+  document.getElementById('create-tenant-modal').addEventListener('mousedown', function(e) {
+    if (e.target === this) {
+      closeModal();
+    }
+  });
+  
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeModal();
+    }
+  });
+</script>
 {% endblock %}

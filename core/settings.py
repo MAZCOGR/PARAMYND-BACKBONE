@@ -284,3 +284,8 @@ LOGGING = {
         'django': {'handlers': ['console'], 'level': 'WARNING', 'propagate': False},
     },
 }
+
+# Cloudflare DNS Automation
+CLOUDFLARE_API_TOKEN = env('CLOUDFLARE_API_TOKEN', default='')
+CLOUDFLARE_ZONE_ID = env('CLOUDFLARE_ZONE_ID', default='')
+

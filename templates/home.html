@@ -49,8 +49,9 @@ body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background: transparent;
   color: var(--white);
-  min-height: 100vh;
+  min-height: 133.33vh;
   overflow-x: hidden;
+  zoom: 0.75;
 }
 
 a { color: inherit; text-decoration: none; }
@@ -128,7 +129,7 @@ img { max-width: 100%; }
    HERO
    ════════════════════════════════ */
 .hero {
-  min-height: 100vh;
+  min-height: 133.33vh;
   display: flex; align-items: center; justify-content: center;
   flex-direction: column; text-align: center;
   padding: 140px 48px 100px;
@@ -137,8 +138,8 @@ img { max-width: 100%; }
 
 /* Brain canvas — fixed full-page background */
 #brainCanvas {
-  position: fixed; inset: 0;
-  width: 100vw; height: 100vh;
+  position: fixed; top: 0; left: 0;
+  width: 133.33vw; height: 133.33vh;
   pointer-events: none; z-index: -1;
   opacity: 0;
   animation: canvasFadeIn 2s ease 0.5s forwards;
@@ -230,33 +231,57 @@ img { max-width: 100%; }
   opacity: 0; animation: fadeUp 0.7s var(--ease) 0.55s forwards;
 }
 
-/* ════════════════════════════════
-   LOGOS BAND
-   ════════════════════════════════ */
-.logos-band {
-  padding: 56px 48px 72px;
-  text-align: center;
-  border-top: 1px solid rgba(255,255,255,0.04);
-}
+/* Logos band removed */
 .logos-label {
-  font-size: 11px; font-weight: 600; letter-spacing: 2px;
+  font-size: 12px; font-weight: 700; letter-spacing: 2px;
   text-transform: uppercase; color: var(--gray-3);
-  margin-bottom: 24px;
+  margin-bottom: 40px;
 }
 .logos-track {
-  display: flex; align-items: center; justify-content: center;
-  gap: 8px; flex-wrap: wrap;
-  max-width: 900px; margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  max-width: 1000px;
+  margin: 0 auto;
 }
-.logo-chip {
-  padding: 7px 16px;
-  font-size: 13px; font-weight: 600; color: var(--gray-3);
-  background: transparent;
-  border-radius: var(--r);
-  letter-spacing: 0.2px;
-  transition: color 0.2s, background 0.2s;
+.logo-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--r-lg);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
-.logo-chip:hover { color: var(--gray-1); background: var(--gray-4); }
+.logo-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(124, 92, 252, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25), 0 0 20px rgba(124, 92, 252, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  transform: translateY(-4px);
+}
+.logo-card svg {
+  opacity: 0.6;
+  filter: grayscale(1);
+  transition: all 0.3s ease;
+}
+.logo-card:hover svg {
+  opacity: 1;
+  filter: grayscale(0);
+}
+.logo-card-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gray-3);
+  transition: color 0.3s;
+  letter-spacing: -0.2px;
+}
+.logo-card:hover .logo-card-name {
+  color: var(--white);
+}
 
 /* ════════════════════════════════
    SECTION UTILITIES
@@ -440,7 +465,22 @@ img { max-width: 100%; }
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15), 0 0 20px rgba(124,92,252,0.15);
   background: rgba(255, 255, 255, 0.11);
 }
-.integ-emoji { font-size: 30px; margin-bottom: 12px; display: block; }
+.integ-logo-container {
+  width: 56px; height: 56px;
+  margin: 0 auto 16px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--r);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+.integ-card:hover .integ-logo-container {
+  transform: scale(1.08) translateY(-2px);
+  border-color: rgba(124, 92, 252, 0.4);
+  box-shadow: 0 8px 24px rgba(124, 92, 252, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  background: rgba(124, 92, 252, 0.08);
+}
 .integ-name { font-size: 14px; font-weight: 700; color: var(--white); margin-bottom: 4px; }
 .integ-type { font-size: 11px; color: var(--gray-3); font-weight: 500; letter-spacing: 0.3px; }
 
@@ -581,22 +621,130 @@ img { max-width: 100%; }
   </div>
 </section>
 
-<!-- ══════════════ LOGOS ══════════════ -->
-<div class="logos-band">
-  <p class="logos-label">Compatible avec votre stack existante</p>
-  <div class="logos-track">
-    <span class="logo-chip">SAP S/4HANA</span>
-    <span class="logo-chip">Oracle ERP</span>
-    <span class="logo-chip">OMP</span>
-    <span class="logo-chip">SAP IBP</span>
-    <span class="logo-chip">Anaplan</span>
-    <span class="logo-chip">OneStream</span>
-    <span class="logo-chip">Workday</span>
-    <span class="logo-chip">Microsoft D365</span>
-    <span class="logo-chip">Kinaxis</span>
-    <span class="logo-chip">API Custom</span>
+<!-- ══════════════ INTEGRATIONS ══════════════ -->
+<section class="section integ-section" id="integrations">
+  <div class="section-inner">
+    <div class="reveal" style="text-align:center; margin-bottom:56px;">
+      <div class="section-eyebrow" style="justify-content:center;">Intégrations</div>
+      <h2 class="section-title">Branchez votre stack<br>existante en quelques clics</h2>
+      <p class="section-sub" style="margin:0 auto;">Aucun remplacement nécessaire. Paramynd vient se poser sur vos systèmes actuels.</p>
+    </div>
+    <div class="integ-grid">
+      <div class="integ-card reveal reveal-d1">
+        <div class="integ-logo-container">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+            <path d="M1 5C1 3.89543 1.89543 3 3 3H21C22.1046 3 23 3.89543 23 5V19C23 20.1046 22.1046 21 21 21H3C1.89543 21 1 20.1046 1 19V5Z" fill="url(#sap-grad)"/>
+            <defs>
+              <linearGradient id="sap-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#00629b"/>
+                <stop offset="100%" stop-color="#008fd3"/>
+              </linearGradient>
+            </defs>
+            <text x="50%" y="60%" dominant-baseline="middle" text-anchor="middle" font-family="'Inter', system-ui, sans-serif" font-weight="900" font-size="8" fill="white" letter-spacing="-0.5px">SAP</text>
+          </svg>
+        </div>
+        <div class="integ-name">SAP S/4HANA</div>
+        <div class="integ-type">ERP</div>
+      </div>
+      <div class="integ-card reveal reveal-d1">
+        <div class="integ-logo-container">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+            <path d="M1 5C1 3.89543 1.89543 3 3 3H21C22.1046 3 23 3.89543 23 5V19C23 20.1046 22.1046 21 21 21H3C1.89543 21 1 20.1046 1 19V5Z" fill="url(#oracle-grad)"/>
+            <defs>
+              <linearGradient id="oracle-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#e0121a"/>
+                <stop offset="100%" stop-color="#af0d14"/>
+              </linearGradient>
+            </defs>
+            <text x="50%" y="58%" dominant-baseline="middle" text-anchor="middle" font-family="'Inter', system-ui, sans-serif" font-weight="900" font-size="5.5" fill="white" letter-spacing="0.5px">ORACLE</text>
+          </svg>
+        </div>
+        <div class="integ-name">Oracle ERP</div>
+        <div class="integ-type">ERP</div>
+      </div>
+      <div class="integ-card reveal reveal-d2">
+        <div class="integ-logo-container">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+            <rect x="1" y="3" width="22" height="18" rx="3" fill="#132743"/>
+            <path d="M4 14V10C4 8.89543 4.89543 8 6 8H18C19.1046 8 20 8.89543 20 10V14" stroke="#48b4e0" stroke-width="1.5" stroke-linecap="round"/>
+            <text x="50%" y="60%" dominant-baseline="middle" text-anchor="middle" font-family="'Inter', system-ui, sans-serif" font-weight="800" font-size="7.5" fill="white">OMP</text>
+          </svg>
+        </div>
+        <div class="integ-name">OMP</div>
+        <div class="integ-type">Supply Chain Planning</div>
+      </div>
+      <div class="integ-card reveal reveal-d2">
+        <div class="integ-logo-container">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+            <rect x="1" y="3" width="22" height="18" rx="3" fill="#008fd3"/>
+            <path d="M6 14H18M12 8V14" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+            <circle cx="6" cy="14" r="2.5" fill="#132743" stroke="white" stroke-width="1"/>
+            <circle cx="18" cy="14" r="2.5" fill="#132743" stroke="white" stroke-width="1"/>
+            <circle cx="12" cy="8" r="2.5" fill="#06d6a0" stroke="white" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="integ-name">SAP IBP</div>
+        <div class="integ-type">Business Planning</div>
+      </div>
+      <div class="integ-card reveal reveal-d3">
+        <div class="integ-logo-container">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+            <rect x="1" y="3" width="22" height="18" rx="3" fill="#0d1b2a"/>
+            <path d="M7 16L12 7L17 16" stroke="#00d2c4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M9.5 13H14.5" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="integ-name">Anaplan</div>
+        <div class="integ-type">EPM / Planning</div>
+      </div>
+      <div class="integ-card reveal reveal-d1">
+        <div class="integ-logo-container">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+            <rect x="1" y="3" width="22" height="18" rx="3" fill="#0a2540"/>
+            <path d="M5 14C8 10 9 10 12 13C15 16 16 11 19 8" stroke="#4facfe" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+            <path d="M5 10C8 6 9 6 12 9C15 12 16 7 19 4" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+          </svg>
+        </div>
+        <div class="integ-name">OneStream</div>
+        <div class="integ-type">EPM / Consolidation</div>
+      </div>
+      <div class="integ-card reveal reveal-d2">
+        <div class="integ-logo-container" style="background:#fff; border-color:#e5e5e5;">
+          <svg width="24" height="24" viewBox="0 0 23 23" fill="none">
+            <rect x="0" y="0" width="10.5" height="10.5" fill="#f25022"/>
+            <rect x="12.5" y="0" width="10.5" height="10.5" fill="#7fba00"/>
+            <rect x="0" y="12.5" width="10.5" height="10.5" fill="#00a4ef"/>
+            <rect x="12.5" y="12.5" width="10.5" height="10.5" fill="#ffb900"/>
+          </svg>
+        </div>
+        <div class="integ-name">Microsoft D365</div>
+        <div class="integ-type">ERP / CRM</div>
+      </div>
+      <div class="integ-card reveal reveal-d2">
+        <div class="integ-logo-container">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+            <rect x="1" y="3" width="22" height="18" rx="3" fill="#d32f2f"/>
+            <path d="M7 7V17M7 12L14 7M10.5 12L15.5 17" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="integ-name">Kinaxis</div>
+        <div class="integ-type">Supply Chain</div>
+      </div>
+      <div class="integ-card reveal reveal-d3">
+        <div class="integ-logo-container">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+            <rect x="1" y="3" width="22" height="18" rx="3" fill="#005cb9"/>
+            <path d="M5 14C8 9 16 9 19 14" stroke="#ec8a1e" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+            <circle cx="12" cy="11" r="1.5" fill="white"/>
+          </svg>
+        </div>
+        <div class="integ-name">Workday</div>
+        <div class="integ-type">HCM / Finance</div>
+      </div>
+    </div>
   </div>
-</div>
+</section>
+
 
 <!-- ══════════════ HOW IT WORKS ══════════════ -->
 <section class="section" id="how">
@@ -756,68 +904,6 @@ img { max-width: 100%; }
   </div>
 </section>
 
-<!-- ══════════════ INTEGRATIONS ══════════════ -->
-<section class="section integ-section" id="integrations">
-  <div class="section-inner">
-    <div class="reveal" style="text-align:center; margin-bottom:56px;">
-      <div class="section-eyebrow" style="justify-content:center;">Intégrations</div>
-      <h2 class="section-title">Branchez votre stack<br>existante en quelques clics</h2>
-      <p class="section-sub" style="margin:0 auto;">Aucun remplacement nécessaire. Paramynd vient se poser sur vos systèmes actuels.</p>
-    </div>
-    <div class="integ-grid">
-      <div class="integ-card reveal reveal-d1">
-        <span class="integ-emoji">🏢</span>
-        <div class="integ-name">SAP S/4HANA</div>
-        <div class="integ-type">ERP</div>
-      </div>
-      <div class="integ-card reveal reveal-d1">
-        <span class="integ-emoji">🔮</span>
-        <div class="integ-name">Oracle ERP</div>
-        <div class="integ-type">ERP</div>
-      </div>
-      <div class="integ-card reveal reveal-d2">
-        <span class="integ-emoji">📦</span>
-        <div class="integ-name">OMP</div>
-        <div class="integ-type">Supply Chain Planning</div>
-      </div>
-      <div class="integ-card reveal reveal-d2">
-        <span class="integ-emoji">🌐</span>
-        <div class="integ-name">SAP IBP</div>
-        <div class="integ-type">Business Planning</div>
-      </div>
-      <div class="integ-card reveal reveal-d3">
-        <span class="integ-emoji">📈</span>
-        <div class="integ-name">Anaplan</div>
-        <div class="integ-type">EPM / Planning</div>
-      </div>
-      <div class="integ-card reveal reveal-d1">
-        <span class="integ-emoji">🎯</span>
-        <div class="integ-name">OneStream</div>
-        <div class="integ-type">EPM / Consolidation</div>
-      </div>
-      <div class="integ-card reveal reveal-d2">
-        <span class="integ-emoji">⚙️</span>
-        <div class="integ-name">Microsoft D365</div>
-        <div class="integ-type">ERP / CRM</div>
-      </div>
-      <div class="integ-card reveal reveal-d2">
-        <span class="integ-emoji">🔁</span>
-        <div class="integ-name">Kinaxis</div>
-        <div class="integ-type">Supply Chain</div>
-      </div>
-      <div class="integ-card reveal reveal-d3">
-        <span class="integ-emoji">👥</span>
-        <div class="integ-name">Workday</div>
-        <div class="integ-type">HCM / Finance</div>
-      </div>
-      <div class="integ-card reveal reveal-d3">
-        <span class="integ-emoji">🔌</span>
-        <div class="integ-name">API Custom</div>
-        <div class="integ-type">REST / GraphQL / Webhook</div>
-      </div>
-    </div>
-  </div>
-</section>
 
 <!-- ══════════════ CTA FINALE ══════════════ -->
 <section class="cta-section">

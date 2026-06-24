@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Paramynd Admin{% endblock %}</title>
+  <title>{% block title %}Paramynd Backbone{% endblock %}</title>
   <meta name="description" content="{% block meta_description %}Interface d'administration Paramynd — Gérez vos instances Cloud Run{% endblock %}">
-  <link rel="stylesheet" href="/static/css/admin.css?v=22">
+  <link rel="stylesheet" href="/static/css/admin.css?v=23">
   <script src="https://unpkg.com/htmx.org@1.9.12"></script>
   {% block extra_head %}{% endblock %}
 </head>
@@ -20,7 +20,7 @@
   <main class="main">
     <div class="topbar">
       <div class="topbar-title">
-        {% block breadcrumb_title %}Paramynd <span>Admin</span>{% endblock %}
+        {% block breadcrumb_title %}Paramynd <span>Backbone</span>{% endblock %}
       </div>
       <div class="topbar-actions">
         {% block topbar_actions %}{% endblock %}
@@ -75,6 +75,58 @@
     </div>
   </main>
 </div>
+
+<!-- Global Custom Confirm Modal -->
+<div id="custom-confirm-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); z-index:99999; align-items:center; justify-content:center; opacity:0; transition:opacity 0.2s ease;">
+  <div class="confirm-box" style="background:rgba(18,18,22,0.95); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); border:1px solid rgba(255,255,255,0.05); border-radius:5px; padding:24px; width:400px; max-width:90%; box-shadow:0 30px 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.08); text-align:center; transform:scale(0.95); transition:transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);">
+    <h3 id="confirm-title" style="margin-top:0; color:var(--text-primary); font-size:16px; font-weight:600; margin-bottom:12px;">Confirmation</h3>
+    <p id="confirm-message" style="color:var(--text-secondary); font-size:13px; margin-bottom:24px; line-height:1.5;"></p>
+    <div style="display:flex; justify-content:flex-end; gap:12px;">
+      <button id="confirm-cancel-btn" class="btn btn-outline" style="border-radius:5px; padding:8px 16px; font-size:13px;">Annuler</button>
+      <button id="confirm-ok-btn" class="btn btn-primary" style="border-radius:5px; padding:8px 16px; font-size:13px; background:var(--danger); color:white; border:none;">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function showCustomConfirm(message, actionLabel, actionCallback) {
+    const modal = document.getElementById('custom-confirm-modal');
+    if (!modal) return;
+    const box = modal.querySelector('.confirm-box');
+    document.getElementById('confirm-message').textContent = message;
+    
+    const okBtn = document.getElementById('confirm-ok-btn');
+    okBtn.textContent = actionLabel;
+    
+    if (actionLabel === 'Supprimer') {
+        okBtn.style.background = 'var(--danger)';
+    } else {
+        okBtn.style.background = 'var(--accent)';
+    }
+
+    modal.style.display = 'flex';
+    void modal.offsetWidth; // Trigger reflow
+    modal.style.opacity = '1';
+    box.style.transform = 'scale(1)';
+
+    const cleanup = () => {
+        modal.style.opacity = '0';
+        box.style.transform = 'scale(0.95)';
+        setTimeout(() => modal.style.display = 'none', 200);
+        document.getElementById('confirm-cancel-btn').removeEventListener('click', handleCancel);
+        okBtn.removeEventListener('click', handleOk);
+    };
+
+    const handleCancel = () => cleanup();
+    const handleOk = () => {
+        cleanup();
+        actionCallback();
+    };
+
+    document.getElementById('confirm-cancel-btn').addEventListener('click', handleCancel);
+    okBtn.addEventListener('click', handleOk);
+}
+</script>
 
 {% block scripts %}{% endblock %}
 </body>
