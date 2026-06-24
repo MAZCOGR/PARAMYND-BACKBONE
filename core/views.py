@@ -58,6 +58,10 @@ def request_demo_view(request):
         send_otp_email(user, email_code)
         send_otp_sms(phone, phone_code)
         
+        # Pour faciliter les tests en attendant que Postmark et Twilio soient configurés
+        messages.info(request, f"🧪 [MODE TEST] Votre Code Email est : {email_code}")
+        messages.info(request, f"🧪 [MODE TEST] Votre Code SMS est : {phone_code}")
+        
         return redirect('verify_otp')
         
     return render(request, 'request_demo.html')
@@ -95,12 +99,14 @@ def verify_otp_view(request):
             user.save(update_fields=['email_verification_code'])
             send_otp_email(user, user.email_verification_code)
             messages.success(request, "Nouveau code email envoyé.")
+            messages.info(request, f"🧪 [MODE TEST] Votre Code Email est : {user.email_verification_code}")
             
         elif action == 'resend_sms':
             user.phone_verification_code = get_random_string(length=6, allowed_chars='0123456789')
             user.save(update_fields=['phone_verification_code'])
             send_otp_sms(user.phone_number, user.phone_verification_code)
             messages.success(request, "Nouveau code SMS envoyé.")
+            messages.info(request, f"🧪 [MODE TEST] Votre Code SMS est : {user.phone_verification_code}")
             
         # Check if fully verified
         if user.email_verified and user.phone_verified:
