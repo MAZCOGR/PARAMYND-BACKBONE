@@ -415,15 +415,13 @@
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
                 <div style="display:flex; flex-direction:column; gap:4px;">
                   <label style="font-size:13px; font-weight:500; color:var(--text-secondary); display:flex; align-items:center; gap:6px;">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted);"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                    Min. Instances
+                    Min. Instances: <span id="min_instances_val" style="color: var(--accent); font-weight: 600;">0</span>
                   </label>
                 </div>
 
                 <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-end;">
                   <label style="font-size:13px; font-weight:500; color:var(--text-secondary); display:flex; align-items:center; gap:6px;">
-                    Max. Instances
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted);"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
+                    Max. Instances: <span id="max_instances_val" style="color: var(--accent); font-weight: 600;">10</span>
                   </label>
                 </div>
               </div>
@@ -464,6 +462,11 @@
                   
                   minTooltip.innerText = min;
                   maxTooltip.innerText = max;
+
+                  const minValLabel = document.getElementById('min_instances_val');
+                  const maxValLabel = document.getElementById('max_instances_val');
+                  if (minValLabel) minValLabel.innerText = min;
+                  if (maxValLabel) maxValLabel.innerText = max;
                   
                   // offset formula: calc(percent% + (half_thumb_width - percent * thumb_width / 100)px)
                   minTooltip.style.left = `calc(${percentMin}% + ${10 - percentMin * 0.2}px)`;
