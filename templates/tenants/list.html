@@ -288,7 +288,7 @@
 </div>
 
 <script>
-  function openModal() {
+  window.openModal = function() {
     const modal = document.getElementById('create-tenant-modal');
     const box = modal.querySelector('.modal-box');
     modal.style.display = 'flex';
@@ -296,9 +296,9 @@
     modal.style.opacity = '1';
     box.style.transform = 'scale(1) translateY(0)';
     document.body.style.overflow = 'hidden';
-  }
+  };
 
-  function closeModal() {
+  window.closeModal = function() {
     const modal = document.getElementById('create-tenant-modal');
     const box = modal.querySelector('.modal-box');
     modal.style.opacity = '0';
@@ -307,7 +307,7 @@
       modal.style.display = 'none';
       document.body.style.overflow = '';
     }, 200);
-  }
+  };
 
   document.getElementById('create-tenant-modal').addEventListener('mousedown', function(e) {
     if (e.target === this) {
