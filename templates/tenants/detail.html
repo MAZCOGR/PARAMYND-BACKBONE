@@ -301,17 +301,48 @@
             <!-- Version cible -->
             <div style="display:flex; flex-direction:column; gap:6px;">
               <span style="font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em;">Version cible</span>
-              <div style="position:relative; width:100%;">
-                <select name="image_tag" class="clean-input" required id="deploy-tag-select" style="font-size:14px; padding:10px 36px 10px 14px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.02); color:#fff; border-radius:6px; width:100%; height:42px; appearance:none; -webkit-appearance:none; cursor:pointer; transition:all 0.2s; outline:none;">
-                  <option value="" style="background:#18181b; color:var(--text-muted);">— Choisir une version —</option>
+              <div style="position:relative; width:100%;" id="custom-select-wrapper">
+                <input type="hidden" name="image_tag" id="deploy-tag-select" required value="{{ tenant.current_image_tag|default:'' }}">
+                
+                <button type="button" id="custom-select-trigger" style="display:flex; justify-content:space-between; align-items:center; font-size:14px; padding:10px 14px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.02); color:#fff; border-radius:6px; width:100%; height:42px; cursor:pointer; outline:none; text-align:left; transition:all 0.2s;">
+                  <span id="custom-select-trigger-value" style="display:flex; align-items:center; gap:8px; width:100%;">
+                    {% if tenant.current_image_tag %}
+                      <span class="td-mono" style="font-weight:600;">{{ tenant.current_image_tag }}</span>
+                      {% for tag in available_tags %}
+                        {% if tag.tag == tenant.current_image_tag %}
+                          {% if tag.is_ready %}
+                            <span style="font-size:10px; padding:2px 8px; border-radius:12px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; text-transform:uppercase; letter-spacing:0.02em;">ready</span>
+                          {% else %}
+                            <span style="font-size:10px; padding:2px 8px; border-radius:12px; background:rgba(239,71,111,0.15); color:#ef476f; font-weight:600; text-transform:uppercase; letter-spacing:0.02em;">unavailable</span>
+                          {% endif %}
+                        {% endif %}
+                      {% endfor %}
+                    {% else %}
+                      <span style="color:var(--text-muted);">— Choisir une version —</span>
+                    {% endif %}
+                  </span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.2s;" id="custom-select-chevron"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+
+                <div id="custom-select-dropdown" style="display:none; position:absolute; top:46px; left:0; right:0; background:#18181b; border:1px solid rgba(255,255,255,0.1); border-radius:6px; box-shadow:0 10px 25px rgba(0,0,0,0.5); z-index:99; max-height:220px; overflow-y:auto; padding:4px 0;">
                   {% for tag in available_tags %}
-                  <option value="{{ tag.tag }}" style="background:#18181b;" {% if tenant.current_image_tag == tag.tag %}selected{% endif %}>
-                    version : {{ tag.tag }} : build : {% if tag.is_ready %}ready{% else %}unavailable{% endif %}{% if tenant.current_image_tag == tag.tag %} (actuel){% endif %}
-                  </option>
+                  <div class="custom-select-option" data-value="{{ tag.tag }}" data-ready="{% if tag.is_ready %}true{% else %}false{% endif %}" style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.02);">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <span style="font-size:12px; color:var(--text-muted); font-weight:500;">version :</span>
+                      <span class="td-mono" style="font-weight:600; color:#fff; font-size:13px;">{{ tag.tag }}</span>
+                      {% if tenant.current_image_tag == tag.tag %}
+                      <span style="font-size:10px; color:var(--accent); font-weight:600;">(actuel)</span>
+                      {% endif %}
+                    </div>
+                    <div>
+                      {% if tag.is_ready %}
+                      <span style="font-size:10px; padding:2px 8px; border-radius:12px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; text-transform:uppercase; letter-spacing:0.02em;">ready</span>
+                      {% else %}
+                      <span style="font-size:10px; padding:2px 8px; border-radius:12px; background:rgba(239,71,111,0.15); color:#ef476f; font-weight:600; text-transform:uppercase; letter-spacing:0.02em;">unavailable</span>
+                      {% endif %}
+                    </div>
+                  </div>
                   {% endfor %}
-                </select>
-                <div style="position:absolute; right:12px; top:50%; transform:translateY(-50%); pointer-events:none; color:var(--text-muted); display:flex; align-items:center;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                 </div>
               </div>
             </div>
@@ -330,6 +361,9 @@
             
             <!-- Scalability Dual Slider -->
             <style>
+              .custom-select-option:hover {
+                background: rgba(255, 255, 255, 0.05) !important;
+              }
               #deploy-tag-select:focus {
                 border-color: rgba(255, 255, 255, 0.15) !important;
                 background: rgba(255, 255, 255, 0.04) !important;
@@ -554,6 +588,54 @@
     select.addEventListener('change', function() {
       const uri = tagsData[this.value];
       preview.textContent = uri ? `URI: ${uri}` : '';
+    });
+  }
+
+  // Custom select dropdown trigger & options
+  const customSelectTrigger = document.getElementById('custom-select-trigger');
+  const customSelectDropdown = document.getElementById('custom-select-dropdown');
+  const customSelectChevron = document.getElementById('custom-select-chevron');
+  const customSelectWrapper = document.getElementById('custom-select-wrapper');
+  const customSelectTriggerValue = document.getElementById('custom-select-trigger-value');
+
+  if (customSelectTrigger && customSelectDropdown) {
+    customSelectTrigger.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const isVisible = customSelectDropdown.style.display === 'block';
+      customSelectDropdown.style.display = isVisible ? 'none' : 'block';
+      customSelectChevron.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
+    });
+
+    document.addEventListener('click', function(e) {
+      if (customSelectWrapper && !customSelectWrapper.contains(e.target)) {
+        customSelectDropdown.style.display = 'none';
+        customSelectChevron.style.transform = 'rotate(0deg)';
+      }
+    });
+
+    const options = customSelectDropdown.querySelectorAll('.custom-select-option');
+    options.forEach(opt => {
+      opt.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const value = this.getAttribute('data-value');
+        const isReady = this.getAttribute('data-ready') === 'true';
+        
+        select.value = value;
+        
+        let badgeHtml = isReady 
+          ? `<span style="font-size:10px; padding:2px 8px; border-radius:12px; background:rgba(34,197,94,0.15); color:#22c55e; font-weight:600; text-transform:uppercase; letter-spacing:0.02em;">ready</span>`
+          : `<span style="font-size:10px; padding:2px 8px; border-radius:12px; background:rgba(239,71,111,0.15); color:#ef476f; font-weight:600; text-transform:uppercase; letter-spacing:0.02em;">unavailable</span>`;
+        
+        customSelectTriggerValue.innerHTML = `
+          <span class="td-mono" style="font-weight:600; color:#fff;">${value}</span>
+          ${badgeHtml}
+        `;
+        
+        customSelectDropdown.style.display = 'none';
+        customSelectChevron.style.transform = 'rotate(0deg)';
+        
+        select.dispatchEvent(new Event('change'));
+      });
     });
   }
 
