@@ -67,13 +67,23 @@ def list_recent_builds(limit: int = 10) -> List[Dict]:
                     duration_str = f"{seconds} s"
 
             progress = 0
-            if b.status.name == 'WORKING' and hasattr(b, 'steps') and b.steps:
-                total_steps = len(b.steps)
-                completed_steps = sum(1 for step in b.steps if step.status.name == 'SUCCESS')
-                if total_steps > 0:
-                    # Give a small base progress so it doesn't look completely empty on step 1
-                    base_progress = 10 
-                    progress = int((completed_steps / total_steps) * 90) + base_progress
+            if b.status.name == 'WORKING':
+                step_progress = 10
+                if hasattr(b, 'steps') and b.steps:
+                    total_steps = len(b.steps)
+                    completed_steps = sum(1 for step in b.steps if step.status.name == 'SUCCESS')
+                    if total_steps > 0:
+                        step_progress = int((completed_steps / total_steps) * 90) + 10
+                        
+                time_progress = 10
+                if b.start_time:
+                    import datetime
+                    now = datetime.datetime.now(datetime.timezone.utc)
+                    elapsed = (now - b.start_time).total_seconds()
+                    # Moyenne d'un build paramynd-admin = ~180 secondes. Capé à 95%
+                    time_progress = int(min((elapsed / 180.0) * 95, 95))
+                    
+                progress = max(step_progress, time_progress)
 
             result.append({
                 'id': b.id,
