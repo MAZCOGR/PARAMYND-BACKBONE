@@ -77,8 +77,8 @@ class Tenant(models.Model):
 
     @property
     def service_name(self):
-        """Nom du service Cloud Run : paramynd-{slug}"""
-        return f"paramynd-{self.slug}"
+        """Nom du service Cloud Run : {slug}"""
+        return self.slug
 
     @property
     def app_url(self):

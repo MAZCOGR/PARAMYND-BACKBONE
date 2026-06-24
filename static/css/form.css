@@ -6,6 +6,7 @@
   background: transparent !important; /* Let the inner mask handle the dark backdrop */
   border-radius: 8px !important;
   max-width: 90%;
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -19,8 +20,8 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 300%;
-  aspect-ratio: 1 / 1;
+  width: 4000px;
+  height: 4000px;
   background: conic-gradient(
     from 0deg,
     transparent 20%,
@@ -37,9 +38,11 @@
 .modal-box::after {
   content: '';
   position: absolute;
-  inset: 1px; /* 1px border thickness */
+  inset: 0; /* Cover entire modal */
+  border: 1px solid transparent; /* Force exactly 1px transparent gap */
   background: rgba(18, 18, 22, 0.98);
-  border-radius: 7px;
+  background-clip: padding-box; /* Keep dark background inside the border */
+  border-radius: 8px; /* Match modal border radius perfectly */
   z-index: -1;
   pointer-events: none;
 }

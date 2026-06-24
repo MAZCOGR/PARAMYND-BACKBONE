@@ -273,8 +273,8 @@
     </div>
 
     <!-- Body -->
-    <div style="padding: 24px; overflow-y:auto; max-height:70vh;">
-      <form method="post" action="{% url 'tenants:deploy' tenant.pk %}" id="deploy-form">
+    <div style="padding: 24px; overflow-y:auto; flex: 1; min-height: 0;">
+      <form method="post" action="{% url 'tenants:deploy' tenant.pk %}" id="deploy-form" style="display: flex; flex-direction: column; flex: 1; min-height: 0; margin: 0;">
         {% csrf_token %}
 
         <!-- Section: Version -->
@@ -645,12 +645,12 @@
       </button>
     </div>
 
-    <form method="post" action="{% url 'tenants:detail' tenant.pk %}" id="params-form" style="display:flex; flex-direction:column; margin:0;">
+    <form method="post" action="{% url 'tenants:detail' tenant.pk %}" id="params-form" style="display:flex; flex-direction:column; margin:0; flex: 1; min-height: 0;">
       {% csrf_token %}
       <input type="hidden" name="update_tenant" value="1">
 
       <!-- Body -->
-      <div style="padding: 24px; overflow-y:auto; max-height:70vh;">
+      <div style="padding: 24px; overflow-y:auto; flex: 1; min-height: 0;">
         <div style="display: flex; gap: 32px; align-items: start; flex-wrap: wrap;">
           <!-- Edit Panel -->
           <div style="flex: 1.2; min-width: 320px; display:flex; flex-direction:column; gap:20px;">

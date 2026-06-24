@@ -265,45 +265,12 @@ def tenant_deploy_view(request, pk):
         tenant.last_deployed_at = timezone.now()
         
         domain_notice = ""
-        # Setup custom domain if defined
+        # Avec le Load Balancer GCP (URL Mask + Wildcard SSL), le sous-domaine est actif dès le déploiement !
         if tenant.custom_domain:
-            domain_result = cloud_run.setup_custom_domain(
-                service_name=tenant.service_name,
-                custom_domain=tenant.custom_domain,
-                gcp_project_id=tenant.gcp_project_id,
-                region=tenant.cloud_run_region
-            )
-            if domain_result['success']:
-                from .models import DomainStatus
-                tenant.domain_status = DomainStatus.PENDING
-                tenant.dns_records = domain_result.get('records', [])
-                
-                # Cloudflare Auto-DNS pour les sous-domaines paramynd.com
-                domain_notice = ""
-                dm_mock = " (mode mock)" if domain_result.get('mock') else ""
-                
-                if tenant.custom_domain.endswith('.paramynd.com'):
-                    from .services import cloudflare
-                    # Trouver la cible (normalement ghs.googlehosted.com.)
-                    target = "ghs.googlehosted.com."
-                    for rec in tenant.dns_records:
-                        if rec.get('type') == 'CNAME':
-                            target = rec.get('rrdata', target)
-                            break
-                            
-                    cf_success = cloudflare.create_dns_record(tenant.custom_domain, target)
-                    if cf_success:
-                        tenant.domain_status = DomainStatus.ACTIVE
-                        domain_notice = f" Domaine et DNS Cloudflare configurés instantanément{dm_mock}."
-                    else:
-                        domain_notice = f" Domaine configuré, mais l'auto-DNS a échoué. Configuration manuelle requise."
-                else:
-                    domain_notice = f" Domaine personnalisé configuré{dm_mock}. DNS externe à vérifier."
-            else:
-                from .models import DomainStatus
-                tenant.domain_status = DomainStatus.FAILED
-                tenant.dns_records = []
-                messages.warning(request, f"Erreur lien personnalisé : {domain_result.get('error')}")
+            from .models import DomainStatus
+            tenant.domain_status = DomainStatus.ACTIVE
+            tenant.dns_records = []
+            domain_notice = " Domaine sécurisé (Load Balancer)."
                 
         tenant.save()
 
