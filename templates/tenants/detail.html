@@ -301,14 +301,19 @@
             <!-- Version cible -->
             <div style="display:flex; flex-direction:column; gap:6px;">
               <span style="font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em;">Version cible</span>
-              <select name="image_tag" class="clean-input" required id="deploy-tag-select" style="font-size:14px; padding:10px 14px; border-color:rgba(124,92,252,0.3); background:rgba(124,92,252,0.05); border-radius:6px; width:100%; height:42px;">
-                <option value="" style="background:#18181b;">— Choisir une version —</option>
-                {% for tag in available_tags %}
-                <option value="{{ tag.tag }}" style="background:#18181b;" {% if tenant.current_image_tag == tag.tag %}selected{% endif %}>
-                  {{ tag.tag }} {% if tag.is_ready %}✅ Build prêt{% else %}⏳ Build en cours{% endif %} {% if tag.commit_msg %}— {{ tag.commit_msg }}{% endif %}{% if tenant.current_image_tag == tag.tag %} (ACTUEL){% endif %}
-                </option>
-                {% endfor %}
-              </select>
+              <div style="position:relative; width:100%;">
+                <select name="image_tag" class="clean-input" required id="deploy-tag-select" style="font-size:14px; padding:10px 36px 10px 14px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.02); color:#fff; border-radius:6px; width:100%; height:42px; appearance:none; -webkit-appearance:none; cursor:pointer; transition:all 0.2s; outline:none;">
+                  <option value="" style="background:#18181b; color:var(--text-muted);">— Choisir une version —</option>
+                  {% for tag in available_tags %}
+                  <option value="{{ tag.tag }}" style="background:#18181b;" {% if tenant.current_image_tag == tag.tag %}selected{% endif %}>
+                    {{ tag.tag }} {% if tag.is_ready %}✅{% else %}⏳{% endif %}{% if tenant.current_image_tag == tag.tag %} (actuel){% endif %}
+                  </option>
+                  {% endfor %}
+                </select>
+                <div style="position:absolute; right:12px; top:50%; transform:translateY(-50%); pointer-events:none; color:var(--text-muted); display:flex; align-items:center;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -325,6 +330,10 @@
             
             <!-- Scalability Dual Slider -->
             <style>
+              #deploy-tag-select:focus {
+                border-color: rgba(255, 255, 255, 0.15) !important;
+                background: rgba(255, 255, 255, 0.04) !important;
+              }
               .dual-slider-container {
                 position: relative;
                 width: 100%;
