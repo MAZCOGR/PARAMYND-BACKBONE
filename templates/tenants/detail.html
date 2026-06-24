@@ -351,7 +351,13 @@
                 pointer-events: none;
                 z-index: 3;
                 margin: 0;
-                outline: none;
+                outline: none !important;
+                -webkit-tap-highlight-color: transparent;
+              }
+              .dual-range:focus {
+                outline: none !important;
+                box-shadow: none !important;
+                background: transparent !important;
               }
               .dual-range::-webkit-slider-thumb {
                 -webkit-appearance: none;
@@ -362,7 +368,12 @@
                 background: #fff;
                 cursor: pointer;
                 border: 2px solid var(--accent);
-                box-shadow: none;
+                box-shadow: none !important;
+                outline: none !important;
+              }
+              .dual-range::-webkit-slider-thumb:focus {
+                outline: none !important;
+                box-shadow: none !important;
               }
               .dual-range::-moz-range-thumb {
                 pointer-events: auto;
@@ -372,7 +383,12 @@
                 background: #fff;
                 cursor: pointer;
                 border: 2px solid var(--accent);
-                box-shadow: none;
+                box-shadow: none !important;
+                outline: none !important;
+              }
+              .dual-range::-moz-range-thumb:focus {
+                outline: none !important;
+                box-shadow: none !important;
               }
             </style>
             
