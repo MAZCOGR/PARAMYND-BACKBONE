@@ -66,8 +66,8 @@ def sync_builds_and_commits() -> bool:
 
         # 2. Sync Cloud Builds
         recent_builds = cloud_build.list_recent_builds(limit=10)
-        db_builds = {b.build_id: b.status for b in CloudBuildRecord.objects.all()}
-        api_builds = {b['id']: b['status'] for b in recent_builds}
+        db_builds = {b.build_id: (b.status, b.progress) for b in CloudBuildRecord.objects.all()}
+        api_builds = {b['id']: (b['status'], b.get('progress', 0)) for b in recent_builds}
         
         # Don't overwrite real data with mock data if we already have real data
         is_builds_mock = any(b['id'].startswith('build-') for b in recent_builds)
