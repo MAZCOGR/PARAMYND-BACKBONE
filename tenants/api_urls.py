@@ -5,6 +5,7 @@ from django.urls import path
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
 from django.shortcuts import get_object_or_404
 
 from .models import Tenant, Deployment
@@ -57,9 +58,62 @@ def deploy_api_view(request, pk):
     return Response({'status': 'error', 'detail': result.get('error')}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def tenant_status_by_slug(request, slug):
+    """
+    GET /api/v1/tenants/status/<slug>/ — Statut de provisioning d'un tenant.
+
+    Endpoint PUBLIC (pas d'auth) utilisé par building_workspace.html pour
+    le polling toutes les 3s. Retourne uniquement le statut et l'URL publique,
+    sans données sensibles.
+
+    Réponse :
+        {
+          "status": "provisioning" | "active" | "failed",
+          "url": "https://<slug>.paramynd.com" | null,
+          "message": "..."
+        }
+    """
+    try:
+        tenant = Tenant.objects.get(slug=slug)
+    except Tenant.DoesNotExist:
+        return Response(
+            {'status': 'not_found', 'url': None, 'message': 'Tenant introuvable.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    # Construire l'URL publique du tenant (wildcard LB paramynd.com)
+    public_url = f'https://{tenant.slug}.paramynd.com'
+
+    if tenant.status == 'active':
+        return Response({
+            'status': 'active',
+            'url': public_url,
+            'message': 'Votre espace est prêt !',
+        })
+    elif tenant.status == 'failed':
+        last_deployment = tenant.deployments.order_by('-started_at').first()
+        error = last_deployment.error_message if last_deployment else 'Erreur inconnue'
+        return Response({
+            'status': 'failed',
+            'url': None,
+            'message': f'Le provisionnement a échoué : {error}',
+        })
+    else:
+        # provisioning / paused / archived → en cours
+        return Response({
+            'status': 'provisioning',
+            'url': None,
+            'message': 'Votre espace est en cours de création...',
+        })
+
+
 urlpatterns = [
     path('', TenantListCreateView.as_view(), name='list_create'),
     path('<uuid:pk>/', TenantDetailView.as_view(), name='detail'),
     path('<uuid:pk>/deploy/', deploy_api_view, name='deploy'),
     path('tags/', tags_view, name='tags'),
+    # ── Public endpoint — polling provisioning status ──
+    path('status/<slug:slug>/', tenant_status_by_slug, name='status_by_slug'),
 ]

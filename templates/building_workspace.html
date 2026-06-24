@@ -139,46 +139,101 @@ body {
 
 {% block extra_js %}
 <script>
-  // Séquence de chargement simulée
-  const steps = [
-    { time: 1500, text: "Provisioning database..." },
-    { time: 3500, text: "Configuring cloud resources..." },
-    { time: 5500, text: "Applying security policies..." },
-    { time: 7000, text: "Finalizing your tenant..." },
-    { time: 8500, action: 'done' }
-  ];
+  const slug = "{{ slug }}";
+  const statusUrl = `/api/v1/tenants/status/${slug}/`;
 
-  const subtext = document.getElementById('loadingSubtext');
-  const title = document.getElementById('loadingTitle');
-  const spinner = document.getElementById('spinner');
+  const subtext    = document.getElementById('loadingSubtext');
+  const title      = document.getElementById('loadingTitle');
+  const spinner    = document.getElementById('spinner');
   const successIcon = document.getElementById('successIcon');
 
-  steps.forEach(step => {
+  // Messages rotatifs pendant le provisioning (~2-4 min)
+  const loadingMessages = [
+    "Provisioning database...",
+    "Configuring cloud resources...",
+    "Deploying your application...",
+    "Applying security policies...",
+    "Running database migrations...",
+    "Setting up your admin account...",
+    "Finalizing your workspace...",
+    "Almost there...",
+  ];
+  let msgIndex = 0;
+
+  // Affiche le prochain message rotatif toutes les 8s
+  function cycleMessage() {
+    subtext.style.opacity = 0;
     setTimeout(() => {
-      if (step.action === 'done') {
-        spinner.style.display = 'none';
-        successIcon.style.display = 'flex';
-        title.textContent = "Workspace Ready!";
-        subtext.textContent = "Redirecting to your dashboard...";
-        
-        // Redirection finale
-        setTimeout(() => {
-          const slug = "{{ slug }}";
-          if (slug) {
-            window.location.href = `https://${slug}.paramynd.com`;
-          } else {
-            window.location.href = "{% url 'accounts:login' %}";
-          }
-        }, 1500);
-      } else {
-        subtext.style.opacity = 0;
-        setTimeout(() => {
-          subtext.textContent = step.text;
-          subtext.style.opacity = 1;
-        }, 300);
+      subtext.textContent = loadingMessages[msgIndex % loadingMessages.length];
+      subtext.style.opacity = 1;
+      msgIndex++;
+    }, 300);
+  }
+
+  // Lance le cycle de messages
+  cycleMessage();
+  const msgInterval = setInterval(cycleMessage, 8000);
+
+  function showSuccess(url) {
+    clearInterval(msgInterval);
+    clearInterval(pollInterval);
+    spinner.style.display = 'none';
+    successIcon.style.display = 'flex';
+    title.textContent = "Workspace Ready!";
+    subtext.style.opacity = 1;
+    subtext.textContent = "Redirecting to your dashboard...";
+    setTimeout(() => {
+      window.location.href = url || `https://${slug}.paramynd.com`;
+    }, 1500);
+  }
+
+  function showError(message) {
+    clearInterval(msgInterval);
+    clearInterval(pollInterval);
+    spinner.style.borderLeftColor = '#ff4d4f';
+    spinner.style.borderRightColor = '#ff7875';
+    title.textContent = "Provisioning Error";
+    subtext.style.opacity = 1;
+    subtext.textContent = message || "Une erreur est survenue. Contactez le support.";
+  }
+
+  // Timeout global : 10 minutes
+  const MAX_POLL_MS = 10 * 60 * 1000;
+  const startTime = Date.now();
+
+  async function pollStatus() {
+    // Timeout
+    if (Date.now() - startTime > MAX_POLL_MS) {
+      showError("Le provisionnement prend plus de temps que prévu. Nous vous contacterons.");
+      return;
+    }
+
+    try {
+      const res = await fetch(statusUrl, { cache: 'no-store' });
+      if (!res.ok) {
+        // 404 = tenant pas encore en DB → continuer à attendre
+        if (res.status === 404) return;
+        showError(`Erreur réseau (${res.status}).`);
+        return;
       }
-    }, step.time);
-  });
+      const data = await res.json();
+
+      if (data.status === 'active') {
+        showSuccess(data.url);
+      } else if (data.status === 'failed') {
+        showError(data.message);
+      }
+      // 'provisioning' → continuer le polling
+    } catch (e) {
+      // Erreur réseau temporaire → continuer
+      console.warn('[BuildingWorkspace] Poll error:', e);
+    }
+  }
+
+  // Démarrer le polling toutes les 3s (premier appel après 2s)
+  setTimeout(pollStatus, 2000);
+  const pollInterval = setInterval(pollStatus, 3000);
+
 
   /* ════════════════════════════════════════════════
      ANIMATION BRAIN CANVAS (ARRIÈRE-PLAN)

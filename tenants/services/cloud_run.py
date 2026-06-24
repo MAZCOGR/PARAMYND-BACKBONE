@@ -74,6 +74,7 @@ def deploy_service(
         base_env = {
             'DJANGO_SETTINGS_MODULE': 'core.settings',
             'DB_NAME': db_name or tenant_slug.replace('-', '_'),
+            'DB_USER': 'admin',
         }
         if cloud_sql_instance:
             base_env['CLOUD_SQL_INSTANCE'] = cloud_sql_instance
@@ -83,6 +84,28 @@ def deploy_service(
         env_list = [
             run_v2.EnvVar(name=k, value=v)
             for k, v in base_env.items()
+        ]
+
+        # Injecter les secrets GCP (DB_PASSWORD + SECRET_KEY) depuis Secret Manager
+        env_list += [
+            run_v2.EnvVar(
+                name='DB_PASSWORD',
+                value_source=run_v2.EnvVarSource(
+                    secret_key_ref=run_v2.SecretKeySelector(
+                        secret='DB_PASS',
+                        version='latest'
+                    )
+                )
+            ),
+            run_v2.EnvVar(
+                name='SECRET_KEY',
+                value_source=run_v2.EnvVarSource(
+                    secret_key_ref=run_v2.SecretKeySelector(
+                        secret='PARAMYND_SECRET_KEY',
+                        version='latest'
+                    )
+                )
+            ),
         ]
 
         # Volume Cloud SQL

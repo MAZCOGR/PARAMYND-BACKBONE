@@ -49,9 +49,10 @@ def request_demo_view(request):
             phone_verification_code=phone_code
         )
         
-        # Store company in session to create Tenant later
+        # Store company + password in session to create Tenant later
         request.session['pending_company'] = company
         request.session['pending_user_id'] = user.id
+        request.session['pending_password'] = password  # Needed for createsuperuser
         
         # Send OTPs
         send_otp_email(user, email_code)
@@ -108,38 +109,61 @@ def verify_otp_view(request):
             
             # Create Tenant automatically
             company = request.session.get('pending_company', '')
+            # Récupérer le mot de passe en session pour le createsuperuser
+            admin_password = request.session.get('pending_password', '')
             final_slug = ''
+            tenant = None
+
             if company:
                 import unicodedata
                 base_slug = unicodedata.normalize('NFKD', company).encode('ascii', 'ignore').decode('ascii').lower()
-                slug = re.sub(r'[^a-z0-9]+', '', base_slug)
-                slug = slug[:30]
-                if not slug:
-                    slug = f"tenant-{user.id}"
+                slug = re.sub(r'[^a-z0-9-]+', '-', base_slug).strip('-')
+                slug = re.sub(r'-+', '-', slug)[:28]
+                if len(slug) < 3:
+                    slug = f"t-{user.id}"[:30]
+
+                # Garantir min 3 chars avec suffixe si besoin
+                if len(slug) < 3:
+                    slug = slug + 'co'
                     
                 # Handle slug collision
                 original_slug = slug
                 counter = 1
                 while Tenant.objects.filter(slug=slug).exists():
-                    slug = f"{original_slug}-{counter}"[:30]
+                    slug = f"{original_slug[:25]}-{counter}"
                     counter += 1
                 
                 db_name = slug.replace('-', '_')
                 final_slug = slug
                 
-                Tenant.objects.create(
+                tenant = Tenant.objects.create(
                     name=company,
                     slug=slug,
                     contact_email=user.email,
                     db_name=db_name,
                     gcp_project_id='yellow-455523',
-                    cloud_run_region='europe-west9'
+                    cloud_run_region='europe-west9',
+                    cloud_sql_instance='yellow-455523:europe-west9:yellow-db-paris',
                 )
             
             # Clean session
+            tenant_id = str(tenant.id) if tenant else None
             del request.session['pending_user_id']
-            if 'pending_company' in request.session:
-                del request.session['pending_company']
+            for key in ['pending_company', 'pending_password']:
+                if key in request.session:
+                    del request.session[key]
+
+            # ── Lancer le provisioning automatique en background ──────────
+            if tenant_id and admin_password:
+                import threading
+                from tenants.services.provisioning import provision_tenant
+                t = threading.Thread(
+                    target=provision_tenant,
+                    args=(tenant_id, user.email, admin_password),
+                    daemon=True,
+                    name=f'provision-{final_slug}',
+                )
+                t.start()
                 
             messages.success(request, "Votre compte et votre espace client ont été créés avec succès !")
             if final_slug:
@@ -147,3 +171,4 @@ def verify_otp_view(request):
             return redirect('building_workspace')
             
     return render(request, 'verify_otp.html', {'user': user})
+
