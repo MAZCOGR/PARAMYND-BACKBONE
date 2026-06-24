@@ -183,7 +183,8 @@ body {
     subtext.style.opacity = 1;
     subtext.textContent = "Redirecting to your dashboard...";
     setTimeout(() => {
-      window.location.href = url || `https://${slug}.paramynd.com`;
+      const redirectBase = url || `https://${slug}.paramynd.com`;
+      window.location.href = `${redirectBase}/auth/login/paramynd-admin/`;
     }, 1500);
   }
 

@@ -111,7 +111,7 @@ def step_create_database(tenant_slug: str, db_name: str, project: str) -> bool:
 
 
 def step_deploy_cloud_run(tenant_slug: str, db_name: str, project: str, region: str,
-                           cloud_sql_instance: str, image_uri: str) -> tuple[bool, str]:
+                           cloud_sql_instance: str, image_uri: str, env_vars: dict = None) -> tuple[bool, str]:
     """
     Étape 2 — Déploie le service Cloud Run pour le tenant.
     Retourne (success, service_url).
@@ -131,6 +131,7 @@ def step_deploy_cloud_run(tenant_slug: str, db_name: str, project: str, region: 
         max_instances=10,
         memory='512Mi',
         cpu='1',
+        env_vars=env_vars,
     )
 
     if not result.get('success'):
@@ -268,6 +269,52 @@ def step_create_superuser(tenant_slug: str, db_name: str, project: str, region: 
     _log(tenant_slug, step, f"Admin account created for {admin_email} ✅")
     return True
 
+def step_create_oauth_app(tenant, admin_email: str) -> tuple[str, str]:
+    """
+    Crée une application OAuth2 First-Party pour ce tenant sans configurer les URLs (fait après).
+    """
+    from oauth2_provider.models import Application
+    from django.contrib.auth import get_user_model
+    import secrets
+
+    User = get_user_model()
+    user = User.objects.filter(email=admin_email).first()
+
+    client_id = secrets.token_urlsafe(32)
+    client_secret = secrets.token_urlsafe(64)
+    
+    app, created = Application.objects.get_or_create(
+        name=f"SSO-{tenant.slug}",
+        defaults={
+            'user': user,
+            'client_id': client_id,
+            'client_secret': client_secret,
+            'client_type': Application.CLIENT_CONFIDENTIAL,
+            'authorization_grant_type': Application.GRANT_AUTHORIZATION_CODE,
+            'skip_authorization': True,
+        }
+    )
+    if not created:
+        client_id = app.client_id
+        client_secret = app.client_secret
+        
+    return client_id, client_secret
+
+def step_update_oauth_app_urls(tenant):
+    """Met à jour les URIs de redirection de l'application OAuth2."""
+    from oauth2_provider.models import Application
+    app = Application.objects.filter(name=f"SSO-{tenant.slug}").first()
+    if app:
+        uris = []
+        if tenant.cloud_run_url:
+            uris.append(f"{tenant.cloud_run_url}/auth/complete/paramynd-admin/")
+        if tenant.custom_domain and tenant.domain_status == 'active':
+            uris.append(f"https://{tenant.custom_domain}/auth/complete/paramynd-admin/")
+        
+        app.redirect_uris = " ".join(uris)
+        app.save(update_fields=['redirect_uris'])
+
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # FONCTION PRINCIPALE
@@ -325,9 +372,17 @@ def provision_tenant(tenant_id: str, admin_email: str, admin_password: str):
         _mark_failed(tenant, deployment, 'Échec de création de la base de données')
         return
 
+    # ── Étape 1.5 : Générer identifiants OAuth2 ───────────────────────────
+    client_id, client_secret = step_create_oauth_app(tenant, admin_email)
+    env_vars = {
+        'SOCIAL_AUTH_PARAMYND_ADMIN_KEY': client_id,
+        'SOCIAL_AUTH_PARAMYND_ADMIN_SECRET': client_secret,
+        'PARAMYND_ADMIN_URL': getattr(settings, 'PARAMYND_ADMIN_URL', 'https://admin.paramynd.com'),
+    }
+
     # ── Étape 2 : Déployer Cloud Run ──────────────────────────────────────
     ok, service_url = step_deploy_cloud_run(
-        slug, db_name, project, region, cloud_sql_instance, image_uri
+        slug, db_name, project, region, cloud_sql_instance, image_uri, env_vars=env_vars
     )
     if not ok:
         errors.append('CLOUD_RUN_DEPLOY_FAILED')
@@ -340,6 +395,9 @@ def provision_tenant(tenant_id: str, admin_email: str, admin_password: str):
     tenant.cloud_run_service_name = slug
     tenant.current_image_tag = image_tag
     tenant.save(update_fields=['cloud_run_url', 'cloud_run_service_name', 'current_image_tag', 'updated_at'])
+
+    # Mettre à jour les URLs de l'app OAuth
+    step_update_oauth_app_urls(tenant)
 
     # ── Étape 3 : Migrations ──────────────────────────────────────────────
     if not step_run_migrations(slug, db_name, project, region, cloud_sql_instance, image_uri):

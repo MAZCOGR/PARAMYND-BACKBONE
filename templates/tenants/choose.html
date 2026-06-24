@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-12">
+        <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Choisissez votre Espace de Travail</h1>
+        <p class="mt-4 text-lg text-gray-500">Vous avez accès à plusieurs espaces. Veuillez sélectionner celui auquel vous souhaitez vous connecter.</p>
+    </div>
+
+    <div class="grid gap-6 sm:grid-cols-2">
+        {% for tenant in tenants %}
+        <a href="{{ tenant.app_url }}/auth/login/paramynd-admin/" class="group relative bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-indigo-500 transition-all duration-200 flex flex-col items-center text-center">
+            <div class="w-16 h-16 rounded-full bg-indigo-50 flex items-center justify-center mb-4 group-hover:bg-indigo-100 transition-colors">
+                <span class="text-2xl font-bold text-indigo-600">{{ tenant.name|first|upper }}</span>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-900 mb-1">{{ tenant.name }}</h3>
+            <p class="text-sm text-gray-500 mb-4">{{ tenant.app_url }}</p>
+            <span class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 rounded-md group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                Accéder à l'espace &rarr;
+            </span>
+        </a>
+        {% empty %}
+        <div class="col-span-2 text-center text-gray-500 py-12">
+            Aucun espace trouvé.
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

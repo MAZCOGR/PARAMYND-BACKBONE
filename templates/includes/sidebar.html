@@ -87,7 +87,7 @@
                     <span class="email" style="font-size: 0.75rem; color: rgba(235, 235, 245, 0.6);">{% if request.user.groups.first %}{{ request.user.groups.first.name }}{% else %}{{ request.user.role }}{% endif %}</span>
                 </div>
             </div>
-            <a href="{% url 'accounts:logout' %}" title="Déconnexion" style="color: rgba(235, 235, 245, 0.6); text-decoration: none;">
+            <a href="{% url 'accounts:logout' %}" hx-boost="false" title="Déconnexion" style="color: rgba(235, 235, 245, 0.6); text-decoration: none;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                     <polyline points="16 17 21 12 16 7" />

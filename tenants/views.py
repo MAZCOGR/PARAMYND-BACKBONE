@@ -75,6 +75,26 @@ def tenant_list_view(request):
     }
     return render(request, 'tenants/list.html', context)
 
+@login_required
+def tenant_choose_view(request):
+    """Sélecteur d'espace pour les utilisateurs ayant plusieurs tenants."""
+    if request.user.is_staff or request.user.is_superuser:
+        return redirect('tenants:list')
+        
+    tenants = Tenant.objects.filter(contact_email=request.user.email)
+    
+    if tenants.count() == 0:
+        return redirect('/request-demo/')
+    elif tenants.count() == 1:
+        tenant = tenants.first()
+        return redirect(f"{tenant.app_url}/auth/login/paramynd-admin/")
+        
+    context = {
+        'page_title': 'Choisissez votre espace',
+        'tenants': tenants,
+    }
+    return render(request, 'tenants/choose.html', context)
+
 
 # ──────────────────────────────────────────────
 # CRÉATION D'UN TENANT
@@ -168,7 +188,9 @@ def tenant_detail_view(request, pk):
     if request.method == 'POST' and 'update_tenant' in request.POST:
         update_form = TenantUpdateForm(request.POST, instance=tenant)
         if update_form.is_valid():
-            update_form.save()
+            tenant = update_form.save()
+            from tenants.services.provisioning import step_update_oauth_app_urls
+            step_update_oauth_app_urls(tenant)
             messages.success(request, "Tenant mis à jour.")
             return redirect('tenants:detail', pk=pk)
 
@@ -261,6 +283,18 @@ def tenant_deploy_view(request, pk):
     tenant.status = TenantStatus.PROVISIONING
     tenant.save(update_fields=['status'])
 
+    # Récupérer les identifiants SSO existants si configurés
+    env_vars = {}
+    from oauth2_provider.models import Application
+    from django.conf import settings
+    app = Application.objects.filter(name=f"SSO-{tenant.slug}").first()
+    if app:
+        env_vars = {
+            'SOCIAL_AUTH_PARAMYND_ADMIN_KEY': app.client_id,
+            'SOCIAL_AUTH_PARAMYND_ADMIN_SECRET': app.client_secret,
+            'PARAMYND_ADMIN_URL': getattr(settings, 'PARAMYND_ADMIN_URL', 'https://admin.paramynd.com'),
+        }
+
     # Appel au service Cloud Run
     result = cloud_run.deploy_service(
         tenant_slug=tenant.slug,
@@ -273,6 +307,7 @@ def tenant_deploy_view(request, pk):
         max_instances=form.cleaned_data.get('max_instances', 10),
         memory=form.cleaned_data.get('memory', '512Mi'),
         cpu=form.cleaned_data.get('cpu', '1'),
+        env_vars=env_vars,
     )
 
     if result['success']:

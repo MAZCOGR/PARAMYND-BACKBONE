@@ -25,11 +25,27 @@ User = get_user_model()
 # VUES WEB (Session Django)
 # ──────────────────────────────────────────────
 
+def get_login_redirect_url(user):
+    """Détermine l'URL de redirection après connexion."""
+    if user.is_staff or user.is_superuser:
+        return '/tenants/'
+    
+    from tenants.models import Tenant
+    user_tenants = Tenant.objects.filter(contact_email=user.email)
+    
+    if user_tenants.count() == 1:
+        tenant = user_tenants.first()
+        return f"{tenant.app_url}/auth/login/paramynd-admin/"
+    elif user_tenants.count() > 1:
+        return '/tenants/choose/'
+    else:
+        return '/request-demo/'
+
 @require_http_methods(["GET", "POST"])
 def login_view(request):
-    """Page de connexion — redirige vers les tenants si déjà connecté."""
+    """Page de connexion — redirige intelligemment."""
     if request.user.is_authenticated:
-        return redirect('tenants:list')
+        return redirect(get_login_redirect_url(request.user))
 
     if request.method == 'POST':
         email = request.POST.get('email', '').strip().lower()
@@ -43,8 +59,10 @@ def login_view(request):
                 login(request, user)
                 user.last_login = timezone.now()
                 user.save(update_fields=['last_login'])
-                next_url = request.GET.get('next', 'tenants:list')
-                return redirect(next_url)
+                next_url = request.GET.get('next')
+                if next_url:
+                    return redirect(next_url)
+                return redirect(get_login_redirect_url(user))
         else:
             messages.error(request, "Email ou mot de passe incorrect.")
 
