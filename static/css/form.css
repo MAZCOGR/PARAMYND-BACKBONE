@@ -10,6 +10,7 @@
   flex-direction: column;
   overflow: hidden;
   z-index: 1;
+  padding: 1px; /* Prevent children background from covering the border */
 }
 
 /* The spinning background light (comet dot) */
