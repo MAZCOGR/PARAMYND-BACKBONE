@@ -306,7 +306,7 @@
                   <option value="" style="background:#18181b; color:var(--text-muted);">— Choisir une version —</option>
                   {% for tag in available_tags %}
                   <option value="{{ tag.tag }}" style="background:#18181b;" {% if tenant.current_image_tag == tag.tag %}selected{% endif %}>
-                    {{ tag.tag }} {% if tag.is_ready %}✅{% else %}⏳{% endif %}{% if tenant.current_image_tag == tag.tag %} (actuel){% endif %}
+                    version : {{ tag.tag }} : build : {% if tag.is_ready %}ready{% else %}unavailable{% endif %}{% if tenant.current_image_tag == tag.tag %} (actuel){% endif %}
                   </option>
                   {% endfor %}
                 </select>
