@@ -38,9 +38,7 @@
   content: '';
   position: absolute;
   inset: 1px; /* 1px border thickness */
-  background: rgba(18, 18, 22, 0.95);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
+  background: rgba(18, 18, 22, 0.98);
   border-radius: 7px;
   z-index: -1;
   pointer-events: none;
