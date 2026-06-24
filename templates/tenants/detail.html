@@ -379,17 +379,45 @@
               .dual-range:active::-webkit-slider-thumb {
                 transform: scale(1.15);
               }
+              .slider-tooltip {
+                position: absolute;
+                top: -32px;
+                transform: translateX(-50%);
+                background: var(--accent);
+                color: white;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: 700;
+                pointer-events: none;
+                box-shadow: 0 4px 12px rgba(124, 92, 252, 0.4);
+                z-index: 4;
+                opacity: 0;
+                transition: opacity 0.2s;
+              }
+              .dual-slider-container:hover .slider-tooltip {
+                opacity: 1;
+              }
+              .slider-tooltip::after {
+                content: '';
+                position: absolute;
+                bottom: -4px;
+                left: 50%;
+                transform: translateX(-50%);
+                border-width: 4px 4px 0;
+                border-style: solid;
+                border-color: var(--accent) transparent transparent transparent;
+              }
             </style>
             
             <div style="grid-column: 1 / -1; background:rgba(255,255,255,0.02); padding:20px 24px; border-radius:8px; border:1px solid rgba(255,255,255,0.05);">
               
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
                 <div style="display:flex; flex-direction:column; gap:4px;">
                   <label style="font-size:13px; font-weight:500; color:var(--text-secondary); display:flex; align-items:center; gap:6px;">
                     <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted);"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     Min. Instances
                   </label>
-                  <div style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); padding:4px 10px; border-radius:5px; font-size:14px; font-weight:600; color:white; width:48px; text-align:center;" id="min_val_display">0</div>
                 </div>
 
                 <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-end;">
@@ -397,11 +425,12 @@
                     Max. Instances
                     <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted);"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
                   </label>
-                  <div style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); padding:4px 10px; border-radius:5px; font-size:14px; font-weight:600; color:white; width:48px; text-align:center;" id="max_val_display">10</div>
                 </div>
               </div>
 
               <div class="dual-slider-container">
+                <div class="slider-tooltip" id="min_tooltip">0</div>
+                <div class="slider-tooltip" id="max_tooltip">10</div>
                 <div class="dual-slider-track"></div>
                 <div class="dual-slider-fill" id="slider_fill"></div>
                 <input type="range" name="min_instances" id="min_instances" class="dual-range" min="0" max="100" value="0">
@@ -426,15 +455,25 @@
                   const max = parseInt(maxSlider.value);
                   const percentMin = (min / 100) * 100;
                   const percentMax = (max / 100) * 100;
+                  
                   fill.style.left = percentMin + '%';
                   fill.style.width = (percentMax - percentMin) + '%';
+                  
+                  const minTooltip = document.getElementById('min_tooltip');
+                  const maxTooltip = document.getElementById('max_tooltip');
+                  
+                  minTooltip.innerText = min;
+                  maxTooltip.innerText = max;
+                  
+                  // offset formula: calc(percent% + (half_thumb_width - percent * thumb_width / 100)px)
+                  minTooltip.style.left = `calc(${percentMin}% + ${10 - percentMin * 0.2}px)`;
+                  maxTooltip.style.left = `calc(${percentMax}% + ${10 - percentMax * 0.2}px)`;
                 }
 
                 minSlider.addEventListener('input', function() {
                   if (parseInt(minSlider.value) > parseInt(maxSlider.value)) {
                     minSlider.value = maxSlider.value;
                   }
-                  document.getElementById('min_val_display').innerText = minSlider.value;
                   updateFill();
                 });
 
@@ -442,7 +481,6 @@
                   if (parseInt(maxSlider.value) < parseInt(minSlider.value)) {
                     maxSlider.value = minSlider.value;
                   }
-                  document.getElementById('max_val_display').innerText = maxSlider.value;
                   updateFill();
                 });
 
