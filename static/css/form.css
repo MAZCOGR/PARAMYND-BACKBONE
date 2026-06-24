@@ -22,9 +22,9 @@
   height: 400%;
   background: conic-gradient(
     from 0deg,
-    transparent 47%,
+    transparent 20%,
     var(--accent) 50%,
-    transparent 53%
+    transparent 80%
   );
   animation: borderRotate 5s linear infinite;
   z-index: -2;
