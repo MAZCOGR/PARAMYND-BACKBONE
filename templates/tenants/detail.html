@@ -278,29 +278,41 @@
         {% csrf_token %}
 
         <!-- Section: Version -->
-        <div style="margin-bottom:20px;">
+        <div style="margin-bottom:28px;">
           <h4 style="margin:0 0 16px 0; font-size:18px; font-weight:800; color:#fff; letter-spacing:-0.03em;">
             Sélection de la version
           </h4>
           
-          <div style="margin-bottom: 24px;">
-            <select name="image_tag" class="clean-input" required id="deploy-tag-select" style="font-size:15px; padding:10px 14px; border-color:rgba(124,92,252,0.3); background:rgba(124,92,252,0.05);">
-              <option value="" style="background:#18181b;">— Choisir une version —</option>
-              {% for tag in available_tags %}
-              <option value="{{ tag.tag }}" style="background:#18181b;" {% if tenant.current_image_tag == tag.tag %}selected{% endif %}>
-                {{ tag.tag }} {% if tag.is_ready %}✅ Build prêt{% else %}⏳ Build en cours{% endif %} {% if tag.commit_msg %}— {{ tag.commit_msg }}{% endif %} {% if tenant.current_image_tag == tag.tag %} (ACTUEL){% endif %}
-              </option>
-              {% endfor %}
-            </select>
-            <div id="image-uri-preview" class="td-mono" style="font-size: 11px; margin-top:8px; color:var(--text-muted); word-break:break-all;"></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:12px;">
+            <!-- Version déployée -->
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <span style="font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em;">Version déployée</span>
+              <div style="display:flex; align-items:center; gap:8px; padding:10px 14px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:6px; min-height:42px;">
+                {% if tenant.current_image_tag %}
+                <span style="display:inline-block; width:6px; height:6px; background:#22c55e; border-radius:50%; box-shadow:0 0 8px #22c55e;"></span>
+                <span class="td-mono" style="font-weight:600; color:#fff; font-size:14px;">{{ tenant.current_image_tag }}</span>
+                {% else %}
+                <span style="display:inline-block; width:6px; height:6px; background:#ef476f; border-radius:50%;"></span>
+                <span style="color:var(--text-muted); font-size:13px;">Aucun déploiement</span>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Version cible -->
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <span style="font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em;">Version cible</span>
+              <select name="image_tag" class="clean-input" required id="deploy-tag-select" style="font-size:14px; padding:10px 14px; border-color:rgba(124,92,252,0.3); background:rgba(124,92,252,0.05); border-radius:6px; width:100%; height:42px;">
+                <option value="" style="background:#18181b;">— Choisir une version —</option>
+                {% for tag in available_tags %}
+                <option value="{{ tag.tag }}" style="background:#18181b;" {% if tenant.current_image_tag == tag.tag %}selected{% endif %}>
+                  {{ tag.tag }} {% if tag.is_ready %}✅ Build prêt{% else %}⏳ Build en cours{% endif %} {% if tag.commit_msg %}— {{ tag.commit_msg }}{% endif %}{% if tenant.current_image_tag == tag.tag %} (ACTUEL){% endif %}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
           </div>
-          
-          {% if tenant.current_image_tag %}
-          <div style="margin-top:-12px; margin-bottom:24px; display:inline-flex; align-items:center; gap:8px; padding:6px 12px; background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.2); border-radius:5px; font-size:12px; color:#22c55e;">
-            <span style="display:inline-block; width:6px; height:6px; background:#22c55e; border-radius:50%; box-shadow:0 0 8px #22c55e;"></span>
-            En production : <span class="td-mono" style="font-weight:600;">{{ tenant.current_image_tag }}</span>
-          </div>
-          {% endif %}
+
+          <div id="image-uri-preview" class="td-mono" style="font-size: 11px; color:var(--text-muted); word-break:break-all;"></div>
         </div>
 
         <!-- Section: Resources -->
