@@ -313,20 +313,49 @@
 
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
             
-            <!-- Scalability Sliders -->
+            <!-- Scalability Dual Slider -->
             <style>
-              .premium-range {
-                -webkit-appearance: none;
+              .dual-slider-container {
+                position: relative;
                 width: 100%;
-                height: 6px;
-                background: rgba(255, 255, 255, 0.08);
-                border-radius: 4px;
-                outline: none;
-                margin: 12px 0;
+                height: 40px;
+                margin-top: 8px;
               }
-              .premium-range::-webkit-slider-thumb {
+              .dual-slider-track {
+                position: absolute;
+                top: 50%;
+                transform: translateY(-50%);
+                height: 6px;
+                width: 100%;
+                background: rgba(255,255,255,0.08);
+                border-radius: 4px;
+                z-index: 1;
+              }
+              .dual-slider-fill {
+                position: absolute;
+                top: 50%;
+                transform: translateY(-50%);
+                height: 6px;
+                background: linear-gradient(90deg, var(--accent), #9d7cff);
+                border-radius: 4px;
+                z-index: 2;
+              }
+              .dual-range {
                 -webkit-appearance: none;
                 appearance: none;
+                position: absolute;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 100%;
+                background: transparent;
+                pointer-events: none;
+                z-index: 3;
+                margin: 0;
+                outline: none;
+              }
+              .dual-range::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                pointer-events: auto;
                 width: 20px;
                 height: 20px;
                 border-radius: 50%;
@@ -336,7 +365,8 @@
                 box-shadow: 0 0 12px rgba(124, 92, 252, 0.6);
                 transition: transform 0.1s;
               }
-              .premium-range::-moz-range-thumb {
+              .dual-range::-moz-range-thumb {
+                pointer-events: auto;
                 width: 20px;
                 height: 20px;
                 border-radius: 50%;
@@ -346,48 +376,81 @@
                 box-shadow: 0 0 12px rgba(124, 92, 252, 0.6);
                 transition: transform 0.1s;
               }
-              .premium-range:active::-webkit-slider-thumb {
+              .dual-range:active::-webkit-slider-thumb {
                 transform: scale(1.15);
               }
             </style>
             
-            <div style="grid-column: 1 / -1; display:grid; grid-template-columns:1fr 1fr; gap:32px; background:rgba(255,255,255,0.02); padding:16px 24px; border-radius:8px; border:1px solid rgba(255,255,255,0.05);">
+            <div style="grid-column: 1 / -1; background:rgba(255,255,255,0.02); padding:20px 24px; border-radius:8px; border:1px solid rgba(255,255,255,0.05);">
               
-              <!-- Min Instances -->
-              <div style="display:flex; flex-direction:column; justify-content:center;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+                <div style="display:flex; flex-direction:column; gap:4px;">
                   <label style="font-size:13px; font-weight:500; color:var(--text-secondary); display:flex; align-items:center; gap:6px;">
                     <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted);"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     Min. Instances
                   </label>
                   <div style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); padding:4px 10px; border-radius:5px; font-size:14px; font-weight:600; color:white; width:48px; text-align:center;" id="min_val_display">0</div>
                 </div>
-                <input type="range" name="min_instances" id="min_instances" class="premium-range" min="0" max="10" value="0" 
-                       oninput="document.getElementById('min_val_display').innerText = this.value; const maxEl = document.getElementById('max_instances'); if(parseInt(this.value) > parseInt(maxEl.value)) { maxEl.value = this.value; document.getElementById('max_val_display').innerText = this.value; }">
-                <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-top:2px; font-weight:500;">
-                  <span>0</span>
-                  <span>10</span>
-                </div>
-              </div>
 
-              <!-- Max Instances -->
-              <div style="display:flex; flex-direction:column; justify-content:center;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-end;">
                   <label style="font-size:13px; font-weight:500; color:var(--text-secondary); display:flex; align-items:center; gap:6px;">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted);"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
                     Max. Instances
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted);"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
                   </label>
                   <div style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); padding:4px 10px; border-radius:5px; font-size:14px; font-weight:600; color:white; width:48px; text-align:center;" id="max_val_display">10</div>
                 </div>
-                <input type="range" name="max_instances" id="max_instances" class="premium-range" min="1" max="100" value="10" 
-                       oninput="document.getElementById('max_val_display').innerText = this.value; const minEl = document.getElementById('min_instances'); if(parseInt(this.value) < parseInt(minEl.value)) { this.value = minEl.value; document.getElementById('max_val_display').innerText = this.value; }">
-                <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-top:2px; font-weight:500;">
-                  <span>1</span>
-                  <span>100</span>
-                </div>
+              </div>
+
+              <div class="dual-slider-container">
+                <div class="dual-slider-track"></div>
+                <div class="dual-slider-fill" id="slider_fill"></div>
+                <input type="range" name="min_instances" id="min_instances" class="dual-range" min="0" max="100" value="0">
+                <input type="range" name="max_instances" id="max_instances" class="dual-range" min="0" max="100" value="10">
+              </div>
+              
+              <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); font-weight:500;">
+                <span>0</span>
+                <span>100</span>
               </div>
 
             </div>
+
+            <script>
+              (function() {
+                const minSlider = document.getElementById('min_instances');
+                const maxSlider = document.getElementById('max_instances');
+                const fill = document.getElementById('slider_fill');
+                
+                function updateFill() {
+                  const min = parseInt(minSlider.value);
+                  const max = parseInt(maxSlider.value);
+                  const percentMin = (min / 100) * 100;
+                  const percentMax = (max / 100) * 100;
+                  fill.style.left = percentMin + '%';
+                  fill.style.width = (percentMax - percentMin) + '%';
+                }
+
+                minSlider.addEventListener('input', function() {
+                  if (parseInt(minSlider.value) > parseInt(maxSlider.value)) {
+                    minSlider.value = maxSlider.value;
+                  }
+                  document.getElementById('min_val_display').innerText = minSlider.value;
+                  updateFill();
+                });
+
+                maxSlider.addEventListener('input', function() {
+                  if (parseInt(maxSlider.value) < parseInt(minSlider.value)) {
+                    maxSlider.value = minSlider.value;
+                  }
+                  document.getElementById('max_val_display').innerText = maxSlider.value;
+                  updateFill();
+                });
+
+                // Init on load
+                document.addEventListener('DOMContentLoaded', updateFill);
+                updateFill();
+              })();
+            </script>
 
             <!-- Memory -->
             <div style="display:flex; flex-direction:column; gap:8px;">
