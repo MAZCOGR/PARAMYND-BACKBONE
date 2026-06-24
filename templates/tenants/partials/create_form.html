@@ -25,7 +25,7 @@
   <div class="form-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
     <!-- Nom -->
     <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
-      <label class="form-label" for="id_name" style="font-weight: 500; font-size: 13px; color: var(--text-secondary);">Nom du client <span class="required" style="color: var(--danger);">*</span></label>
+      <label class="form-label" for="id_name" style="font-weight: 500; font-size: 13px; color: var(--text-secondary);">Nom de l'entreprise <span class="required" style="color: var(--danger);">*</span></label>
       <input type="text" name="name" id="id_name" class="form-input clean-input" value="{{ form.name.value|default:'' }}" placeholder="Acme Corp" required>
       {% if form.name.errors %}<div class="form-error">{{ form.name.errors.0 }}</div>{% endif %}
     </div>
@@ -102,14 +102,16 @@
   </div>
 
   <script>
-    // Auto-génération du slug depuis le nom
+    // Auto-génération du slug et du custom domain depuis le nom
     (function() {
       const nameInput = document.getElementById('id_name');
       const slugInput = document.getElementById('id_slug');
       const servicePreview = document.getElementById('service-preview');
       const dbNameInput = document.getElementById('id_db_name');
+      const customDomainInput = document.getElementById('id_custom_domain');
 
       let slugManuallyEdited = false;
+      let domainManuallyEdited = false;
 
       function slugify(text) {
         return text
@@ -118,6 +120,12 @@
           .replace(/[^a-z0-9]+/g, '-')
           .replace(/^-|-$/g, '')
           .substring(0, 30);
+      }
+
+      if (customDomainInput) {
+        customDomainInput.addEventListener('input', function() {
+          domainManuallyEdited = true;
+        });
       }
 
       if (nameInput && slugInput) {
@@ -140,7 +148,10 @@
           servicePreview.textContent = slug ? `paramynd-${slug}` : 'paramynd-...';
         }
         if (dbNameInput && !dbNameInput.value) {
-          document.getElementById('id_db_name').placeholder = slug ? `paramynd_${slug.replace(/-/g,'_')}` : 'paramynd_acme';
+          dbNameInput.placeholder = slug ? `paramynd_${slug.replace(/-/g,'_')}` : 'paramynd_acme';
+        }
+        if (customDomainInput && !domainManuallyEdited) {
+          customDomainInput.value = slug ? `${slug}.paramynd.com` : '';
         }
       }
     })();

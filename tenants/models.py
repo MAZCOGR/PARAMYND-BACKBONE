@@ -81,6 +81,13 @@ class Tenant(models.Model):
         return f"paramynd-{self.slug}"
 
     @property
+    def app_url(self):
+        """Retourne l'URL personnalisée si elle est active, sinon l'URL Cloud Run."""
+        if self.custom_domain and self.domain_status == 'active':
+            return f"https://{self.custom_domain}"
+        return self.cloud_run_url
+
+    @property
     def status_badge_class(self):
         """Classe CSS pour le badge de statut."""
         classes = {
