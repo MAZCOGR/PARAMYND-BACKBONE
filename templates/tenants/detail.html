@@ -304,7 +304,7 @@
               <div style="position:relative; width:100%;" id="custom-select-wrapper">
                 <input type="hidden" name="image_tag" id="deploy-tag-select" required value="{{ tenant.current_image_tag|default:'' }}">
                 
-                <button type="button" id="custom-select-trigger" style="display:flex; justify-content:space-between; align-items:center; font-size:14px; padding:10px 14px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.02); color:#fff; border-radius:6px; width:100%; height:42px; cursor:pointer; outline:none; text-align:left; transition:all 0.2s;">
+                <button type="button" id="custom-select-trigger" class="custom-select-trigger">
                   <span id="custom-select-trigger-value" style="display:flex; align-items:center; gap:8px; width:100%;">
                     {% if tenant.current_image_tag %}
                       <span class="td-mono" style="font-weight:600;">{{ tenant.current_image_tag }}</span>
@@ -324,7 +324,7 @@
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.2s;" id="custom-select-chevron"><path d="m6 9 6 6 6-6"/></svg>
                 </button>
 
-                <div id="custom-select-dropdown" style="display:none; position:absolute; top:46px; left:0; right:0; background:#18181b; border:1px solid rgba(255,255,255,0.1); border-radius:6px; box-shadow:0 10px 25px rgba(0,0,0,0.5); z-index:99; max-height:220px; overflow-y:auto; padding:4px 0;">
+                <div id="custom-select-dropdown" class="custom-select-dropdown">
                   {% for tag in available_tags %}
                   <div class="custom-select-option" data-value="{{ tag.tag }}" data-ready="{% if tag.is_ready %}true{% else %}false{% endif %}" style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.02);">
                     <div style="display:flex; align-items:center; gap:8px;">

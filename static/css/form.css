@@ -1,6 +1,47 @@
 /* Premium Form UI Components for Paramynd Admin */
 
 /* Custom Dropdown Select Component */
+.custom-select-trigger {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  color: #fff;
+  border-radius: 6px;
+  width: 100%;
+  height: 42px;
+  cursor: pointer;
+  outline: none;
+  text-align: left;
+  transition: all 0.2s;
+}
+
+.custom-select-trigger:focus {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.custom-select-dropdown {
+  display: none;
+  position: absolute;
+  top: 46px;
+  left: 0;
+  right: 0;
+  background: rgba(18, 18, 22, 0.7) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  z-index: 99;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
 .custom-select-option {
   display: flex;
   justify-content: space-between;
