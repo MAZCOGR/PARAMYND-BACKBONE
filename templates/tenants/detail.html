@@ -325,19 +325,19 @@
                 position: absolute;
                 top: 50%;
                 transform: translateY(-50%);
-                height: 6px;
+                height: 4px;
                 width: 100%;
                 background: rgba(255,255,255,0.08);
-                border-radius: 4px;
+                border-radius: 2px;
                 z-index: 1;
               }
               .dual-slider-fill {
                 position: absolute;
                 top: 50%;
                 transform: translateY(-50%);
-                height: 6px;
-                background: linear-gradient(90deg, var(--accent), #9d7cff);
-                border-radius: 4px;
+                height: 4px;
+                background: var(--accent);
+                border-radius: 2px;
                 z-index: 2;
               }
               .dual-range {
@@ -356,35 +356,29 @@
               .dual-range::-webkit-slider-thumb {
                 -webkit-appearance: none;
                 pointer-events: auto;
-                width: 20px;
-                height: 20px;
+                width: 14px;
+                height: 14px;
                 border-radius: 50%;
                 background: #fff;
                 cursor: pointer;
-                border: 3px solid var(--accent);
-                box-shadow: 0 0 12px rgba(124, 92, 252, 0.6);
-                transition: transform 0.1s;
+                border: 2px solid var(--accent);
+                box-shadow: none;
               }
               .dual-range::-moz-range-thumb {
                 pointer-events: auto;
-                width: 20px;
-                height: 20px;
+                width: 14px;
+                height: 14px;
                 border-radius: 50%;
                 background: #fff;
                 cursor: pointer;
-                border: 3px solid var(--accent);
-                box-shadow: 0 0 12px rgba(124, 92, 252, 0.6);
-                transition: transform 0.1s;
+                border: 2px solid var(--accent);
+                box-shadow: none;
               }
-              .dual-range:active::-webkit-slider-thumb {
-                transform: scale(1.15);
-              }
-
             </style>
             
-            <div style="grid-column: 1 / -1; background:rgba(255,255,255,0.02); padding:20px 24px; border-radius:8px; border:1px solid rgba(255,255,255,0.05);">
+            <div style="grid-column: 1 / -1; padding: 12px 0;">
               
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
                 <div style="display:flex; flex-direction:column; gap:4px;">
                   <label style="font-size:13px; font-weight:500; color:var(--text-secondary); display:flex; align-items:center; gap:6px;">
                     Min. Instances: <span id="min_instances_val" style="color: var(--accent); font-weight: 600;">0</span>
