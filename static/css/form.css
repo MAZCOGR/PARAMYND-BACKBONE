@@ -1,0 +1,106 @@
+/* Premium Form UI Components for Paramynd Admin */
+
+/* Custom Dropdown Select Component */
+.custom-select-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+  transition: background 0.15s;
+}
+
+.custom-select-option:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+#deploy-tag-select:focus {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* Dual Range Slider Component */
+.dual-slider-container {
+  position: relative;
+  width: 100%;
+  height: 40px;
+  margin-top: 8px;
+}
+
+.dual-slider-track {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 4px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  z-index: 1;
+}
+
+.dual-slider-fill {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 4px;
+  background: var(--accent);
+  border-radius: 2px;
+  z-index: 2;
+}
+
+.dual-range {
+  -webkit-appearance: none;
+  appearance: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 100%;
+  background: transparent;
+  pointer-events: none;
+  z-index: 3;
+  margin: 0;
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dual-range:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.dual-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  pointer-events: auto;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  border: 2px solid var(--accent);
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.dual-range::-webkit-slider-thumb:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.dual-range::-moz-range-thumb {
+  pointer-events: auto;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  border: 2px solid var(--accent);
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.dual-range::-moz-range-thumb:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
