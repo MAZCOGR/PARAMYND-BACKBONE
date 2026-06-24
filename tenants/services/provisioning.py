@@ -377,3 +377,56 @@ def _mark_failed(tenant, deployment, error_message: str):
     deployment.error_message = error_message
     deployment.completed_at = timezone.now()
     deployment.save(update_fields=['status', 'error_message', 'completed_at'])
+
+
+def deprovision_tenant(tenant_id: str):
+    """
+    Supprime toutes les ressources GCP associées à un tenant, puis supprime le tenant de la base.
+    Peut être exécuté de façon asynchrone ou synchrone.
+    """
+    from tenants.models import Tenant
+    
+    try:
+        tenant = Tenant.objects.get(id=tenant_id)
+    except Tenant.DoesNotExist:
+        logger.error(f"[DEPROVISION] Tenant {tenant_id} not found in DB")
+        return
+
+    slug = tenant.slug
+    db_name = tenant.db_name or slug.replace('-', '_')
+    project = tenant.gcp_project_id or DEFAULT_PROJECT
+    region = tenant.cloud_run_region or DEFAULT_REGION
+
+    _log(slug, 'DEPROVISION_START', f"Starting full deprovisioning for tenant '{slug}'")
+
+    # 1. Supprimer le service Cloud Run
+    _log(slug, 'CR_DELETE', f"Deleting Cloud Run service {slug}...")
+    _run_gcloud([
+        'run', 'services', 'delete', slug,
+        f'--region={region}', f'--project={project}'
+    ], slug, 'CR_DELETE', timeout=60)
+
+    # 2. Supprimer les jobs Cloud Run
+    _log(slug, 'CR_JOBS_DELETE', "Deleting Cloud Run jobs...")
+    for job_suffix in ['migrate', 'superuser']:
+        _run_gcloud([
+            'run', 'jobs', 'delete', f"{slug}-{job_suffix}",
+            f'--region={region}', f'--project={project}'
+        ], slug, 'CR_JOBS_DELETE', timeout=30)
+
+    # 3. Supprimer la base de données Cloud SQL
+    _log(slug, 'DB_DELETE', f"Deleting Cloud SQL database {db_name}...")
+    _run_gcloud([
+        'sql', 'databases', 'delete', db_name,
+        '--instance=yellow-db-paris',
+        f'--project={project}'
+    ], slug, 'DB_DELETE', timeout=120)
+
+    # 4. Supprimer l'instance Tenant dans la base de données Django
+    # Note: Cela déclenchera la suppression en cascade si d'autres objets sont liés (Deployment, etc.)
+    _log(slug, 'DB_RECORD_DELETE', f"Deleting Tenant record for '{slug}'...")
+    try:
+        tenant.delete()
+        _log(slug, 'DONE', f"✅ Tenant '{slug}' deprovisioned and deleted successfully.")
+    except Exception as e:
+        _log(slug, 'ERROR', f"Failed to delete Tenant record: {e}", error=True)

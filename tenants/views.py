@@ -185,6 +185,28 @@ def tenant_detail_view(request, pk):
 
 
 # ──────────────────────────────────────────────
+# SUPPRESSION
+# ──────────────────────────────────────────────
+
+@admin_required
+@require_POST
+def tenant_delete_view(request, pk):
+    """Supprime complètement un tenant et ses ressources associées."""
+    tenant = get_object_or_404(Tenant, pk=pk)
+    tenant_name = tenant.name
+    
+    # Lancement du déprovisionnement de manière asynchrone pour ne pas bloquer la requête HTTP trop longtemps
+    # (ou synchrone si ce n'est pas trop long, ici on le fait en background)
+    import threading
+    from tenants.services.provisioning import deprovision_tenant
+    
+    threading.Thread(target=deprovision_tenant, args=(tenant.id,)).start()
+    
+    messages.success(request, f"La suppression du tenant « {tenant_name} » et de ses ressources a été lancée en arrière-plan.")
+    return redirect('tenants:list')
+
+
+# ──────────────────────────────────────────────
 # DÉPLOIEMENT
 # ──────────────────────────────────────────────
 
