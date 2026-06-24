@@ -160,6 +160,7 @@ class CloudBuildRecord(models.Model):
     """Cache en base de données de l'historique Cloud Build."""
     build_id = models.CharField(max_length=100, primary_key=True, verbose_name="ID du build")
     status = models.CharField(max_length=50, verbose_name="Statut")
+    progress = models.IntegerField(default=0, verbose_name="Progression (%)")
     created_str = models.CharField(max_length=100, verbose_name="Créé le")
     duration = models.CharField(max_length=50, verbose_name="Durée")
     commit_sha = models.CharField(max_length=40, blank=True, null=True, verbose_name="Commit SHA")

@@ -66,9 +66,19 @@ def list_recent_builds(limit: int = 10) -> List[Dict]:
                 else:
                     duration_str = f"{seconds} s"
 
+            progress = 0
+            if b.status.name == 'WORKING' and hasattr(b, 'steps') and b.steps:
+                total_steps = len(b.steps)
+                completed_steps = sum(1 for step in b.steps if step.status.name == 'SUCCESS')
+                if total_steps > 0:
+                    # Give a small base progress so it doesn't look completely empty on step 1
+                    base_progress = 10 
+                    progress = int((completed_steps / total_steps) * 90) + base_progress
+
             result.append({
                 'id': b.id,
                 'status': b.status.name,
+                'progress': progress,
                 'tags': list(b.tags),
                 'commit_sha': commit_sha,
                 'branch_name': branch_name,

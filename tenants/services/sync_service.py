@@ -79,6 +79,7 @@ def sync_builds_and_commits() -> bool:
                     CloudBuildRecord.objects.create(
                         build_id=build['id'],
                         status=build['status'],
+                        progress=build.get('progress', 0),
                         created_str=build['created'],
                         duration=build['duration'],
                         commit_sha=build['commit_sha'],
