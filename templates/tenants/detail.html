@@ -379,35 +379,7 @@
               .dual-range:active::-webkit-slider-thumb {
                 transform: scale(1.15);
               }
-              .slider-tooltip {
-                position: absolute;
-                top: -32px;
-                transform: translateX(-50%);
-                background: var(--accent);
-                color: white;
-                padding: 4px 8px;
-                border-radius: 4px;
-                font-size: 12px;
-                font-weight: 700;
-                pointer-events: none;
-                box-shadow: 0 4px 12px rgba(124, 92, 252, 0.4);
-                z-index: 4;
-                opacity: 0;
-                transition: opacity 0.2s;
-              }
-              .dual-slider-container:hover .slider-tooltip {
-                opacity: 1;
-              }
-              .slider-tooltip::after {
-                content: '';
-                position: absolute;
-                bottom: -4px;
-                left: 50%;
-                transform: translateX(-50%);
-                border-width: 4px 4px 0;
-                border-style: solid;
-                border-color: var(--accent) transparent transparent transparent;
-              }
+
             </style>
             
             <div style="grid-column: 1 / -1; background:rgba(255,255,255,0.02); padding:20px 24px; border-radius:8px; border:1px solid rgba(255,255,255,0.05);">
@@ -427,8 +399,6 @@
               </div>
 
               <div class="dual-slider-container">
-                <div class="slider-tooltip" id="min_tooltip">0</div>
-                <div class="slider-tooltip" id="max_tooltip">10</div>
                 <div class="dual-slider-track"></div>
                 <div class="dual-slider-fill" id="slider_fill"></div>
                 <input type="range" name="min_instances" id="min_instances" class="dual-range" min="0" max="100" value="0">
@@ -457,20 +427,10 @@
                   fill.style.left = percentMin + '%';
                   fill.style.width = (percentMax - percentMin) + '%';
                   
-                  const minTooltip = document.getElementById('min_tooltip');
-                  const maxTooltip = document.getElementById('max_tooltip');
-                  
-                  minTooltip.innerText = min;
-                  maxTooltip.innerText = max;
-
                   const minValLabel = document.getElementById('min_instances_val');
                   const maxValLabel = document.getElementById('max_instances_val');
                   if (minValLabel) minValLabel.innerText = min;
                   if (maxValLabel) maxValLabel.innerText = max;
-                  
-                  // offset formula: calc(percent% + (half_thumb_width - percent * thumb_width / 100)px)
-                  minTooltip.style.left = `calc(${percentMin}% + ${10 - percentMin * 0.2}px)`;
-                  maxTooltip.style.left = `calc(${percentMax}% + ${10 - percentMax * 0.2}px)`;
                 }
 
                 minSlider.addEventListener('input', function() {
