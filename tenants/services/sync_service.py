@@ -69,20 +69,23 @@ def sync_builds_and_commits() -> bool:
         db_builds = {b.build_id: b.status for b in CloudBuildRecord.objects.all()}
         api_builds = {b['id']: b['status'] for b in recent_builds}
         
+        # Don't overwrite real data with mock data if we already have real data
+        is_builds_mock = any(b['id'].startswith('build-') for b in recent_builds)
         if db_builds != api_builds:
-            has_changes = True
-            CloudBuildRecord.objects.all().delete()
-            for build in recent_builds:
-                CloudBuildRecord.objects.create(
-                    build_id=build['id'],
-                    status=build['status'],
-                    created_str=build['created'],
-                    duration=build['duration'],
-                    commit_sha=build['commit_sha'],
-                    branch_name=build['branch_name'],
-                    tags=build['tags'],
-                    images=build.get('images', [])
-                )
+            if not is_builds_mock or len(db_builds) == 0:
+                has_changes = True
+                CloudBuildRecord.objects.all().delete()
+                for build in recent_builds:
+                    CloudBuildRecord.objects.create(
+                        build_id=build['id'],
+                        status=build['status'],
+                        created_str=build['created'],
+                        duration=build['duration'],
+                        commit_sha=build['commit_sha'],
+                        branch_name=build['branch_name'],
+                        tags=build['tags'],
+                        images=build.get('images', [])
+                    )
 
     except Exception as e:
         logger.error(f"Erreur lors de la synchronisation : {e}")
