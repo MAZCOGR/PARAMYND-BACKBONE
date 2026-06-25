@@ -33,7 +33,7 @@
       Couper le trafic
     </button>
     <div id="sync-indicator" style="display:none;">
-      <div hx-get="{% url 'tenants:builds_sync' %}" hx-trigger="load" hx-swap="outerHTML" hx-target="#sync-indicator"></div>
+      <div hx-get="{% url 'tenants:builds_sync' %}" hx-trigger="every 2s" hx-swap="none"></div>
     </div>
   </div>
 </div>

@@ -460,8 +460,7 @@ def builds_sync_view(request):
     has_changes = sync_builds_and_commits()
     
     if not has_changes:
-        html = '<div id="sync-indicator" style="display:none;"></div>'
-        return HttpResponse(html)
+        return HttpResponse(status=204)
 
     # Si changements, on récupère les nouvelles données pour redessiner la page
     recent_commits = GitCommitRecord.objects.all()[:10]
