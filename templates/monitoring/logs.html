@@ -120,21 +120,21 @@
     <table>
       <thead>
         <tr>
-          <th style="width: 150px;">Date & Heure</th>
-          <th style="width: 100px;">Niveau</th>
+          <th>Date & Heure</th>
+          <th>Niveau</th>
           <th>Message</th>
         </tr>
       </thead>
       <tbody>
         {% for log in logs %}
         <tr>
-          <td style="white-space:nowrap; vertical-align: top;">
+          <td>
             <div style="display:flex; flex-direction:column; gap:2px; line-height: 1.2;">
               <strong style="color:var(--text-primary); font-size:13px;">{{ log.timestamp|slice:"0:10" }}</strong>
               <span style="color:var(--text-muted); font-size:11px;">{{ log.timestamp|slice:"11:23" }}</span>
             </div>
           </td>
-          <td style="vertical-align: top;">
+          <td>
             <span class="log-badge bg-{{ log.severity|default:'DEFAULT' }}">{{ log.severity }}</span>
           </td>
           <td class="td-mono-log">

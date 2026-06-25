@@ -25,12 +25,12 @@
         <input type="hidden" name="action" value="save_matrix">
         
         <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse; text-align: center;">
+            <table>
                 <thead>
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02);">
-                        <th style="padding: 15px; text-align: left; color: var(--text-muted, #888); font-size: 12px; border-right: 1px solid rgba(255,255,255,0.05); min-width: 250px;">Modules \ Rôles</th>
+                    <tr>
+                        <th>Modules \ Rôles</th>
                         {% for group in groups %}
-                        <th style="padding: 15px; color: var(--accent-color, #7C5CFC); font-size: 13px; font-weight: 600; min-width: 120px;">
+                        <th>
                             {{ group.name }}
                         </th>
                         {% endfor %}
@@ -38,40 +38,40 @@
                 </thead>
                 <tbody>
                     <!-- LIGNE: Tenants -->
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                        <td style="padding: 15px; text-align: left; color: var(--text-color, #fff); font-size: 13px; border-right: 1px solid rgba(255,255,255,0.05);">🏢 Clients (Tenants)</td>
+                    <tr>
+                        <td>🏢 Clients (Tenants)</td>
                         {% for group in groups %}
-                        <td style="padding: 15px;">
+                        <td>
                             <input type="checkbox" name="tenants_{{ group.id }}" {% if group.access.can_access_tenants %}checked{% endif %} style="accent-color: var(--accent-color, #7C5CFC); width: 16px; height: 16px; cursor: pointer;">
                         </td>
                         {% endfor %}
                     </tr>
 
                     <!-- LIGNE: Builds -->
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                        <td style="padding: 15px; text-align: left; color: var(--text-color, #fff); font-size: 13px; border-right: 1px solid rgba(255,255,255,0.05);">🚀 Builds & Images</td>
+                    <tr>
+                        <td>🚀 Builds & Images</td>
                         {% for group in groups %}
-                        <td style="padding: 15px;">
+                        <td>
                             <input type="checkbox" name="builds_{{ group.id }}" {% if group.access.can_access_builds %}checked{% endif %} style="accent-color: var(--accent-color, #7C5CFC); width: 16px; height: 16px; cursor: pointer;">
                         </td>
                         {% endfor %}
                     </tr>
 
                     <!-- LIGNE: Monitoring -->
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                        <td style="padding: 15px; text-align: left; color: var(--text-color, #fff); font-size: 13px; border-right: 1px solid rgba(255,255,255,0.05);">📊 Monitoring</td>
+                    <tr>
+                        <td>📊 Monitoring</td>
                         {% for group in groups %}
-                        <td style="padding: 15px;">
+                        <td>
                             <input type="checkbox" name="monitoring_{{ group.id }}" {% if group.access.can_access_monitoring %}checked{% endif %} style="accent-color: var(--accent-color, #7C5CFC); width: 16px; height: 16px; cursor: pointer;">
                         </td>
                         {% endfor %}
                     </tr>
 
                     <!-- LIGNE: Users -->
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                        <td style="padding: 15px; text-align: left; color: var(--text-color, #fff); font-size: 13px; border-right: 1px solid rgba(255,255,255,0.05);">👥 Gestion des Utilisateurs</td>
+                    <tr>
+                        <td>👥 Gestion des Utilisateurs</td>
                         {% for group in groups %}
-                        <td style="padding: 15px;">
+                        <td>
                             <input type="checkbox" name="users_{{ group.id }}" {% if group.access.can_access_users %}checked{% endif %} style="accent-color: var(--accent-color, #7C5CFC); width: 16px; height: 16px; cursor: pointer;">
                         </td>
                         {% endfor %}
@@ -79,9 +79,9 @@
 
                     <!-- LIGNE: Matrice des Roles -->
                     <tr>
-                        <td style="padding: 15px; text-align: left; color: var(--text-color, #fff); font-size: 13px; border-right: 1px solid rgba(255,255,255,0.05);">🔐 Matrice des Rôles</td>
+                        <td>🔐 Matrice des Rôles</td>
                         {% for group in groups %}
-                        <td style="padding: 15px;">
+                        <td>
                             <input type="checkbox" name="roles_{{ group.id }}" {% if group.access.can_access_roles %}checked{% endif %} style="accent-color: var(--accent-color, #7C5CFC); width: 16px; height: 16px; cursor: pointer;">
                         </td>
                         {% endfor %}

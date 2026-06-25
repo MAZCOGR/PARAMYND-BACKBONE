@@ -198,7 +198,7 @@
           <th>Statut</th>
           <th>Auteur</th>
           <th>Date</th>
-          <th style="text-align: right;">Action</th>
+          <th>Action</th>
         </tr>
       </thead>
       <tbody>
@@ -231,8 +231,8 @@
               <span style="font-size:13px; color:var(--text-secondary);">{{ dep.deployed_by|default:"Système"|truncatechars:20 }}</span>
             </div>
           </td>
-          <td style="color:var(--text-muted); font-size:13px;">{{ dep.started_at|timesince }} ago</td>
-          <td style="text-align: right;">
+          <td>{{ dep.started_at|timesince }} ago</td>
+          <td>
             {% if dep.revision_name and dep.status == 'success' %}
             <form method="post" action="{% url 'tenants:rollback' tenant.pk %}" onsubmit="return confirm('Voulez-vous effectuer un rollback vers la révision {{ dep.revision_name }} ?')" style="display:inline-block;">
               {% csrf_token %}

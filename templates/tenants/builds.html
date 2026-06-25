@@ -112,7 +112,7 @@
           <tbody>
             {% for build in builds %}
             <tr>
-              <td style="white-space:nowrap;">
+              <td>
                 <div style="display:flex; flex-direction:column; gap:2px; line-height: 1;">
                   <strong style="color:var(--text-primary); font-size:13px;">{{ build.short_date }}</strong>
                   <span style="color:var(--text-muted); font-size:11px;">{{ build.short_time }}</span>
@@ -182,7 +182,7 @@
               </div>
             </td>
               <td class="td-mono" style="color:var(--text-muted);">{{ build.duration }}</td>
-              <td style="text-align: right; position: relative;">
+              <td>
                 {% if not forloop.first or build.status != 'SUCCESS' %}
                 <div class="action-menu-wrapper" style="position:relative; display:inline-block;">
                     <button class="action-btn" onclick="toggleActionMenu(this, '{{ build.build_id }}')">

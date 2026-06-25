@@ -137,20 +137,20 @@
           <table>
             <thead>
               <tr>
-                <th style="padding: 12px 20px;">Nom</th>
-                <th style="padding: 12px 20px;">Slug</th>
-                <th style="padding: 12px 20px;">Statut</th>
-                <th style="padding: 12px 20px;">Version déployée</th>
-                <th style="padding: 12px 20px;">URL Cloud Run</th>
-                <th style="padding: 12px 20px;">Dernier déploiement</th>
-                <th style="padding: 12px 20px; text-align:right;">Actions</th>
+                <th>Nom</th>
+                <th>Slug</th>
+                <th>Statut</th>
+                <th>Version déployée</th>
+                <th>URL Cloud Run</th>
+                <th>Dernier déploiement</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {% if tenants %}
                 {% for tenant in tenants %}
                 <tr>
-                  <td style="padding: 12px 20px;">
+                  <td>
                     <div style="display:flex; flex-direction:column; gap:2px;">
                       <a href="{% url 'tenants:detail' tenant.pk %}" style="color:var(--text-primary); font-weight:600; text-decoration:none; font-size:14px;">
                         {{ tenant.name }}
@@ -160,12 +160,12 @@
                       {% endif %}
                     </div>
                   </td>
-                  <td style="padding: 12px 20px;">
+                  <td>
                     <span class="td-mono" style="display:inline-flex; align-items:center; gap:4px; color:var(--text-muted); background:rgba(255,255,255,0.03); padding:4px 8px; border-radius:5px; border:1px solid rgba(255,255,255,0.05);">
                       {{ tenant.slug }}
                     </span>
                   </td>
-                  <td style="padding: 12px 20px;">
+                  <td>
                     {% if tenant.status == 'active' %}
                       <span style="display:inline-flex; align-items:center; background:rgba(6, 214, 160, 0.1); color:var(--success); padding:4px 8px; border-radius:5px; font-size:12px; font-weight:600; border:1px solid rgba(6, 214, 160, 0.2);">
                         <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
@@ -187,7 +187,7 @@
                       </span>
                     {% endif %}
                   </td>
-                  <td style="padding: 12px 20px;">
+                  <td>
                     {% if tenant.current_image_tag %}
                     <span style="display:inline-flex; align-items:center; background:rgba(124, 92, 252, 0.1); color:var(--accent); padding:2px 8px; border-radius:5px; font-size:12px; font-weight:600; border:1px solid rgba(124, 92, 252, 0.2);">
                       <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
@@ -197,7 +197,7 @@
                     <span style="color:var(--text-muted);">-</span>
                     {% endif %}
                   </td>
-                  <td style="padding: 12px 20px;">
+                  <td>
                     {% if tenant.app_url %}
                     <a href="{{ tenant.app_url }}" target="_blank" style="display:inline-flex; align-items:center; gap:4px; color:var(--info); text-decoration:none; font-size:13px; background:rgba(76, 201, 240, 0.05); padding:4px 8px; border-radius:5px; border:1px solid rgba(76, 201, 240, 0.1);">
                       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
@@ -211,14 +211,14 @@
                     <span style="color:var(--text-muted); font-size:13px;">Non déployé</span>
                     {% endif %}
                   </td>
-                  <td style="padding: 12px 20px;">
+                  <td>
                     {% if tenant.last_deployed_at %}
                     <span style="color:var(--text-secondary); font-size:13px;">{{ tenant.last_deployed_at|timesince }} ago</span>
                     {% else %}
                     <span style="color:var(--text-muted);">-</span>
                     {% endif %}
                   </td>
-                  <td style="padding: 12px 20px; text-align:right;">
+                  <td>
                     <a href="{% url 'tenants:detail' tenant.pk %}" class="btn btn-outline btn-sm" style="border-radius:5px;">Gérer</a>
                   </td>
                 </tr>

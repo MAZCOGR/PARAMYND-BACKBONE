@@ -17,31 +17,31 @@
     <h2 class="card-title">Tous les Utilisateurs</h2>
   </div>
   <div class="card-body" style="padding:0;">
-    <div style="overflow-x:auto;">
-      <table style="width:100%; border-collapse: collapse; text-align: left;">
+    <div class="table-container">
+      <table>
         <thead>
-          <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">
-            <th style="padding: 1rem 1.5rem; font-weight: 600;">Email</th>
-            <th style="padding: 1rem 1.5rem; font-weight: 600;">Nom complet</th>
-            <th style="padding: 1rem 1.5rem; font-weight: 600;">Téléphone</th>
-            <th style="padding: 1rem 1.5rem; font-weight: 600;">Rôle</th>
-            <th style="padding: 1rem 1.5rem; font-weight: 600;">Statut</th>
-            <th style="padding: 1rem 1.5rem; font-weight: 600; text-align: right;">Actions</th>
+          <tr>
+            <th>Email</th>
+            <th>Nom complet</th>
+            <th>Téléphone</th>
+            <th>Rôle</th>
+            <th>Statut</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody id="user-list-body">
           {% for user in users %}
-          <tr style="border-bottom: 1px solid var(--border-color); transition: background-color 0.2s ease;">
-            <td style="padding: 1rem 1.5rem;">
+          <tr>
+            <td>
               <div style="font-weight: 500; color: var(--text-color);">{{ user.email }}</div>
             </td>
-            <td style="padding: 1rem 1.5rem; color: var(--text-muted);">
+            <td>
               {{ user.get_full_name }}
             </td>
-            <td style="padding: 1rem 1.5rem; color: var(--text-muted);">
+            <td>
               {{ user.phone_number|default:"-" }}
             </td>
-            <td style="padding: 1rem 1.5rem;">
+            <td>
               {% if user.groups.all %}
                 {% for group in user.groups.all %}
                   <span style="display:inline-block; padding:0.25rem 0.6rem; border-radius:12px; font-size:0.75rem; font-weight:600; background:rgba(255,255,255,0.05); color:var(--text-color); border:1px solid rgba(255,255,255,0.1); margin-bottom:0.25rem;">
@@ -57,14 +57,14 @@
                 <span style="color: var(--text-muted);">-</span>
               {% endif %}
             </td>
-            <td style="padding: 1rem 1.5rem;">
+            <td>
               {% if user.is_active %}
                 <span style="color: var(--accent-color); font-weight: 600;">Actif</span>
               {% else %}
                 <span style="color: var(--danger-color); font-weight: 600;">Inactif</span>
               {% endif %}
             </td>
-            <td style="padding: 1rem 1.5rem; text-align: right;">
+            <td>
               <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
                 <a href="{% url 'accounts:user_update' user.pk %}" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background:rgba(255,255,255,0.05);">Éditer</a>
                 <a href="{% url 'accounts:user_password_reset' user.pk %}" class="btn alert-warning" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background: rgba(255, 193, 7, 0.1); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.2);">Mot de passe</a>
