@@ -185,7 +185,17 @@ def deploy_service(
             client.set_iam_policy(request={'resource': service_fqn, 'policy': policy})
             logger.info(f"Permissions IAM configurées pour rendre {service_name} public.")
         except Exception as e:
-            logger.error(f"Erreur lors de la configuration IAM publique pour {service_name}: {e}")
+            logger.error(f"Erreur Python API IAM pour {service_name}: {e}. Tentative via gcloud...")
+            try:
+                import subprocess
+                subprocess.run([
+                    'gcloud', 'run', 'services', 'add-iam-policy-binding', service_name,
+                    '--member=allUsers', '--role=roles/run.invoker',
+                    f'--region={region}', f'--project={gcp_project_id}', '--quiet'
+                ], check=True, capture_output=True)
+                logger.info(f"Permissions IAM configurées via gcloud pour {service_name}.")
+            except subprocess.CalledProcessError as gcloud_e:
+                logger.error(f"Erreur gcloud IAM pour {service_name}: {gcloud_e.stderr.decode()}")
 
         return {
             'success': True,
