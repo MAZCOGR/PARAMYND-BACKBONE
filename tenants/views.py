@@ -292,7 +292,7 @@ def tenant_deploy_view(request, pk):
         env_vars = {
             'SOCIAL_AUTH_PARAMYND_ADMIN_KEY': app.client_id,
             'SOCIAL_AUTH_PARAMYND_ADMIN_SECRET': app.client_secret,
-            'PARAMYND_ADMIN_URL': getattr(settings, 'PARAMYND_ADMIN_URL', 'https://admin.paramynd.com'),
+            'PARAMYND_ADMIN_URL': getattr(settings, 'PARAMYND_ADMIN_URL', 'https://paramynd.com'),
         }
 
     # Appel au service Cloud Run
