@@ -248,6 +248,13 @@ EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='service@lageniale.com')
 
 # ==============================================================================
+# OAUTH2 PROVIDER
+# ==============================================================================
+OAUTH2_PROVIDER = {
+    'PKCE_REQUIRED': False,
+}
+
+# ==============================================================================
 # SMS (TWILIO)
 # ==============================================================================
 TWILIO_ACCOUNT_SID = env('TWILIO_ACCOUNT_SID', default='')
