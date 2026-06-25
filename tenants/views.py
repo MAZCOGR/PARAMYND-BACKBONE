@@ -287,11 +287,17 @@ def tenant_deploy_view(request, pk):
     env_vars = {}
     from oauth2_provider.models import Application
     from django.conf import settings
+    import secrets
     app = Application.objects.filter(name=f"SSO-{tenant.slug}").first()
     if app:
+        # Rotation du secret client pour éviter d'envoyer le hash de la DB
+        new_secret = secrets.token_urlsafe(64)
+        app.client_secret = new_secret
+        app.save()
+        
         env_vars = {
             'SOCIAL_AUTH_PARAMYND_ADMIN_KEY': app.client_id,
-            'SOCIAL_AUTH_PARAMYND_ADMIN_SECRET': app.client_secret,
+            'SOCIAL_AUTH_PARAMYND_ADMIN_SECRET': new_secret,
             'PARAMYND_ADMIN_URL': getattr(settings, 'PARAMYND_ADMIN_URL', 'https://paramynd.com'),
         }
 
