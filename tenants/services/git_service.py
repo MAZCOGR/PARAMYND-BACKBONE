@@ -34,8 +34,7 @@ def get_recent_commits(limit: int = 10) -> List[Dict]:
 
 def _get_commits_from_repo(repo_path: str, limit: int = 10) -> List[Dict]:
     try:
-        # Fetch first to ensure we have remote updates
-        subprocess.run(["git", "-c", "safe.directory=*", "-C", repo_path, "fetch", "--all"], capture_output=True, text=True)
+        # Removed `git fetch` because it hangs without credentials in Cloud Run
         
         # Format : hash|message|auteur|date|branches
         command = [

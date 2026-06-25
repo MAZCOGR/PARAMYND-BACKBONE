@@ -13,6 +13,13 @@ def list_recent_builds(limit: int = 10) -> List[Dict]:
     """
     Liste les builds récents Cloud Build qui ont généré des artifacts (images).
     """
+    from django.core.cache import cache
+    
+    cache_key = f'cloud_build_recent_{limit}'
+    cached_data = cache.get(cache_key)
+    if cached_data is not None:
+        return cached_data
+
     try:
         from google.cloud.devtools import cloudbuild_v1
 
@@ -100,6 +107,7 @@ def list_recent_builds(limit: int = 10) -> List[Dict]:
             if len(result) >= limit:
                 break
                 
+        cache.set(cache_key, result, 15)
         return result
         
     except Exception as e:

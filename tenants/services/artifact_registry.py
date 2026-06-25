@@ -14,6 +14,13 @@ def list_available_tags(limit: int = 10) -> List[Dict]:
     Liste les tags Docker disponibles dans Artifact Registry.
     Retourne une liste de {'tag': str, 'digest': str, 'created': str, 'uri': str}
     """
+    from django.core.cache import cache
+    
+    cache_key = f'artifact_registry_tags_{limit}'
+    cached_data = cache.get(cache_key)
+    if cached_data is not None:
+        return cached_data
+
     try:
         from google.cloud import artifactregistry_v1
 
@@ -40,6 +47,7 @@ def list_available_tags(limit: int = 10) -> List[Dict]:
                 'created': '',
                 'uri': uri,
             })
+        cache.set(cache_key, result, 60)
         return result
 
     except Exception as e:
