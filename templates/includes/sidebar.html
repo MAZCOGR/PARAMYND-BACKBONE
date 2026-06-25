@@ -77,17 +77,17 @@
 
     <!-- FOOTER -->
     <div class="sidebar-footer">
-        <div class="user-card" style="display: flex; align-items: center; justify-content: space-between; padding: 10px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <div class="user-avatar" style="width: 32px; height: 32px; background: #8C72FF; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+        <div class="user-card">
+            <div class="user-card-left">
+                <div class="user-avatar">
                     {{ request.user.first_name|first|upper|default:request.user.email|first|upper }}
                 </div>
-                <div class="user-info" style="display: flex; flex-direction: column;">
-                    <span class="name" style="font-weight: 600; font-size: 0.9rem; color: #fff;">{{ request.user.get_short_name }}</span>
-                    <span class="email" style="font-size: 0.75rem; color: rgba(235, 235, 245, 0.6);">{% if request.user.groups.first %}{{ request.user.groups.first.name }}{% else %}{{ request.user.role }}{% endif %}</span>
+                <div class="user-info">
+                    <span class="name">{{ request.user.get_short_name }}</span>
+                    <span class="email">{% if request.user.groups.first %}{{ request.user.groups.first.name }}{% else %}{{ request.user.role }}{% endif %}</span>
                 </div>
             </div>
-            <a href="{% url 'accounts:logout' %}" hx-boost="false" title="Déconnexion" style="color: rgba(235, 235, 245, 0.6); text-decoration: none;">
+            <a href="{% url 'accounts:logout' %}" hx-boost="false" title="Déconnexion" class="user-logout">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                     <polyline points="16 17 21 12 16 7" />
@@ -97,6 +97,3 @@
         </div>
     </div>
 </aside>
-
-<script src="/static/js/sidebar.js"></script>
-<link rel="stylesheet" href="/static/css/sidebar.css">

@@ -5,9 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Paramynd Backbone{% endblock %}</title>
   <meta name="description" content="{% block meta_description %}Interface d'administration Paramynd — Gérez vos instances Cloud Run{% endblock %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/admin.css?v=23">
   <link rel="stylesheet" href="/static/css/form.css?v=11">
   <link rel="stylesheet" href="/static/css/table.css?v=1">
+  <link rel="stylesheet" href="/static/css/sidebar.css?v=2">
   <link rel="stylesheet" href="/static/css/toasts.css">
   <script src="https://unpkg.com/htmx.org@1.9.12"></script>
   {% block extra_head %}{% endblock %}
@@ -69,6 +73,7 @@
 </div>
 
 <script src="/static/js/base.js"></script>
+<script src="/static/js/sidebar.js"></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

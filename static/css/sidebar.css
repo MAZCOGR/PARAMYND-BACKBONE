@@ -130,6 +130,47 @@
     margin-top: auto;
     padding: 12px 10px;
 }
+.user-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+}
+.user-card-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
 .user-avatar {
+    width: 32px;
+    height: 32px;
+    background: #8C72FF;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+.user-info {
+    display: flex;
+    flex-direction: column;
+}
+.user-info .name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #fff;
+}
+.user-info .email {
+    font-size: 0.75rem;
+    color: rgba(235, 235, 245, 0.6);
+}
+.user-logout {
+    color: rgba(235, 235, 245, 0.6);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+.user-logout:hover {
+    color: #ff4757;
 }

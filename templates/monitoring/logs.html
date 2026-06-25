@@ -18,6 +18,76 @@
 {% endblock %}
 
 {% block content %}
+<style>
+  /* Force page-content to be a strict flex container for a one-pager layout */
+  .page-content {
+    display: flex !important;
+    flex-direction: column !important;
+    height: calc(133.33dvh - 64px) !important;
+    max-height: calc(133.33dvh - 64px) !important;
+    overflow: hidden !important;
+    padding: 24px 0px 0px 0px !important;
+  }
+  
+  /* Expandable Severity Pills */
+  .severity-pill {
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 6px 8px; /* small padding when collapsed */
+    border: 1px solid transparent;
+    opacity: 0.4;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    border-radius: 20px;
+    max-width: 32px; /* enough for icon */
+    overflow: hidden;
+    white-space: nowrap;
+    position: relative;
+    height: 28px;
+  }
+  
+  .severity-pill.active {
+    opacity: 1;
+    border-color: rgba(255,255,255,0.4);
+    max-width: 140px;
+    padding: 6px 14px;
+  }
+  
+  .severity-pill:hover {
+    opacity: 1;
+    max-width: 140px;
+    padding: 6px 14px;
+  }
+  
+  .severity-pill:active {
+    transform: scale(0.95);
+  }
+  
+  .severity-pill .pill-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+  
+  .severity-pill .pill-label {
+    opacity: 0;
+    margin-left: 8px;
+    transition: opacity 0.2s 0.1s;
+  }
+  
+  .severity-pill.active .pill-label,
+  .severity-pill:hover .pill-label {
+    opacity: 1;
+  }
+</style>
+
 <div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 24px; flex-shrink: 0;">
   <div>
     <h1>Monitoring & Logs</h1>
@@ -71,19 +141,35 @@
       </div>
     </div>
 
-    <!-- Severity Pills (Right-aligned) -->
+    <!-- Expandable Severity Pills (Right-aligned) -->
     <div class="form-group" style="margin: 0; margin-left: auto;">
       <label class="form-label" style="color: var(--text-secondary); font-size: 12px; margin-bottom: 8px; display: block; font-weight: 500; text-align: right;">Niveau de Sévérité</label>
       <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
         {% for val, label in severity_choices %}
         <button type="submit" name="severity" value="{{ val }}" 
-                class="log-badge bg-{{ val|default:'DEFAULT' }}" 
-                style="cursor: pointer; font-family: inherit; font-size: 11px; font-weight: 700; padding: 6px 14px; border: 1px solid {% if severity_filter == val or not severity_filter and not val %}rgba(255,255,255,0.4){% else %}transparent{% endif %}; opacity: {% if severity_filter == val or not severity_filter and not val %}1{% else %}0.35{% endif %}; transition: opacity 0.2s, transform 0.1s; display: inline-flex; align-items: center; justify-content: center;"
-                onmouseover="this.style.opacity='1'" 
-                onmouseout="this.style.opacity='{% if severity_filter == val or not severity_filter and not val %}1{% else %}0.35{% endif %}'"
-                onmousedown="this.style.transform='scale(0.95)'"
-                onmouseup="this.style.transform='scale(1)'">
-          {{ label }}
+                class="log-badge bg-{{ val|default:'DEFAULT' }} severity-pill {% if severity_filter == val or not severity_filter and not val %}active{% endif %}">
+          <span class="pill-icon">
+            {% if not val %}
+              <!-- All / List -->
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+            {% elif val == 'DEBUG' %}
+              <!-- Bug -->
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9"/><path d="M6.53 9C4.6 8.8 3 7.1 3 5"/><path d="M6 13H2"/><path d="M3 21c0-2.1 1.7-3.9 3.8-4"/><path d="M20.97 5c-2 .2-3.53 1.9-3.53 4"/><path d="M22 13h-4"/><path d="M17.2 17c2.1.1 3.8 1.9 3.8 4"/></svg>
+            {% elif val == 'INFO' %}
+              <!-- Info -->
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+            {% elif val == 'WARNING' %}
+              <!-- Alert Triangle -->
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+            {% elif val == 'ERROR' %}
+              <!-- X Circle -->
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+            {% elif val == 'CRITICAL' %}
+              <!-- Flame -->
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+            {% endif %}
+          </span>
+          <span class="pill-label">{{ label }}</span>
         </button>
         {% endfor %}
       </div>
