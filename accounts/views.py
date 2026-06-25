@@ -69,11 +69,15 @@ def login_view(request):
     return render(request, 'accounts/login.html')
 
 
-@login_required
 def logout_view(request):
     """Déconnexion et redirection vers login."""
-    logout(request)
-    messages.success(request, "Vous avez été déconnecté.")
+    if request.user.is_authenticated:
+        logout(request)
+        messages.success(request, "Vous avez été déconnecté.")
+    
+    next_url = request.GET.get('next')
+    if next_url:
+        return redirect(next_url)
     return redirect('accounts:login')
 
 
