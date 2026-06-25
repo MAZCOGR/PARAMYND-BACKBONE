@@ -153,7 +153,7 @@ class GitCommitRecord(models.Model):
     class Meta:
         db_table = 'tenants_git_commit'
         verbose_name = 'Commit Git'
-        ordering = ['-commit_date_iso']
+        ordering = ['-fetched_at']
 
 
 class CloudBuildRecord(models.Model):
@@ -190,5 +190,5 @@ class SaaSGitCommitRecord(models.Model):
     class Meta:
         db_table = 'tenants_saas_git_commit'
         verbose_name = 'Commit Git SaaS'
-        ordering = ['-commit_date_iso']
+        ordering = ['-fetched_at']
 

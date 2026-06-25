@@ -12,77 +12,87 @@
 {% endblock %}
 
 {% block content %}
-<div class="card">
-  <div class="card-header">
-    <h2 class="card-title">Tous les Utilisateurs</h2>
-  </div>
-  <div class="card-body" style="padding:0;">
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>Email</th>
-            <th>Nom complet</th>
-            <th>Téléphone</th>
-            <th>Rôle</th>
-            <th>Statut</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="user-list-body">
-          {% for user in users %}
-          <tr>
-            <td>
-              <div style="font-weight: 500; color: var(--text-color);">{{ user.email }}</div>
-            </td>
-            <td>
-              {{ user.get_full_name }}
-            </td>
-            <td>
-              {{ user.phone_number|default:"-" }}
-            </td>
-            <td>
-              {% if user.groups.all %}
-                {% for group in user.groups.all %}
-                  <span style="display:inline-block; padding:0.25rem 0.6rem; border-radius:12px; font-size:0.75rem; font-weight:600; background:rgba(255,255,255,0.05); color:var(--text-color); border:1px solid rgba(255,255,255,0.1); margin-bottom:0.25rem;">
-                    {{ group.name }}
-                  </span>
-                {% endfor %}
-              {% elif user.role %}
-                <!-- Legacy fallback -->
-                <span style="display:inline-block; padding:0.25rem 0.6rem; border-radius:12px; font-size:0.75rem; font-weight:600; background:rgba(255,255,255,0.05); color:var(--text-color); border:1px solid rgba(255,255,255,0.1);">
-                  {{ user.get_role_display }}
-                </span>
-              {% else %}
-                <span style="color: var(--text-muted);">-</span>
-              {% endif %}
-            </td>
-            <td>
-              {% if user.is_active %}
-                <span style="color: var(--accent-color); font-weight: 600;">Actif</span>
-              {% else %}
-                <span style="color: var(--danger-color); font-weight: 600;">Inactif</span>
-              {% endif %}
-            </td>
-            <td>
-              <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
-                <a href="{% url 'accounts:user_update' user.pk %}" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background:rgba(255,255,255,0.05);">Éditer</a>
-                <a href="{% url 'accounts:user_password_reset' user.pk %}" class="btn alert-warning" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background: rgba(255, 193, 7, 0.1); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.2);">Mot de passe</a>
-                {% if request.user.pk != user.pk %}
-                <a href="{% url 'accounts:user_delete' user.pk %}" class="btn alert-danger" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background: rgba(239, 71, 111, 0.1); color: var(--danger-color); border: 1px solid rgba(239, 71, 111, 0.2);">Supprimer</a>
-                {% endif %}
-              </div>
-            </td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="6" style="padding: 3rem; text-align: center; color: var(--text-muted);">
-              Aucun utilisateur trouvé.
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+<div class="builds-grid" style="grid-template-columns: 1fr;">
+  <div id="users-container">
+    <div class="card" style="padding: 0; animation: fadeIn 0.4s ease; border: none; background: transparent; box-shadow: none;">
+      <div id="table-wrapper">
+        <div class="table-container table-scroll-limit" style="border:none; border-radius:0; background:transparent;">
+          <table>
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Nom complet</th>
+                <th>Téléphone</th>
+                <th>Rôle</th>
+                <th>Statut</th>
+                <th style="text-align:right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="user-list-body">
+              {% for user in users %}
+              <tr>
+                <td>
+                  <span class="td-primary">{{ user.email }}</span>
+                </td>
+                <td>
+                  <span style="color:var(--text-secondary);">{{ user.get_full_name }}</span>
+                </td>
+                <td>
+                  <span style="color:var(--text-secondary);">{{ user.phone_number|default:"-" }}</span>
+                </td>
+                <td>
+                  {% if user.groups.all %}
+                    {% for group in user.groups.all %}
+                      <span style="display:inline-block; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:600; background:rgba(255,255,255,0.05); color:var(--text-primary); border:1px solid rgba(255,255,255,0.1); margin-bottom:4px;">
+                        {{ group.name }}
+                      </span>
+                    {% endfor %}
+                  {% elif user.role %}
+                    <span style="display:inline-block; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:600; background:rgba(255,255,255,0.05); color:var(--text-primary); border:1px solid rgba(255,255,255,0.1);">
+                      {{ user.get_role_display }}
+                    </span>
+                  {% else %}
+                    <span style="color: var(--text-muted);">-</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if user.is_active %}
+                    <span style="display:inline-flex; align-items:center; background:rgba(6, 214, 160, 0.1); color:var(--success); padding:4px 8px; border-radius:12px; font-size:12px; font-weight:600; border:1px solid rgba(6, 214, 160, 0.2);">
+                      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                      Actif
+                    </span>
+                  {% else %}
+                    <span style="display:inline-flex; align-items:center; background:rgba(239, 71, 111, 0.1); color:var(--danger); padding:4px 8px; border-radius:12px; font-size:12px; font-weight:600; border:1px solid rgba(239, 71, 111, 0.2);">
+                      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                      Inactif
+                    </span>
+                  {% endif %}
+                </td>
+                <td style="text-align:right;">
+                  <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                    <a href="{% url 'accounts:user_update' user.pk %}" class="btn btn-outline btn-sm" style="border-radius:5px;">Éditer</a>
+                    <a href="{% url 'accounts:user_password_reset' user.pk %}" class="btn alert-warning btn-sm" style="border-radius:5px; background: rgba(255, 193, 7, 0.1); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.2);">Mot de passe</a>
+                    {% if request.user.pk != user.pk %}
+                    <a href="{% url 'accounts:user_delete' user.pk %}" class="btn alert-danger btn-sm" style="border-radius:5px; background: rgba(239, 71, 111, 0.1); color: var(--danger); border: 1px solid rgba(239, 71, 111, 0.2);">Supprimer</a>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" style="padding: 0;">
+                  <div class="empty-state" style="padding:60px 20px; border:none; text-align:center;">
+                    <div class="icon">🔍</div>
+                    <h3>Aucun utilisateur trouvé</h3>
+                    <p style="color:var(--text-muted); margin-top:8px;">Créez un utilisateur pour commencer.</p>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 </div>
