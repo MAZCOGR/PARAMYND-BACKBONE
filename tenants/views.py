@@ -87,7 +87,7 @@ def tenant_choose_view(request):
         return redirect('/request-demo/')
     elif tenants.count() == 1:
         tenant = tenants.first()
-        return redirect(f"{tenant.app_url}/auth/login/paramynd-admin/")
+        return redirect(f"{tenant.app_url}/auth/login/")
         
     context = {
         'page_title': 'Choisissez votre espace',

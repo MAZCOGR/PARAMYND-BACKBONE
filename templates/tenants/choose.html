@@ -9,7 +9,7 @@
 
     <div class="grid gap-6 sm:grid-cols-2">
         {% for tenant in tenants %}
-        <a href="{{ tenant.app_url }}/auth/login/paramynd-admin/" class="group relative bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-indigo-500 transition-all duration-200 flex flex-col items-center text-center">
+        <a href="{{ tenant.app_url }}/auth/login/" class="group relative bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-indigo-500 transition-all duration-200 flex flex-col items-center text-center">
             <div class="w-16 h-16 rounded-full bg-indigo-50 flex items-center justify-center mb-4 group-hover:bg-indigo-100 transition-colors">
                 <span class="text-2xl font-bold text-indigo-600">{{ tenant.name|first|upper }}</span>
             </div>

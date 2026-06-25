@@ -35,7 +35,7 @@ def get_login_redirect_url(user):
     
     if user_tenants.count() == 1:
         tenant = user_tenants.first()
-        return f"{tenant.app_url}/auth/login/paramynd-admin/"
+        return f"{tenant.app_url}/auth/login/"
     elif user_tenants.count() > 1:
         return '/tenants/choose/'
     else:
