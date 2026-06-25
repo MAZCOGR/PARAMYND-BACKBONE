@@ -3,7 +3,7 @@
 {% block title %}Monitoring — Paramynd Admin{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="/static/css/logs.css">
+<link rel="stylesheet" href="/static/css/logs.css?v=2">
 {% endblock %}
 
 {% block content %}
@@ -106,7 +106,6 @@
     </div>
   </div>
   
-  {% if logs %}
   <div class="table-container table-scroll-limit" style="border:none; border-radius:0; background:transparent;">
     <table>
       <thead>
@@ -116,33 +115,19 @@
           <th>Message</th>
         </tr>
       </thead>
-      <tbody>
-        {% for log in logs %}
+      <tbody hx-get="{% url 'monitoring:logs_table' %}?service={{ selected_service }}&severity={{ severity_filter }}" 
+             hx-trigger="load" 
+             hx-swap="innerHTML">
         <tr>
-          <td>
-            <div style="display:flex; flex-direction:column; gap:4px; line-height: 1.2;">
-              <strong style="color:var(--text-primary); font-size:13px; font-weight: 600;">{{ log.timestamp|slice:"0:10" }}</strong>
-              <span style="color:var(--text-muted); font-size:11px; font-family: 'JetBrains Mono', monospace;">{{ log.timestamp|slice:"11:23" }}</span>
-            </div>
-          </td>
-          <td>
-            <span class="log-badge bg-{{ log.severity|default:'DEFAULT' }}">{{ log.severity }}</span>
-          </td>
-          <td class="td-mono-log" style="line-height: 1.5; padding: 16px 20px;">
-            {{ log.message }}
+          <td colspan="3" style="text-align: center; padding: 60px 40px; color: var(--text-muted);">
+            <div class="icon spin" style="font-size: 32px; margin-bottom: 16px; opacity: 0.6; display: inline-block;">⏳</div>
+            <h3 style="margin-bottom: 8px; color: var(--text-primary);">Chargement des logs...</h3>
+            <p>Connexion à l'infrastructure Cloud Run en cours.</p>
           </td>
         </tr>
-        {% endfor %}
       </tbody>
     </table>
   </div>
-  {% else %}
-  <div class="empty-state" style="padding:60px 40px;">
-    <div class="icon" style="opacity: 0.6; font-size: 32px; margin-bottom: 16px;">🔍</div>
-    <h3 style="margin-bottom: 8px;">Aucun log trouvé</h3>
-    <p style="color: var(--text-muted);">Il n'y a aucune entrée correspondant à vos critères actuels.</p>
-  </div>
-  {% endif %}
 </div>
 
 {% else %}
@@ -156,5 +141,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="/static/js/logs.js"></script>
+<script src="/static/js/logs.js?v=2"></script>
 {% endblock %}

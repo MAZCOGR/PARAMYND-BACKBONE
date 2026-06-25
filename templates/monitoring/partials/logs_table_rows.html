@@ -1,0 +1,43 @@
+{% for log in logs %}
+<tr>
+  <td>
+    <div style="display:flex; flex-direction:column; gap:4px; line-height: 1.2;">
+      <strong style="color:var(--text-primary); font-size:13px; font-weight: 600;">{{ log.timestamp|slice:"0:10" }}</strong>
+      <span style="color:var(--text-muted); font-size:11px; font-family: 'JetBrains Mono', monospace;">{{ log.timestamp|slice:"11:23" }}</span>
+    </div>
+  </td>
+  <td>
+    <span class="log-badge bg-{{ log.severity|default:'DEFAULT' }}">{{ log.severity }}</span>
+  </td>
+  <td class="td-mono-log" style="line-height: 1.5; padding: 16px 20px;">
+    {{ log.message }}
+  </td>
+</tr>
+{% empty %}
+{% if not page_token %}
+<tr>
+  <td colspan="3" style="padding: 0;">
+    <div class="empty-state" style="padding:60px 40px; border:none; background:transparent;">
+      <div class="icon" style="opacity: 0.6; font-size: 32px; margin-bottom: 16px;">🔍</div>
+      <h3 style="margin-bottom: 8px;">Aucun log trouvé</h3>
+      <p style="color: var(--text-muted);">Il n'y a aucune entrée correspondant à vos critères actuels.</p>
+    </div>
+  </td>
+</tr>
+{% endif %}
+{% endfor %}
+
+{% if next_page_token %}
+<tr id="load-more-row-{{ next_page_token }}">
+  <td colspan="3" style="text-align: center; padding: 16px;">
+    <button class="btn btn-outline" 
+            hx-get="{% url 'monitoring:logs_table' %}?service={{ selected_service }}&severity={{ severity_filter }}&page_token={{ next_page_token }}" 
+            hx-target="#load-more-row-{{ next_page_token }}" 
+            hx-swap="outerHTML"
+            style="background:rgba(255,255,255,0.03); border-color:rgba(255,255,255,0.1); border-radius:8px; width:100%; justify-content:center;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+      Charger les 100 logs suivants
+    </button>
+  </td>
+</tr>
+{% endif %}
