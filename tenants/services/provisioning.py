@@ -307,9 +307,9 @@ def step_update_oauth_app_urls(tenant):
     if app:
         uris = []
         if tenant.cloud_run_url:
-            uris.append(f"{tenant.cloud_run_url}/auth/complete/paramynd-admin/")
+            uris.append(f"{tenant.cloud_run_url}/social-auth/complete/paramynd-admin/")
         if tenant.custom_domain and tenant.domain_status == 'active':
-            uris.append(f"https://{tenant.custom_domain}/auth/complete/paramynd-admin/")
+            uris.append(f"https://{tenant.custom_domain}/social-auth/complete/paramynd-admin/")
         
         app.redirect_uris = " ".join(uris)
         app.save(update_fields=['redirect_uris'])
@@ -377,7 +377,7 @@ def provision_tenant(tenant_id: str, admin_email: str, admin_password: str):
     env_vars = {
         'SOCIAL_AUTH_PARAMYND_ADMIN_KEY': client_id,
         'SOCIAL_AUTH_PARAMYND_ADMIN_SECRET': client_secret,
-        'PARAMYND_ADMIN_URL': getattr(settings, 'PARAMYND_ADMIN_URL', 'https://admin.paramynd.com'),
+        'PARAMYND_ADMIN_URL': getattr(settings, 'PARAMYND_ADMIN_URL', 'https://paramynd.com'),
     }
 
     # ── Étape 2 : Déployer Cloud Run ──────────────────────────────────────
