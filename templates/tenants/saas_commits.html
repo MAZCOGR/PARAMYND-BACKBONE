@@ -16,7 +16,7 @@
   <div style="display:flex; align-items:center; gap:16px;">
     <a href="{% url 'tenants:list' %}" class="btn btn-outline btn-sm" style="height:fit-content;">← Retour</a>
     <div id="saas-sync-indicator" style="display:none;">
-      <div hx-get="{% url 'tenants:saas_commits_sync' %}" hx-trigger="load, every 30s" hx-swap="outerHTML" hx-target="#saas-sync-indicator"></div>
+      <div hx-get="{% url 'tenants:saas_commits_sync' %}" hx-trigger="load, every 10s" hx-swap="outerHTML" hx-target="#saas-sync-indicator"></div>
     </div>
   </div>
 </div>
