@@ -46,9 +46,20 @@ def get_service_logs(service_name: str, limit: int = 100, severity: str = None, 
         try:
             from google.cloud import logging as gcloud_logging
 
+            # Resolve the actual Cloud Run service name (tenants are prefixed with paramynd- in the UI)
+            actual_service_name = service_name
+            if service_name.startswith('paramynd-') and service_name != 'paramynd-admin':
+                from tenants.models import Tenant
+                tenant_slug = service_name.replace('paramynd-', '', 1)
+                tenant = Tenant.objects.filter(slug=tenant_slug).first()
+                if tenant and tenant.cloud_run_service_name:
+                    actual_service_name = tenant.cloud_run_service_name
+                else:
+                    actual_service_name = tenant_slug
+
             filter_parts = [
                 f'resource.type="cloud_run_revision"',
-                f'resource.labels.service_name="{service_name}"',
+                f'resource.labels.service_name="{actual_service_name}"',
             ]
             if severity:
                 filter_parts.append(f'severity={severity}')
@@ -61,28 +72,39 @@ def get_service_logs(service_name: str, limit: int = 100, severity: str = None, 
 
             iterator = client.list_entries(
                 filter_=log_filter,
-                page_size=limit,
+                max_results=limit,
                 order_by=gcloud_logging.DESCENDING,
                 page_token=page_token
             )
 
-            # Extraire exactement une page
-            pages = iterator.pages
-            try:
-                page = next(pages)
-                entries = list(page)
-                # Google gère la propriété next_page_token directement sur l'itérateur après extraction
-                next_token = iterator.next_page_token
-            except StopIteration:
-                entries = []
-                next_token = None
+            entries = list(iterator)
+            next_token = None
 
             result = []
             for entry in entries:
+                message = None
+                
+                if entry.payload:
+                    if isinstance(entry.payload, str):
+                        message = entry.payload
+                    elif isinstance(entry.payload, dict):
+                        message = entry.payload.get('message') or entry.payload.get('msg')
+                        if not message:
+                            message = str(entry.payload)
+                    else:
+                        message = str(entry.payload)
+                        
+                if not message and getattr(entry, 'http_request', None):
+                    req = entry.http_request
+                    message = f"{req.get('requestMethod', 'HTTP')} {req.get('requestUrl', '')} - Status {req.get('status', '')}"
+                
+                if not message or str(message).strip() == 'None':
+                    continue
+
                 result.append({
                     'timestamp': str(entry.timestamp) if entry.timestamp else '',
                     'severity': entry.severity or 'DEFAULT',
-                    'message': entry.payload if isinstance(entry.payload, str) else str(entry.payload),
+                    'message': message,
                     'revision': entry.resource.labels.get('revision_name', '') if entry.resource else '',
                 })
 

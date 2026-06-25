@@ -4,10 +4,21 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="/static/css/logs.css?v=2">
+<style>
+  /* Force page-content to be a strict flex container for a one-pager layout */
+  .page-content {
+    display: flex;
+    flex-direction: column;
+    height: calc(133.33dvh - 64px); /* 100dvh scaled - topbar */
+    max-height: calc(133.33dvh - 64px);
+    overflow: hidden;
+    padding-bottom: 32px;
+  }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 24px;">
+<div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 24px; flex-shrink: 0;">
   <div>
     <h1>Monitoring & Logs</h1>
     <p>Consultez les logs en temps réel de votre infrastructure et des SaaS déployés.</p>
@@ -22,15 +33,14 @@
   </div>
 </div>
 
-<div style="margin-bottom: 32px;">
+<div style="margin-bottom: 24px; flex-shrink: 0;">
   <form method="get" action="{% url 'monitoring:logs' %}" id="logs-filter-form" style="display:flex; gap:24px; align-items:flex-end; flex-wrap:wrap; margin:0;">
     
     <!-- Hidden inputs for custom select -->
     <input type="hidden" name="service" id="input-service" value="{{ selected_service }}">
-    <input type="hidden" name="severity" id="input-severity" value="{{ severity_filter }}">
 
     <!-- Service Select -->
-    <div class="form-group" style="min-width: 340px; margin: 0; flex-grow: 1; max-width: 450px;">
+    <div class="form-group" style="min-width: 340px; margin: 0; max-width: 450px;">
       <label class="form-label" style="color: var(--text-secondary); font-size: 12px; margin-bottom: 8px; display: block; font-weight: 500;">Environnement / Service</label>
       <div class="custom-select-wrapper" style="position:relative; width:100%;">
         <button type="button" class="custom-select-trigger" data-target="dropdown-service" style="padding: 12px 16px; height: auto;">
@@ -44,8 +54,6 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="custom-select-chevron" style="transition: transform 0.2s;"><path d="m6 9 6 6 6-6"/></svg>
         </button>
         <div id="dropdown-service" class="custom-select-dropdown" style="display:none; max-height: 350px;">
-          <div class="custom-select-option" data-input="input-service" data-value="" style="color:var(--text-muted);">— Sélectionner un environnement —</div>
-          
           <div style="padding: 12px 14px 6px 14px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); font-weight: 700; opacity: 0.8;">Infrastructure Centrale</div>
           <div class="custom-select-option" data-input="input-service" data-value="paramynd-admin">
             <span class="td-mono" style="font-weight:500; color:#fff;">paramynd-admin</span>
@@ -63,31 +71,21 @@
       </div>
     </div>
 
-    <!-- Severity Select -->
-    <div class="form-group" style="min-width: 200px; margin: 0; max-width: 260px;">
-      <label class="form-label" style="color: var(--text-secondary); font-size: 12px; margin-bottom: 8px; display: block; font-weight: 500;">Niveau de Sévérité</label>
-      <div class="custom-select-wrapper" style="position:relative; width:100%;">
-        <button type="button" class="custom-select-trigger" data-target="dropdown-severity" style="padding: 12px 16px; height: auto;">
-          <span class="custom-select-trigger-value" style="display:flex; align-items:center; gap:8px; width:100%;">
-            {% if severity_filter %}
-              <span class="log-badge bg-{{ severity_filter }}">{{ severity_filter }}</span>
-            {% else %}
-              <span style="color:var(--text-muted);">Tous les niveaux</span>
-            {% endif %}
-          </span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="custom-select-chevron" style="transition: transform 0.2s;"><path d="m6 9 6 6 6-6"/></svg>
+    <!-- Severity Pills (Right-aligned) -->
+    <div class="form-group" style="margin: 0; margin-left: auto;">
+      <label class="form-label" style="color: var(--text-secondary); font-size: 12px; margin-bottom: 8px; display: block; font-weight: 500; text-align: right;">Niveau de Sévérité</label>
+      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
+        {% for val, label in severity_choices %}
+        <button type="submit" name="severity" value="{{ val }}" 
+                class="log-badge bg-{{ val|default:'DEFAULT' }}" 
+                style="cursor: pointer; font-family: inherit; font-size: 11px; font-weight: 700; padding: 6px 14px; border: 1px solid {% if severity_filter == val or not severity_filter and not val %}rgba(255,255,255,0.4){% else %}transparent{% endif %}; opacity: {% if severity_filter == val or not severity_filter and not val %}1{% else %}0.35{% endif %}; transition: opacity 0.2s, transform 0.1s; display: inline-flex; align-items: center; justify-content: center;"
+                onmouseover="this.style.opacity='1'" 
+                onmouseout="this.style.opacity='{% if severity_filter == val or not severity_filter and not val %}1{% else %}0.35{% endif %}'"
+                onmousedown="this.style.transform='scale(0.95)'"
+                onmouseup="this.style.transform='scale(1)'">
+          {{ label }}
         </button>
-        <div id="dropdown-severity" class="custom-select-dropdown" style="display:none;">
-          {% for val, label in severity_choices %}
-          <div class="custom-select-option" data-input="input-severity" data-value="{{ val }}">
-            {% if val %}
-              <span class="log-badge bg-{{ val }}">{{ label }}</span>
-            {% else %}
-              <span style="color:var(--text-muted);">Tous les niveaux</span>
-            {% endif %}
-          </div>
-          {% endfor %}
-        </div>
+        {% endfor %}
       </div>
     </div>
   </form>
@@ -95,8 +93,8 @@
 
 <!-- Table Container matching standard table.css -->
 {% if selected_service %}
-<div class="card" style="padding: 0; animation: fadeIn 0.4s ease 0.1s backwards;">
-  <div class="card-header" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 20px; display: block;">
+<div class="card" style="padding: 0; animation: fadeIn 0.4s ease 0.1s backwards; display: flex; flex-direction: column; flex: 1; min-height: 0;">
+  <div class="card-header" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 20px; display: block; flex-shrink: 0;">
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <div class="card-title" style="display: flex; align-items: center; gap: 12px;">
         <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="var(--text-muted)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h7"/></svg>
@@ -106,8 +104,8 @@
     </div>
   </div>
   
-  <div class="table-container table-scroll-limit" style="border:none; border-radius:0; background:transparent;">
-    <table>
+  <div class="table-container" style="border:none; border-radius:0; background:transparent; flex: 1; overflow-y: auto; position: relative;">
+    <table style="table-layout: fixed; width: 100%;">
       <thead>
         <tr>
           <th style="width: 180px;">Date & Heure</th>

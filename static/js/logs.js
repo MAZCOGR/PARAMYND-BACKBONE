@@ -1,63 +1,59 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const triggers = document.querySelectorAll('.custom-select-trigger');
-  
-  triggers.forEach(trigger => {
-    trigger.addEventListener('click', function(e) {
-      e.stopPropagation();
-      const targetId = this.getAttribute('data-target');
-      const dropdown = document.getElementById(targetId);
-      const chevron = this.querySelector('.custom-select-chevron');
-      
-      const isVisible = dropdown.style.display === 'block';
-      
-      // Hide all other dropdowns
-      document.querySelectorAll('.custom-select-dropdown').forEach(d => {
-        d.style.display = 'none';
-      });
-      document.querySelectorAll('.custom-select-chevron').forEach(c => {
-        c.style.transform = 'rotate(0deg)';
-      });
+// Use event delegation to handle clicks, so it works perfectly with HTMX
+document.addEventListener('click', function(e) {
+  // 1. Handle Trigger Clicks
+  const trigger = e.target.closest('.custom-select-trigger');
+  if (trigger) {
+    e.stopPropagation();
+    const targetId = trigger.getAttribute('data-target');
+    const dropdown = document.getElementById(targetId);
+    if (!dropdown) return;
 
-      // Toggle current
-      if (!isVisible) {
-        dropdown.style.display = 'block';
-        chevron.style.transform = 'rotate(180deg)';
-      }
+    const chevron = trigger.querySelector('.custom-select-chevron');
+    const isVisible = dropdown.style.display === 'block';
+    
+    // Hide all other dropdowns
+    document.querySelectorAll('.custom-select-dropdown').forEach(d => {
+      d.style.display = 'none';
     });
-  });
+    document.querySelectorAll('.custom-select-chevron').forEach(c => {
+      if (c) c.style.transform = 'rotate(0deg)';
+    });
 
-  // Close dropdowns when clicking outside
-  document.addEventListener('click', function(e) {
-    if (!e.target.closest('.custom-select-wrapper')) {
-      document.querySelectorAll('.custom-select-dropdown').forEach(d => {
-        d.style.display = 'none';
-      });
-      document.querySelectorAll('.custom-select-chevron').forEach(c => {
-        c.style.transform = 'rotate(0deg)';
-      });
+    // Toggle current
+    if (!isVisible) {
+      dropdown.style.display = 'block';
+      if (chevron) chevron.style.transform = 'rotate(180deg)';
     }
-  });
+    return;
+  }
 
-  // Handle option selection
-  const options = document.querySelectorAll('.custom-select-option');
-  options.forEach(opt => {
-    opt.addEventListener('click', function(e) {
-      e.stopPropagation();
-      const value = this.getAttribute('data-value');
-      const inputId = this.getAttribute('data-input');
-      const inputEl = document.getElementById(inputId);
-      
-      if (inputEl) {
-        // Set the hidden input value
-        inputEl.value = value;
-        // Submit the form
-        const form = document.getElementById('logs-filter-form');
-        if (form) {
-          form.submit();
-        }
+  // 2. Handle Option Selection
+  const option = e.target.closest('.custom-select-option');
+  if (option) {
+    e.stopPropagation();
+    const value = option.getAttribute('data-value');
+    const inputId = option.getAttribute('data-input');
+    const inputEl = document.getElementById(inputId);
+    
+    if (inputEl) {
+      inputEl.value = value;
+      const form = document.getElementById('logs-filter-form');
+      if (form) {
+        form.submit();
       }
+    }
+    return;
+  }
+
+  // 3. Close dropdowns when clicking outside
+  if (!e.target.closest('.custom-select-wrapper')) {
+    document.querySelectorAll('.custom-select-dropdown').forEach(d => {
+      d.style.display = 'none';
     });
-  });
+    document.querySelectorAll('.custom-select-chevron').forEach(c => {
+      if (c) c.style.transform = 'rotate(0deg)';
+    });
+  }
 });
 
 function refreshLogs() {
