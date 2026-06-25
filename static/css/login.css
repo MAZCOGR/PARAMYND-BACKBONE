@@ -1,0 +1,201 @@
+/* Variables de thème Paramynd */
+:root {
+  --r: 5px; /* Radius global demandé */
+  --black: #050507;
+  --purple: #7c5cfc;
+  --teal: #06d6a0;
+  --white: #ffffff;
+  --gray-2: rgba(255,255,255,0.5);
+  --error: #ef476f;
+  --shadow-lg: 0 24px 64px rgba(0,0,0,0.7);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--black);
+  color: var(--white);
+  min-height: 133.33vh;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow-x: hidden;
+  zoom: 0.75;
+}
+
+/* ════════════════════════════════════════════════
+   ARRIÈRE-PLAN ANIMÉ (BRAIN CANVAS)
+   ════════════════════════════════════════════════ */
+#brainCanvas {
+  position: fixed; top: 0; left: 0;
+  width: 133.33vw; height: 133.33vh;
+  pointer-events: none; z-index: -1;
+  opacity: 0;
+  animation: canvasFadeIn 2s ease 0.5s forwards;
+}
+@keyframes canvasFadeIn { to { opacity: 1; } }
+
+.hero-ambient {
+  position: fixed; top: 0; left: 0; width: 133.33vw; height: 133.33vh; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 50%, rgba(5,5,7,0) 30%, rgba(5,5,7,0.55) 100%),
+    radial-gradient(ellipse 100% 30% at 50% 100%, rgba(5,5,7,0.8) 0%, transparent 100%);
+}
+
+/* ════════════════════════════════════════════════
+   CARTE GLASSMORPHISM PREMIUM
+   ════════════════════════════════════════════════ */
+.demo-container {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 400px;
+  padding: 1.2rem;
+  margin: 24px auto;
+  animation: fadeUp 0.8s ease-out;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.demo-card {
+  /* Effet verre premium */
+  background: rgba(18, 18, 24, 0.45);
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  
+  /* Bordure délicate et radius global de 5px */
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--r);
+  
+  padding: 2rem 2.2rem;
+  box-shadow: var(--shadow-lg), 0 0 100px rgba(124,92,252,0.12);
+}
+
+.demo-header {
+  text-align: center;
+  margin-bottom: 1.6rem;
+}
+
+.demo-logo {
+  width: 36px; height: 36px; 
+  border-radius: var(--r);
+  background: linear-gradient(135deg, var(--purple) 0%, var(--teal) 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; font-weight: bold; color: #fff;
+  box-shadow: 0 4px 16px rgba(124,92,252,0.4);
+  margin: 0 auto 1rem;
+}
+
+.demo-header h1 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  letter-spacing: -0.5px;
+}
+.demo-header p {
+  font-size: 0.85rem;
+  color: var(--gray-2);
+  margin: 0;
+}
+
+/* ════════════════════════════════════════════════
+   CHAMPS DE FORMULAIRE
+   ════════════════════════════════════════════════ */
+.form-group {
+  display: flex; flex-direction: column; margin-bottom: 1.2rem;
+}
+.form-group label {
+  font-size: 0.75rem; color: var(--gray-2); margin-bottom: 0.4rem; font-weight: 500;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--r);
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: #fff;
+  font-size: 0.85rem;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.form-group input:-webkit-autofill,
+.form-group input:-webkit-autofill:hover, 
+.form-group input:-webkit-autofill:focus, 
+.form-group input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px #1a1a24 inset !important;
+  -webkit-text-fill-color: white !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--purple);
+  background: rgba(255,255,255,0.08);
+  box-shadow: 0 0 0 3px rgba(124,92,252,0.2);
+}
+
+.form-group input.invalid {
+  border-color: var(--error) !important;
+  background: rgba(239, 71, 111, 0.05) !important;
+  box-shadow: 0 0 0 3px rgba(239, 71, 111, 0.15) !important;
+}
+
+/* Bouton principal */
+.submit-btn {
+  width: 100%; padding: 0.8rem; border-radius: var(--r); border: none;
+  background: linear-gradient(135deg, var(--purple), var(--teal));
+  color: #fff; font-size: 0.9rem; font-weight: 600; cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 15px rgba(124,92,252,0.3);
+  display: flex; justify-content: center; align-items: center; gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+.submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(124,92,252,0.5);
+}
+
+.back-link {
+  display: block; text-align: center; margin-top: 1.5rem;
+  font-size: 0.75rem; color: var(--gray-2); text-decoration: none; transition: color 0.2s;
+}
+
+.messages-container {
+  margin-bottom: 1.2rem;
+}
+.alert {
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--r);
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+  color: #fff;
+}
+.alert-error {
+  background: rgba(239, 71, 111, 0.1);
+  border: 1px solid rgba(239, 71, 111, 0.3);
+  color: #ffb3c1;
+}
+.alert-success {
+  background: rgba(6, 214, 160, 0.1);
+  border: 1px solid rgba(6, 214, 160, 0.3);
+  color: #99e2b4;
+}
+.alert-info, .alert-warning {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+@media (max-width: 600px) {
+  .demo-container { padding: 1rem; margin: 20px auto; }
+  .demo-card { padding: 1.5rem; }
+}
+
+@keyframes spin { 100% { transform: rotate(360deg); } }
+

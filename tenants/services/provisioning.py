@@ -296,7 +296,11 @@ def step_create_oauth_app(tenant, admin_email: str) -> tuple[str, str]:
     )
     if not created:
         client_id = app.client_id
-        client_secret = app.client_secret
+        # The secret in the DB is hashed, we cannot retrieve the plain text.
+        # We MUST generate a new one and update the app, so we can pass the plain text to the client.
+        client_secret = secrets.token_urlsafe(64)
+        app.client_secret = client_secret
+        app.save(update_fields=['client_secret'])
         
     return client_id, client_secret
 

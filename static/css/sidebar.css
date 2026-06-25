@@ -1,0 +1,135 @@
+/* Apple HIG Inspired Typography & Sidebar CSS - Compact Edition */
+.admin-sidebar {
+    width: 220px; /* Reduced width for compactness */
+    background: #050507; /* Exactly matches home.html --black */
+    border-right: 1px solid rgba(255, 255, 255, 0.05); /* Subtle separator */
+    display: flex;
+    flex-direction: column;
+    height: 133.33vh;
+    overflow-y: auto;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+.sidebar-header {
+    padding: 20px 16px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+.brand-logo {
+    font-weight: 800;
+    font-size: 34px;
+    color: #fff;
+    letter-spacing: -0.04em;
+}
+.admin-tag {
+    color: #8C72FF;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+.sidebar-sect {
+    padding: 16px 16px 6px; /* Tighter section headers */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: rgba(235, 235, 245, 0.5); 
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: default;
+    user-select: none;
+}
+.nav-sect-group {
+    padding: 0 8px; /* Reduced side padding */
+}
+.nav-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 10px; /* Tighter vertical padding */
+    margin-bottom: 2px;
+    border-radius: 6px; /* Smaller border radius for compact items */
+    color: rgba(235, 235, 245, 0.7); 
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+.nav-item:hover {
+    color: #fff;
+    transform: scale(0.98); 
+    background: transparent !important;
+}
+.nav-item.active {
+    font-weight: 800;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+.nav-item.active .nav-text {
+    background: linear-gradient(120deg, #7c5cfc 0%, #a78bfa 40%, #06d6a0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    display: inline-block;
+}
+.nav-item.active::before {
+    display: none !important;
+}
+.nav-text {
+    flex: 1;
+    font-size: 14px; /* Reduced for compactness */
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+.nav-group {
+    margin-bottom: 2px;
+}
+.nav-group .chevron {
+    transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+    color: rgba(235, 235, 245, 0.3);
+}
+.nav-group.open .chevron {
+    transform: rotate(90deg);
+    color: rgba(235, 235, 245, 0.6);
+}
+.group-items {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+    padding-left: 10px;
+}
+.nav-group.open .group-items {
+    max-height: 300px;
+}
+.sub-item {
+    display: block;
+    padding: 6px 10px; /* Tighter padding */
+    color: rgba(235, 235, 245, 0.6);
+    text-decoration: none;
+    font-size: 13px; /* Slightly smaller than main item */
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+.sub-item:hover {
+    color: #fff;
+    transform: translateX(4px); 
+}
+.sub-item.active {
+    font-weight: 800;
+    background: linear-gradient(120deg, #7c5cfc 0%, #a78bfa 40%, #06d6a0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    display: inline-block;
+}
+.sidebar-footer {
+    margin-top: auto;
+    padding: 12px 10px;
+}
+.user-avatar {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}

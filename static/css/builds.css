@@ -1,0 +1,2 @@
+/* Hide the topbar completely as requested */
+  .topbar { display: none !important; }
