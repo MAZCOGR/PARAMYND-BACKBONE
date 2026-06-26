@@ -38,12 +38,30 @@ def _log(tenant_slug: str, step: str, msg: str, error: bool = False):
     fn(f"[PROVISION:{tenant_slug}] [{step}] {msg}")
 
 
+def _sanitize_cmd_for_log(args: list) -> list:
+    """
+    C-02 fix : masque les valeurs sensibles dans les arguments gcloud avant logging.
+    Remplace les valeurs après DJANGO_SUPERUSER_PASSWORD= par '***'.
+    """
+    sanitized = []
+    for arg in args:
+        if 'DJANGO_SUPERUSER_PASSWORD=' in arg:
+            # Masquer uniquement la valeur du password dans --set-env-vars
+            import re
+            arg = re.sub(r'(DJANGO_SUPERUSER_PASSWORD=)[^,\s]+', r'\1***', arg)
+        sanitized.append(arg)
+    return sanitized
+
+
 def _run_gcloud(args: list, tenant_slug: str, step: str, timeout: int = 300) -> tuple[bool, str]:
     """
     Exécute une commande gcloud et retourne (success, output).
+    C-02 fix : les arguments sont sanitizés avant logging (pas de secrets en clair).
     """
     cmd = ['gcloud'] + args + ['--quiet']
-    _log(tenant_slug, step, f"Running: {' '.join(cmd)}")
+    # C-02 fix : logger la version sanitizée (password masqué)
+    safe_cmd = _sanitize_cmd_for_log(cmd)
+    _log(tenant_slug, step, f"Running: {' '.join(safe_cmd)}")
     try:
         result = subprocess.run(
             cmd,
@@ -166,7 +184,7 @@ def step_run_migrations(tenant_slug: str, db_name: str, project: str, region: st
         f'--project={project}',
         f'--set-cloudsql-instances={cloud_sql_instance}',
         f'--set-env-vars=DJANGO_SETTINGS_MODULE=core.settings,DB_NAME={db_name},DB_USER=admin,CLOUD_SQL_INSTANCE={cloud_sql_instance}',
-        '--set-secrets=DB_PASSWORD=DB_PASS:latest,SECRET_KEY=PARAMYND_SECRET_KEY:latest',
+        '--set-secrets=DB_PASSWORD=DB_PASS:latest,SECRET_KEY=PARAMYND_SECRET_KEY:latest,JWT_SIGNING_KEY=PARAMYND_JWT_SIGNING_KEY:latest',
         '--command=python',
         '--args=manage.py,migrate',
         '--max-retries=1',
@@ -193,6 +211,11 @@ def step_create_superuser(tenant_slug: str, db_name: str, project: str, region: 
     """
     Étape 4 — Crée le compte superuser admin du client dans la DB du tenant.
     Utilise un Cloud Run Job avec les credentials passés en variables d'env.
+
+    C-03 fix : la voie de secours avec interpolation directe du password dans
+    un script Python shell a été supprimée (risque d'injection).
+    En cas d'échec, le tenant reste actif mais sans compte superuser initial.
+    L'utilisateur peut créer son compte via le lien 'Mot de passe oublié'.
     """
     step = 'SUPERUSER'
     job_name = f'{tenant_slug}-superuser'
@@ -204,8 +227,8 @@ def step_create_superuser(tenant_slug: str, db_name: str, project: str, region: 
         f'--region={region}', f'--project={project}',
     ], tenant_slug, step, timeout=30)
 
-    # Créer le job avec un script inline qui crée le superuser
-    # On passe les credentials via des variables d'environnement
+    # Créer le job — le password est passé via DJANGO_SUPERUSER_PASSWORD
+    # C-02 fix : le logging est sanitizé par _sanitize_cmd_for_log()
     ok, out = _run_gcloud([
         'run', 'jobs', 'create', job_name,
         f'--image={image_uri}',
@@ -221,37 +244,18 @@ def step_create_superuser(tenant_slug: str, db_name: str, project: str, region: 
             f'DJANGO_SUPERUSER_PASSWORD={admin_password},'
             f'DJANGO_SUPERUSER_USERNAME={admin_email}'
         ),
-        '--set-secrets=DB_PASSWORD=DB_PASS:latest,SECRET_KEY=PARAMYND_SECRET_KEY:latest',
+        '--set-secrets=DB_PASSWORD=DB_PASS:latest,SECRET_KEY=PARAMYND_SECRET_KEY:latest,JWT_SIGNING_KEY=PARAMYND_JWT_SIGNING_KEY:latest',
         '--command=python',
         '--args=manage.py,createsuperuser,--noinput',
         '--max-retries=1',
     ], tenant_slug, step, timeout=60)
 
     if not ok:
-        # En cas d'échec, on essaie avec un script Python shell
-        _log(tenant_slug, step, "Trying alternative createsuperuser via shell script...", error=False)
-        script = (
-            "from django.contrib.auth import get_user_model; "
-            f"U=get_user_model(); "
-            f"U.objects.filter(email='{admin_email}').exists() or "
-            f"U.objects.create_superuser(email='{admin_email}', password='{admin_password}')"
-        )
-        ok, out = _run_gcloud([
-            'run', 'jobs', 'create', job_name,
-            f'--image={image_uri}',
-            f'--region={region}',
-            f'--project={project}',
-            f'--set-cloudsql-instances={cloud_sql_instance}',
-            f'--set-env-vars=DJANGO_SETTINGS_MODULE=core.settings,DB_NAME={db_name},DB_USER=admin,CLOUD_SQL_INSTANCE={cloud_sql_instance}',
-            '--set-secrets=DB_PASSWORD=DB_PASS:latest,SECRET_KEY=PARAMYND_SECRET_KEY:latest',
-            '--command=python',
-            f'--args=manage.py,shell,-c,{script}',
-            '--max-retries=1',
-        ], tenant_slug, step, timeout=60)
-
-        if not ok:
-            _log(tenant_slug, step, "Could not create superuser job — tenant will still be active.", error=True)
-            return False
+        # C-03 fix : la voie de secours avec shell -c a été supprimée.
+        # Elle était vulnérable à l'injection Python si le password contenait
+        # des apostrophes ou des caractères spéciaux.
+        _log(tenant_slug, step, "Could not create superuser job — tenant will still be active.", error=True)
+        return False
 
     # Exécuter le job
     _log(tenant_slug, step, "Executing superuser creation job...")

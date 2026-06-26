@@ -20,7 +20,9 @@ class EmailBackend(ModelBackend):
         return None
 
     def get_user(self, user_id):
+        # H-05 fix : vérifier is_active — un user désactivé ne garde pas sa session
         try:
-            return User.objects.get(pk=user_id)
+            user = User.objects.get(pk=user_id)
+            return user if self.user_can_authenticate(user) else None
         except User.DoesNotExist:
             return None

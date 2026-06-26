@@ -93,12 +93,12 @@ def tenant_status_by_slug(request, slug):
             'message': 'Votre espace est prêt !',
         })
     elif tenant.status == 'failed':
-        last_deployment = tenant.deployments.order_by('-started_at').first()
-        error = last_deployment.error_message if last_deployment else 'Erreur inconnue'
+        # H-01 fix : ne pas exposer le message d'erreur interne dans un endpoint public
+        # Le message d'erreur technique est logé côté serveur uniquement
         return Response({
             'status': 'failed',
             'url': None,
-            'message': f'Le provisionnement a échoué : {error}',
+            'message': 'Le provisionnement a échoué. Contactez le support Paramynd.',
         })
     else:
         # provisioning / paused / archived → en cours

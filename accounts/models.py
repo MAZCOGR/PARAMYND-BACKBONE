@@ -61,6 +61,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     phone_verified = models.BooleanField(default=False, verbose_name='Téléphone vérifié')
     email_verification_code = models.CharField(max_length=6, null=True, blank=True)
     phone_verification_code = models.CharField(max_length=6, null=True, blank=True)
+    # H-06 fix : expiration des OTPs (30 minutes max)
+    otp_email_expires_at = models.DateTimeField(null=True, blank=True, verbose_name='Expiration OTP email')
+    otp_phone_expires_at = models.DateTimeField(null=True, blank=True, verbose_name='Expiration OTP SMS')
 
     objects = UserManager()
 

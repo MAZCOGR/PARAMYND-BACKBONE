@@ -60,14 +60,17 @@ def user_delete_view(request, pk):
 def user_password_reset_view(request, pk):
     user = get_object_or_404(User, pk=pk)
     if request.method == 'POST':
-        new_password = request.POST.get('new_password')
-        if new_password:
+        new_password = request.POST.get('new_password', '').strip()
+        # N-02 fix : valider la longueur minimum du mot de passe
+        if not new_password:
+            messages.error(request, "Le mot de passe ne peut pas être vide.")
+        elif len(new_password) < 8:
+            messages.error(request, "Le mot de passe doit contenir au moins 8 caractères.")
+        else:
             user.set_password(new_password)
             user.save()
             messages.success(request, f"Mot de passe de {user.email} réinitialisé.")
             return redirect('accounts:user_list')
-        else:
-            messages.error(request, "Le mot de passe ne peut pas être vide.")
     return render(request, 'accounts/users/password_reset.html', {'user_obj': user})
 
 from django.contrib.auth.models import Group

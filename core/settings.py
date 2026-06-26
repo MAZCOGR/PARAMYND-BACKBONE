@@ -211,11 +211,12 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=8),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
+    # C-06 fix : clé de signature JWT séparée de SECRET_KEY
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),   # M-10 fix : 1h au lieu de 8h
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),   # M-10 fix : 7j au lieu de 30j
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
-    'SIGNING_KEY': SECRET_KEY,
+    'SIGNING_KEY': env('JWT_SIGNING_KEY', default=SECRET_KEY),
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
@@ -264,7 +265,8 @@ DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='service@lageniale.com')
 # OAUTH2 PROVIDER
 # ==============================================================================
 OAUTH2_PROVIDER = {
-    'PKCE_REQUIRED': False,
+    # C-09 fix : PKCE requis pour protéger contre l'interception du code d'autorisation
+    'PKCE_REQUIRED': True,
 }
 
 # ==============================================================================

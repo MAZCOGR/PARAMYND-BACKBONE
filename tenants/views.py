@@ -33,11 +33,17 @@ def admin_required(view_func):
 
 @login_required
 def tenant_list_view(request):
-    """Liste tous les tenants avec recherche et filtre par statut."""
+    """Liste les tenants. Les admins voient tout, les users voient leurs tenants uniquement."""
     status_filter = request.GET.get('status', '')
     search = request.GET.get('q', '').strip()
 
-    tenants = Tenant.objects.all().order_by('-created_at')
+    # M-13 fix : les utilisateurs non-admin ne voient que leurs propres tenants
+    if request.user.is_admin:
+        tenants = Tenant.objects.all().order_by('-created_at')
+    else:
+        tenants = Tenant.objects.filter(
+            contact_email=request.user.email
+        ).order_by('-created_at')
 
     if status_filter:
         tenants = tenants.filter(status=status_filter)
@@ -532,10 +538,12 @@ def builds_sync_view(request):
     }
     return render(request, 'tenants/partials/builds_sync_update.html', context)
 
-@login_required
+@admin_required
 @require_POST
 def builds_delete_view(request, build_id):
-    """Supprime un enregistrement de build et son image correspondante dans Artifact Registry."""
+    """Supprime un enregistrement de build et son image GCP.
+    H-07 fix : admin_required au lieu de login_required.
+    """
     import subprocess
     import logging
     logger = logging.getLogger(__name__)

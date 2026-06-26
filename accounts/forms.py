@@ -6,10 +6,15 @@ User = get_user_model()
 
 class UserAdminCreationForm(forms.ModelForm):
     """
-    A form for creating new users. Includes all the required
-    fields, plus a repeated password.
+    Formulaire de création d'un utilisateur admin.
+    N-03 fix : le champ password a maintenant une validation de longueur minimum.
     """
-    password = forms.CharField(label='Mot de passe', widget=forms.PasswordInput)
+    password = forms.CharField(
+        label='Mot de passe',
+        widget=forms.PasswordInput,
+        min_length=8,
+        help_text='8 caractères minimum.',
+    )
     groups = forms.ModelMultipleChoiceField(
         queryset=Group.objects.all(),
         widget=forms.CheckboxSelectMultiple,
@@ -22,10 +27,11 @@ class UserAdminCreationForm(forms.ModelForm):
         fields = ('email', 'password', 'first_name', 'last_name', 'phone_number', 'is_active', 'groups')
 
     def save(self, commit=True):
-        # Save the provided password in hashed format
         user = super().save(commit=False)
         user.set_password(self.cleaned_data["password"])
-        user.is_staff = True # Needed to access the portal
+        # N-01 fix : is_staff uniquement si le rôle le justifie
+        # (admin ou superadmin) — pas hardcodé à True pour tous
+        user.is_staff = user.role in ('admin', 'superadmin')
         if commit:
             user.save()
             self.save_m2m()
