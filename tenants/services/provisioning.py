@@ -276,6 +276,8 @@ def step_create_superuser(tenant_slug: str, db_name: str, project: str, region: 
 def step_create_oauth_app(tenant, admin_email: str) -> tuple[str, str]:
     """
     Crée une application OAuth2 First-Party pour ce tenant sans configurer les URLs (fait après).
+    Client PUBLIC + PKCE : le code challenge est obligatoire côté serveur (PKCE_REQUIRED=True),
+    et USE_PKCE=True dans le backend social-auth côté tenant.
     """
     from oauth2_provider.models import Application
     from django.contrib.auth import get_user_model
@@ -286,27 +288,33 @@ def step_create_oauth_app(tenant, admin_email: str) -> tuple[str, str]:
 
     client_id = secrets.token_urlsafe(32)
     client_secret = secrets.token_urlsafe(64)
-    
+
     app, created = Application.objects.get_or_create(
         name=f"SSO-{tenant.slug}",
         defaults={
             'user': user,
             'client_id': client_id,
             'client_secret': client_secret,
-            'client_type': Application.CLIENT_CONFIDENTIAL,
+            'client_type': Application.CLIENT_PUBLIC,   # PUBLIC requis pour PKCE
             'authorization_grant_type': Application.GRANT_AUTHORIZATION_CODE,
             'skip_authorization': True,
         }
     )
     if not created:
         client_id = app.client_id
-        # The secret in the DB is hashed, we cannot retrieve the plain text.
-        # We MUST generate a new one and update the app, so we can pass the plain text to the client.
+        # Migrer les apps existantes vers PUBLIC si nécessaire
+        update_fields = []
+        if app.client_type != Application.CLIENT_PUBLIC:
+            app.client_type = Application.CLIENT_PUBLIC
+            update_fields.append('client_type')
+        # Régénérer le secret (le hashed en DB ne peut pas être relu)
         client_secret = secrets.token_urlsafe(64)
         app.client_secret = client_secret
-        app.save(update_fields=['client_secret'])
-        
+        update_fields.append('client_secret')
+        app.save(update_fields=update_fields)
+
     return client_id, client_secret
+
 
 def step_update_oauth_app_urls(tenant):
     """Met à jour les URIs de redirection de l'application OAuth2."""
