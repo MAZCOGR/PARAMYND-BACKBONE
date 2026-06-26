@@ -65,16 +65,27 @@ def tenant_status_by_slug(request, slug):
     GET /api/v1/tenants/status/<slug>/ — Statut de provisioning d'un tenant.
 
     Endpoint PUBLIC (pas d'auth) utilisé par building_workspace.html pour
-    le polling toutes les 3s. Retourne uniquement le statut et l'URL publique,
-    sans données sensibles.
+    le polling toutes les 3s. Retourne le statut, l'étape courante et l'URL publique.
 
     Réponse :
         {
           "status": "provisioning" | "active" | "failed",
-          "url": "https://<slug>.paramynd.com" | null,
-          "message": "..."
+          "step": "db_create" | "oauth_setup" | "cr_deploy" | "migrate" | "superuser" | "done",
+          "step_index": 0..6,
+          "message": "...",
+          "url": "https://<slug>.paramynd.com" | null
         }
     """
+    # Mapping étape → (index 0-6, label affiché)
+    STEP_MAP = {
+        'db_create':   (0, 'Création de la base de données...'),
+        'oauth_setup': (1, 'Configuration des ressources cloud...'),
+        'cr_deploy':   (2, 'Déploiement de l\'application...'),
+        'migrate':     (3, 'Application des migrations...'),
+        'superuser':   (4, 'Création du compte administrateur...'),
+        'done':        (5, 'Finalisation de l\'espace de travail...'),
+    }
+
     try:
         tenant = Tenant.objects.get(slug=slug)
     except Tenant.DoesNotExist:
@@ -89,24 +100,32 @@ def tenant_status_by_slug(request, slug):
     if tenant.status == 'active':
         return Response({
             'status': 'active',
+            'step': 'done',
+            'step_index': 6,
             'url': public_url,
             'message': 'Votre espace est prêt !',
         })
     elif tenant.status == 'failed':
         # H-01 fix : ne pas exposer le message d'erreur interne dans un endpoint public
-        # Le message d'erreur technique est logé côté serveur uniquement
         return Response({
             'status': 'failed',
+            'step': tenant.provisioning_step or '',
+            'step_index': STEP_MAP.get(tenant.provisioning_step, (0, ''))[0],
             'url': None,
             'message': 'Le provisionnement a échoué. Contactez le support Paramynd.',
         })
     else:
         # provisioning / paused / archived → en cours
+        step_key = tenant.provisioning_step or 'db_create'
+        step_index, step_message = STEP_MAP.get(step_key, (0, 'Initialisation...'))
         return Response({
             'status': 'provisioning',
+            'step': step_key,
+            'step_index': step_index,
             'url': None,
-            'message': 'Votre espace est en cours de création...',
+            'message': step_message,
         })
+
 
 
 urlpatterns = [

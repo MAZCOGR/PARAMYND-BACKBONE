@@ -42,6 +42,8 @@ class Tenant(models.Model):
     slug                  = models.SlugField(max_length=100, unique=True, db_index=True, verbose_name='Slug (identifiant URL)')
     contact_email         = models.EmailField(blank=True, null=True, verbose_name='Email de contact')
     status                = models.CharField(max_length=20, choices=TenantStatus.choices, default=TenantStatus.PROVISIONING, verbose_name='Statut')
+    provisioning_step     = models.CharField(max_length=50, blank=True, default='', verbose_name='Étape provisioning en cours',
+                                             help_text='Ex: db_create, cr_deploy, migrate, superuser, done')
 
     # GCP Config
     gcp_project_id        = models.CharField(max_length=255, default='yellow-455523', verbose_name='Projet GCP')

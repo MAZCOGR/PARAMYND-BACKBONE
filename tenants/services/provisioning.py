@@ -373,6 +373,10 @@ def provision_tenant(tenant_id: str, admin_email: str, admin_password: str):
 
     errors = []
 
+    # ── Étape 0 : Préparer ───────────────────────────────────────────────
+    tenant.provisioning_step = 'db_create'
+    tenant.save(update_fields=['provisioning_step', 'updated_at'])
+
     # ── Étape 1 : Créer la DB ─────────────────────────────────────────────
     if not step_create_database(slug, db_name, project):
         errors.append('DATABASE_CREATE_FAILED')
@@ -381,6 +385,9 @@ def provision_tenant(tenant_id: str, admin_email: str, admin_password: str):
         return
 
     # ── Étape 1.5 : Générer identifiants OAuth2 ───────────────────────────
+    tenant.provisioning_step = 'oauth_setup'
+    tenant.save(update_fields=['provisioning_step', 'updated_at'])
+
     client_id, client_secret = step_create_oauth_app(tenant, admin_email)
     env_vars = {
         'SOCIAL_AUTH_PARAMYND_ADMIN_KEY': client_id,
@@ -389,6 +396,9 @@ def provision_tenant(tenant_id: str, admin_email: str, admin_password: str):
     }
 
     # ── Étape 2 : Déployer Cloud Run ──────────────────────────────────────
+    tenant.provisioning_step = 'cr_deploy'
+    tenant.save(update_fields=['provisioning_step', 'updated_at'])
+
     ok, service_url = step_deploy_cloud_run(
         slug, db_name, project, region, cloud_sql_instance, image_uri, env_vars=env_vars
     )
@@ -408,6 +418,9 @@ def provision_tenant(tenant_id: str, admin_email: str, admin_password: str):
     step_update_oauth_app_urls(tenant)
 
     # ── Étape 3 : Migrations ──────────────────────────────────────────────
+    tenant.provisioning_step = 'migrate'
+    tenant.save(update_fields=['provisioning_step', 'updated_at'])
+
     if not step_run_migrations(slug, db_name, project, region, cloud_sql_instance, image_uri):
         errors.append('MIGRATE_FAILED')
         _log(slug, 'MIGRATE', 'Failed — marking tenant as failed', error=True)
@@ -416,6 +429,9 @@ def provision_tenant(tenant_id: str, admin_email: str, admin_password: str):
 
     # ── Étape 4 : Créer le superuser ──────────────────────────────────────
     # Non bloquant : si ça échoue, le tenant reste accessible mais sans compte
+    tenant.provisioning_step = 'superuser'
+    tenant.save(update_fields=['provisioning_step', 'updated_at'])
+
     step_create_superuser(
         slug, db_name, project, region, cloud_sql_instance, image_uri,
         admin_email, admin_password
@@ -423,9 +439,10 @@ def provision_tenant(tenant_id: str, admin_email: str, admin_password: str):
 
     # ── Étape 5 : Marquer le tenant comme ACTIVE ──────────────────────────
     from tenants.models import TenantStatus
+    tenant.provisioning_step = 'done'
     tenant.status = TenantStatus.ACTIVE
     tenant.last_deployed_at = timezone.now()
-    tenant.save(update_fields=['status', 'last_deployed_at', 'updated_at'])
+    tenant.save(update_fields=['provisioning_step', 'status', 'last_deployed_at', 'updated_at'])
 
     deployment.status = DeploymentStatus.SUCCESS
     deployment.completed_at = timezone.now()
