@@ -314,13 +314,22 @@ def step_update_oauth_app_urls(tenant):
     app = Application.objects.filter(name=f"SSO-{tenant.slug}").first()
     if app:
         uris = []
+        # URL Cloud Run directe (interne)
         if tenant.cloud_run_url:
             uris.append(f"{tenant.cloud_run_url}/social-auth/complete/paramynd-admin/")
+        # URL wildcard paramynd.com (via Load Balancer) — toujours présente
+        uris.append(f"https://{tenant.slug}.paramynd.com/social-auth/complete/paramynd-admin/")
+        # URL Cloud Run alternative (format region)
+        project = tenant.gcp_project_id or 'yellow-455523'
+        region = tenant.cloud_run_region or 'europe-west9'
+        uris.append(f"https://{tenant.slug}-{project.replace('-', '')[:12]}.{region}.run.app/social-auth/complete/paramynd-admin/")
+        # Domaine personnalisé si actif
         if tenant.custom_domain and tenant.domain_status == 'active':
             uris.append(f"https://{tenant.custom_domain}/social-auth/complete/paramynd-admin/")
-        
+
         app.redirect_uris = " ".join(uris)
         app.save(update_fields=['redirect_uris'])
+
 
 
 
