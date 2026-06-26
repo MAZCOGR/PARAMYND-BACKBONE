@@ -9,6 +9,8 @@ urlpatterns = [
     path('new/', views.tenant_create_view, name='create'),
     path('<uuid:pk>/', views.tenant_detail_view, name='detail'),
     path('<uuid:pk>/delete/', views.tenant_delete_view, name='delete'),
+    path('<uuid:pk>/reprovision/', views.tenant_reprovision_view, name='reprovision'),
+
     path('<uuid:pk>/deploy/', views.tenant_deploy_view, name='deploy'),
     path('<uuid:pk>/rollback/', views.tenant_rollback_view, name='rollback'),
     path('<uuid:pk>/status/', views.tenant_status_view, name='status'),

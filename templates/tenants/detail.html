@@ -81,6 +81,29 @@
       if (label) label.textContent = 'Suppression…';
     }
     </script>
+
+    {% if tenant.status == 'provisioning' or tenant.status == 'failed' %}
+    <form id="reprovision-form" method="post" action="{% url 'tenants:reprovision' tenant.pk %}" style="display:none;">
+        {% csrf_token %}
+    </form>
+    <button
+        id="reprovision-btn"
+        class="btn-expand btn-expand-warning"
+        onclick="showCustomConfirm(
+            '↻ Relancer le provisioning de {{ tenant.name }} ?\n\nCette action est sans risque : elle reprend là où le provisioning s\'est arrêté (migrations, superuser). Les données existantes sont conservées.',
+            'Relancer le provisioning',
+            () => document.getElementById('reprovision-form').submit()
+        )"
+        title="Relancer le provisioning"
+        style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white;"
+    >
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </svg>
+      <span class="btn-label">↻ Relancer</span>
+    </button>
+    {% endif %}
+
     <button class="btn-expand" title="Ressources">
       <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
       <span class="btn-label">Ressources</span>

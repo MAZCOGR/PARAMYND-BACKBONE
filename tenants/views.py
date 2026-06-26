@@ -243,8 +243,59 @@ def tenant_delete_view(request, pk):
 
     threading.Thread(target=_delete_and_remove, args=(tenant_id,), daemon=True).start()
 
-    messages.success(request, f"La suppression du tenant « {tenant_name} » a été lancée. Il sera retiré de la liste une fois toutes les ressources supprimées.")
+    messages.success(request, f"La suppression du tenant « {tenant_name} » a été lancée. Il sera retiré de la liste une fois toutes les ressources supprimées.")
     return redirect('tenants:list')
+
+
+# ──────────────────────────────────────────────
+# RELANCER LE PROVISIONING (retry)
+# ──────────────────────────────────────────────
+
+@admin_required
+@require_POST
+def tenant_reprovision_view(request, pk):
+    """
+    Relance le provisioning complet d'un tenant bloqué en 'provisioning' ou 'failed'.
+    Idempotent : toutes les étapes vérifient si les ressources existent déjà avant de les créer.
+    Cas typique : thread daemon tué par un scale-down Cloud Run pendant le provisioning initial.
+    """
+    tenant = get_object_or_404(Tenant, pk=pk)
+
+    if tenant.status not in (TenantStatus.PROVISIONING, TenantStatus.FAILED):
+        messages.warning(
+            request,
+            f"Le tenant « {tenant.name} » est en statut {tenant.get_status_display()} — "
+            "le reprovisioning n'est possible que pour les statuts 'En cours' ou 'En erreur'."
+        )
+        return redirect('tenants:detail', pk=pk)
+
+    # Remettre en provisioning
+    tenant.status = TenantStatus.PROVISIONING
+    tenant.save(update_fields=['status'])
+
+    # Générer un mot de passe temporaire aléatoire pour le superuser
+    import secrets as _secrets
+    temp_password = _secrets.token_urlsafe(16)
+
+    # Relancer en thread background
+    import threading
+    from tenants.services.provisioning import provision_tenant
+
+    t = threading.Thread(
+        target=provision_tenant,
+        args=(str(tenant.id), tenant.contact_email, temp_password),
+        daemon=True,
+        name=f'reprovision-{tenant.slug}',
+    )
+    t.start()
+
+    messages.success(
+        request,
+        f"✅ Reprovisioning lancé pour « {tenant.name} ». "
+        "Le statut passera à Actif dans quelques minutes."
+    )
+    return redirect('tenants:detail', pk=pk)
+
 
 
 # ──────────────────────────────────────────────
