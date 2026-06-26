@@ -8,6 +8,7 @@ django-oauth-toolkit==3.0.1
 
 # Base de données
 psycopg2-binary==2.9.10
+django-db-connection-pool==1.2.6  # Connection pooling SQLAlchemy — évite la saturation Cloud SQL
 
 # Utilitaires
 django-environ==0.12.0

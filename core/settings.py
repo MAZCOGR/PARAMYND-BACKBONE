@@ -114,13 +114,24 @@ CLOUD_SQL_INSTANCE = os.getenv('CLOUD_SQL_INSTANCE', 'yellow-455523:europe-west9
 if IS_CLOUD_RUN:
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.postgresql',
+            # django-db-connection-pool : pool SQLAlchemy par process gunicorn
+            # Évite la saturation Cloud SQL en environnement serverless
+            'ENGINE': 'dj_db_conn_pool.backends.postgresql',
             'NAME': os.getenv('DB_NAME', 'paramynd_admin'),
             'USER': os.getenv('DB_USER', 'admin'),
             'PASSWORD': os.getenv('DB_PASSWORD'),
             'HOST': f'/cloudsql/{CLOUD_SQL_INSTANCE}',
             'PORT': '5432',
-            'CONN_MAX_AGE': 60,
+            # CONN_MAX_AGE=0 est impératif sur Cloud Run (serverless) :
+            # les instances sont éphémères, garder des connexions ouvertes
+            # entre requêtes sature rapidement les slots PostgreSQL.
+            'CONN_MAX_AGE': 0,
+            'POOL_OPTIONS': {
+                'POOL_SIZE': 2,       # 2 connexions permanentes par worker gunicorn
+                'MAX_OVERFLOW': 1,    # 1 connexion bonus en pic de charge
+                'RECYCLE': 600,       # Recycler les connexions toutes les 10 min
+                'PRE_PING': True,     # Vérifier la connexion avant utilisation
+            },
         }
     }
     USE_X_FORWARDED_HOST = True
@@ -129,7 +140,7 @@ if IS_CLOUD_RUN:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SAMESITE = 'Lax'
-    
+
     # Fix for Firebase Hosting stripping cookies (it only allows __session)
     SESSION_COOKIE_NAME = '__session'
     CSRF_USE_SESSIONS = True
@@ -142,7 +153,9 @@ else:
             'PASSWORD': env('DB_PASSWORD', default='admin123'),
             'HOST': env('DB_HOST', default='127.0.0.1'),
             'PORT': env('DB_PORT', default='5433'),
-            'CONN_MAX_AGE': 60,
+            # En local, on garde CONN_MAX_AGE=0 aussi pour cohérence
+            # et parce que le Cloud SQL Proxy gère lui-même la persistance
+            'CONN_MAX_AGE': 0,
         }
     }
 
