@@ -14,6 +14,7 @@ class TenantStatus(models.TextChoices):
     PAUSED       = 'paused',       'Mis en pause'
     FAILED       = 'failed',       'En erreur'
     ARCHIVED     = 'archived',     'Archivé'
+    DELETING     = 'deleting',     'Suppression en cours'
 
 
 class DomainStatus(models.TextChoices):

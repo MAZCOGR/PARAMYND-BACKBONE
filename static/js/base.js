@@ -23,7 +23,7 @@ function showCustomConfirm(message, actionLabel, actionCallback) {
     const okBtn = document.getElementById('confirm-ok-btn');
     okBtn.textContent = actionLabel;
     
-    if (actionLabel === 'Supprimer') {
+    if (actionLabel.includes('Supprimer') || actionLabel.includes('supprimer')) {
         okBtn.style.background = 'var(--danger)';
     } else {
         okBtn.style.background = 'var(--accent)';

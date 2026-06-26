@@ -216,15 +216,28 @@ def tenant_delete_view(request, pk):
     """Supprime complètement un tenant et ses ressources associées."""
     tenant = get_object_or_404(Tenant, pk=pk)
     tenant_name = tenant.name
-    
-    # Lancement du déprovisionnement de manière asynchrone pour ne pas bloquer la requête HTTP trop longtemps
-    # (ou synchrone si ce n'est pas trop long, ici on le fait en background)
+    tenant_id = tenant.id
+
+    # Marquer immédiatement le tenant comme « en cours de suppression »
+    # pour que la liste affiche le bon statut dès la redirection.
+    tenant.status = TenantStatus.DELETING
+    tenant.save(update_fields=['status'])
+
+    # Lancement du déprovisionnement en arrière-plan
     import threading
     from tenants.services.provisioning import deprovision_tenant
-    
-    threading.Thread(target=deprovision_tenant, args=(tenant.id,)).start()
-    
-    messages.success(request, f"La suppression du tenant « {tenant_name} » et de ses ressources a été lancée en arrière-plan.")
+
+    def _delete_and_remove(tid):
+        deprovision_tenant(tid)
+        # Une fois les ressources GCP supprimées, supprimer l'enregistrement en base
+        try:
+            Tenant.objects.filter(pk=tid).delete()
+        except Exception:
+            pass
+
+    threading.Thread(target=_delete_and_remove, args=(tenant_id,), daemon=True).start()
+
+    messages.success(request, f"La suppression du tenant « {tenant_name} » a été lancée. Il sera retiré de la liste une fois toutes les ressources supprimées.")
     return redirect('tenants:list')
 
 
