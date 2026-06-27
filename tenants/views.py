@@ -709,7 +709,13 @@ def _build_saas_commits_context():
 
 @login_required
 def saas_commits_view(request):
-    """Page principale des commits SaaS."""
+    """
+    Page principale des commits SaaS.
+    Lance une sync avant le rendu pour que le premier affichage soit toujours à jour.
+    Le cache 60s dans git_service évite les appels excessifs à l'API GitHub.
+    """
+    from tenants.services.sync_service import sync_builds_and_commits
+    sync_builds_and_commits()  # sync silencieuse — le cache évite les appels répétés
     context = _build_saas_commits_context()
     context['page_title'] = 'SaaS Commits — Paramynd Admin'
     return render(request, 'tenants/saas_commits.html', context)
