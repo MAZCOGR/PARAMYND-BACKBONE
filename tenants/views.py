@@ -369,6 +369,8 @@ def tenant_deploy_view(request, pk):
             'SOCIAL_AUTH_PARAMYND_ADMIN_KEY': app.client_id,
             'SOCIAL_AUTH_PARAMYND_ADMIN_SECRET': new_secret,
             'PARAMYND_ADMIN_URL': getattr(settings, 'PARAMYND_ADMIN_URL', 'https://paramynd.com'),
+            # PUBLIC_DOMAIN : domaine public du tenant pour le CloudRunHostMiddleware
+            'PUBLIC_DOMAIN': tenant.custom_domain if (tenant.custom_domain and tenant.domain_status == 'active') else f"{tenant.slug}.paramynd.com",
         }
 
     # Appel au service Cloud Run

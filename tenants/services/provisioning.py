@@ -410,6 +410,9 @@ def provision_tenant(tenant_id: str, admin_email: str, admin_password: str):
         'SOCIAL_AUTH_PARAMYND_ADMIN_KEY': client_id,
         'SOCIAL_AUTH_PARAMYND_ADMIN_SECRET': client_secret,
         'PARAMYND_ADMIN_URL': getattr(settings, 'PARAMYND_ADMIN_URL', 'https://paramynd.com'),
+        # PUBLIC_DOMAIN : domaine public du tenant, utilisé par CloudRunHostMiddleware
+        # pour réécrire le header HTTP_HOST quand la requête arrive depuis .a.run.app
+        'PUBLIC_DOMAIN': f"{tenant.slug}.paramynd.com",
     }
 
     # ── Étape 2 : Déployer Cloud Run ──────────────────────────────────────

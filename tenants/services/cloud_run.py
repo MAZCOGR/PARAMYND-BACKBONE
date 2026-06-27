@@ -170,32 +170,29 @@ def deploy_service(
         result = operation.result(timeout=300)
         revision = result.latest_created_revision if hasattr(result, 'latest_created_revision') else 'unknown'
 
-        # Rendre le service public (non authentifié)
+        # Rendre le service public (invoker allUsers) via gcloud
+        # Note : run_v2.ServicesClient n'expose pas get_iam_policy/set_iam_policy,
+        # ces méthodes appartiennent à l'IAM REST API. On passe directement par gcloud.
         try:
-            policy = client.get_iam_policy(request={'resource': service_fqn})
-            binding_found = False
-            for b in policy.bindings:
-                if b.role == 'roles/run.invoker':
-                    if 'allUsers' not in b.members:
-                        b.members.append('allUsers')
-                    binding_found = True
-                    break
-            if not binding_found:
-                policy.bindings.add(role='roles/run.invoker', members=['allUsers'])
-            client.set_iam_policy(request={'resource': service_fqn, 'policy': policy})
-            logger.info(f"Permissions IAM configurées pour rendre {service_name} public.")
-        except Exception as e:
-            logger.error(f"Erreur Python API IAM pour {service_name}: {e}. Tentative via gcloud...")
-            try:
-                import subprocess
-                subprocess.run([
+            import subprocess
+            iam_result = subprocess.run(
+                [
                     'gcloud', 'run', 'services', 'add-iam-policy-binding', service_name,
                     '--member=allUsers', '--role=roles/run.invoker',
                     f'--region={region}', f'--project={gcp_project_id}', '--quiet'
-                ], check=True, capture_output=True)
-                logger.info(f"Permissions IAM configurées via gcloud pour {service_name}.")
-            except subprocess.CalledProcessError as gcloud_e:
-                logger.error(f"Erreur gcloud IAM pour {service_name}: {gcloud_e.stderr.decode()}")
+                ],
+                capture_output=True,
+                text=True,
+            )
+            if iam_result.returncode == 0:
+                logger.info(f"Permissions IAM configurées (allUsers → run.invoker) pour {service_name}.")
+            else:
+                logger.error(
+                    f"Erreur gcloud IAM pour {service_name} (code {iam_result.returncode}): "
+                    f"{iam_result.stderr.strip()}"
+                )
+        except Exception as iam_exc:
+            logger.error(f"Exception lors de la configuration IAM pour {service_name}: {iam_exc}")
 
         return {
             'success': True,
