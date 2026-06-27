@@ -244,43 +244,49 @@ def verify_otp_view(request):
                     original_slug = slug
                     counter = 1
 
-                    # H-09 fix : utiliser une transaction et try/except IntegrityError
+                    # H-09 fix : savepoints imbriqués pour gérer l'IntegrityError
+                    # SANS corrompre la transaction parente (PostgreSQL exige
+                    # un ROLLBACK TO SAVEPOINT après toute erreur SQL).
                     from django.db import IntegrityError
                     db_name = slug.replace('-', '_')
                     final_slug = slug
 
                     try:
-                        tenant = Tenant.objects.create(
-                            name=company,
-                            slug=slug,
-                            contact_email=locked_user.email,
-                            db_name=db_name,
-                            gcp_project_id='yellow-455523',
-                            cloud_run_region='europe-west9',
-                            cloud_sql_instance='yellow-455523:europe-west9:yellow-db-paris',
-                        )
+                        with transaction.atomic():  # savepoint #1
+                            tenant = Tenant.objects.create(
+                                name=company,
+                                slug=slug,
+                                contact_email=locked_user.email,
+                                db_name=db_name,
+                                gcp_project_id='yellow-455523',
+                                cloud_run_region='europe-west9',
+                                cloud_sql_instance='yellow-455523:europe-west9:yellow-db-paris',
+                            )
                     except IntegrityError:
-                        # Slug déjà pris : en générer un avec suffixe unique
-                        while True:
+                        # Slug déjà pris : générer un suffixe unique
+                        tenant = None
+                        while counter <= 10:
                             slug = f"{original_slug[:25]}-{counter}"
                             counter += 1
                             db_name = slug.replace('-', '_')
                             final_slug = slug
                             try:
-                                tenant = Tenant.objects.create(
-                                    name=company,
-                                    slug=slug,
-                                    contact_email=locked_user.email,
-                                    db_name=db_name,
-                                    gcp_project_id='yellow-455523',
-                                    cloud_run_region='europe-west9',
-                                    cloud_sql_instance='yellow-455523:europe-west9:yellow-db-paris',
-                                )
-                                break
+                                with transaction.atomic():  # savepoint #N
+                                    tenant = Tenant.objects.create(
+                                        name=company,
+                                        slug=slug,
+                                        contact_email=locked_user.email,
+                                        db_name=db_name,
+                                        gcp_project_id='yellow-455523',
+                                        cloud_run_region='europe-west9',
+                                        cloud_sql_instance='yellow-455523:europe-west9:yellow-db-paris',
+                                    )
+                                break  # succès
                             except IntegrityError:
-                                if counter > 10:
-                                    messages.error(request, "Impossible de créer l'espace. Contactez le support.")
-                                    return render(request, 'verify_otp.html', {'user': locked_user})
+                                continue
+                        if tenant is None:
+                            messages.error(request, "Impossible de créer l'espace. Contactez le support.")
+                            return render(request, 'verify_otp.html', {'user': locked_user})
 
                 # Stocker le slug pour la redirection (en cas de double-clic)
                 request.session['pending_slug'] = final_slug
