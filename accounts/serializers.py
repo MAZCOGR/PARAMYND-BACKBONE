@@ -21,8 +21,10 @@ class ParamyndTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
-        # Renommer 'username' en 'email' pour le backend
-        attrs['email'] = attrs.get(self.username_field)
+        # Bug #3 fix : accepter 'email' OU 'username' comme identifiant
+        # — robustesse si le client envoie le mauvais champ.
+        # Identique à paramynd/accounts/serializers.py.
+        attrs[self.username_field] = attrs.get('email') or attrs.get(self.username_field, '')
         return super().validate(attrs)
 
 
@@ -35,4 +37,7 @@ class UserSerializer(serializers.ModelSerializer):
             'id', 'email', 'first_name', 'last_name', 'full_name',
             'role', 'is_active', 'date_joined', 'last_login',
         ]
-        read_only_fields = ['id', 'date_joined', 'last_login']
+        # Bug #11 fix : is_active en read_only_fields — un user ne peut pas
+        # se réactiver lui-même via PATCH /api/auth/me/ si son compte est désactivé.
+        # Identique au M-09 fix de paramynd/accounts/serializers.py.
+        read_only_fields = ['id', 'is_active', 'date_joined', 'last_login']

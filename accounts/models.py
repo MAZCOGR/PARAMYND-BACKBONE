@@ -64,6 +64,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     # H-06 fix : expiration des OTPs (30 minutes max)
     otp_email_expires_at = models.DateTimeField(null=True, blank=True, verbose_name='Expiration OTP email')
     otp_phone_expires_at = models.DateTimeField(null=True, blank=True, verbose_name='Expiration OTP SMS')
+    # Bug #12 fix : compteur de tentatives OTP pour bloquer le brute-force
+    otp_attempts = models.PositiveSmallIntegerField(default=0, verbose_name='Tentatives OTP')
+
+    # Constante de classe (accessible via user.OTP_MAX_ATTEMPTS)
+    OTP_MAX_ATTEMPTS = 5
 
     objects = UserManager()
 

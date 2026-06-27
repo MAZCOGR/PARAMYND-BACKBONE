@@ -56,7 +56,10 @@ class UserAdminChangeForm(forms.ModelForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.is_staff = True
+        # Bug #2 fix : is_staff doit être conditionné au rôle,
+        # pas hardcodé à True pour tous les utilisateurs modifiés.
+        # Identique à UserAdminCreationForm.save().
+        user.is_staff = user.role in ('admin', 'superadmin')
         if commit:
             user.save()
             self.save_m2m()

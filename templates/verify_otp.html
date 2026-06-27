@@ -41,21 +41,30 @@
       </div>
       
       {% if not user.email_verified %}
-      <form method="post">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="verify_email">
-        <div class="form-group">
-          <input type="text" name="email_code" class="otp-input" placeholder="000000" maxlength="6" required>
+        {% if user.otp_attempts >= 5 %}
+        <div class="alert error" style="margin-top: 1rem;">
+          🔒 Trop de tentatives incorrectes. Demandez un nouveau code via le bouton ci-dessous.
         </div>
-        <button type="submit" class="btn-primary">Valider le code Email</button>
-      </form>
-      <form method="post" style="margin-top: 0.5rem;">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="resend_email">
-        <button type="submit" class="btn-text">Renvoyer le code</button>
-      </form>
+        {% endif %}
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="verify_email">
+          <div class="form-group">
+            <input type="text" name="email_code" class="otp-input" placeholder="000000" maxlength="6"
+                   inputmode="numeric" pattern="[0-9]{6}" autocomplete="one-time-code"
+                   {% if user.otp_attempts >= 5 %}disabled{% endif %} required>
+          </div>
+          <button type="submit" class="btn-primary" {% if user.otp_attempts >= 5 %}disabled{% endif %}>
+            Valider le code Email
+          </button>
+        </form>
+        <form method="post" style="margin-top: 0.5rem;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="resend_email">
+          <button type="submit" class="btn-text">Renvoyer le code email</button>
+        </form>
       {% else %}
-      <div style="color: var(--teal); font-size: 0.85rem; font-weight: 500;">✓ Email vérifié avec succès</div>
+      <div style="color: var(--teal); font-size: 0.85rem; font-weight: 500; margin-top: 0.5rem;">✓ Email vérifié avec succès</div>
       {% endif %}
     </div>
 
@@ -67,28 +76,53 @@
         </div>
         <div>
           <div style="font-weight: 600;">Téléphone</div>
-          <div style="font-size: 0.8rem; color: var(--gray-2);">{{ user.phone_number }}</div>
+          <div style="font-size: 0.8rem; color: var(--gray-2);">
+            {% if user.phone_number %}{{ user.phone_number }}{% else %}<em style="color: var(--gray-3);">Non renseigné</em>{% endif %}
+          </div>
         </div>
       </div>
-      
+
       {% if not user.phone_verified %}
-      <form method="post">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="verify_sms">
-        <div class="form-group">
-          <input type="text" name="sms_code" class="otp-input" placeholder="000000" maxlength="6" required>
+        {% if not user.phone_number %}
+        {# Bug #13 UX fix : avertir clairement si le numéro est absent #}
+        <div class="alert warning" style="margin-top: 1rem;">
+          ⚠️ Aucun numéro de téléphone associé à votre compte.
+          Contactez le support pour le mettre à jour, ou validez simplement votre email pour continuer.
         </div>
-        <button type="submit" class="btn-primary">Valider le code SMS</button>
-      </form>
-      <form method="post" style="margin-top: 0.5rem;">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="resend_sms">
-        <button type="submit" class="btn-text">Renvoyer le code</button>
-      </form>
+        {% else %}
+          {% if user.otp_attempts >= 5 %}
+          <div class="alert error" style="margin-top: 1rem;">
+            🔒 Trop de tentatives incorrectes. Demandez un nouveau code via le bouton ci-dessous.
+          </div>
+          {% endif %}
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="verify_sms">
+            <div class="form-group">
+              <input type="text" name="sms_code" class="otp-input" placeholder="000000" maxlength="6"
+                     inputmode="numeric" pattern="[0-9]{6}" autocomplete="one-time-code"
+                     {% if user.otp_attempts >= 5 %}disabled{% endif %} required>
+            </div>
+            <button type="submit" class="btn-primary" {% if user.otp_attempts >= 5 %}disabled{% endif %}>
+              Valider le code SMS
+            </button>
+          </form>
+          <form method="post" style="margin-top: 0.5rem;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="resend_sms">
+            <button type="submit" class="btn-text">Renvoyer le code SMS</button>
+          </form>
+        {% endif %}
       {% else %}
-      <div style="color: var(--teal); font-size: 0.85rem; font-weight: 500;">✓ Téléphone vérifié avec succès</div>
+      <div style="color: var(--teal); font-size: 0.85rem; font-weight: 500; margin-top: 0.5rem;">✓ Téléphone vérifié avec succès</div>
       {% endif %}
     </div>
+
+    {% if user.email_verified and user.phone_verified %}
+    <div class="alert success" style="margin-top: 1.5rem; text-align: center;">
+      ✅ Vérification complète ! Votre espace est en cours de création…
+    </div>
+    {% endif %}
     
   </div>
 </div>

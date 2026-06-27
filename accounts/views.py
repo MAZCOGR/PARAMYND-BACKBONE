@@ -59,6 +59,35 @@ def _safe_redirect(request, fallback='/'):
     return redirect(fallback)
 
 
+def _safe_logout_redirect(request):
+    """
+    Variante de _safe_redirect pour le logout uniquement.
+    Autorise le retour vers les hosts configurés dans settings.LOGOUT_REDIRECT_ALLOWED_HOSTS
+    (ex: paramynd.com, sous-domaines tenants) en plus du host courant.
+    Cela permet au client de se déconnecter et revenir sur le site public
+    sans ouvrir un open redirect générique.
+    """
+    from django.conf import settings
+    next_url = request.GET.get('next') or request.POST.get('next')
+
+    if not next_url:
+        return redirect('/auth/login/')
+
+    # Construire la liste des hosts autorisés pour le logout
+    allowed_hosts = {request.get_host()}
+    extra = getattr(settings, 'LOGOUT_REDIRECT_ALLOWED_HOSTS', [])
+    allowed_hosts.update(extra)
+
+    if url_has_allowed_host_and_scheme(
+        url=next_url,
+        allowed_hosts=allowed_hosts,
+        require_https=False,  # En dév on peut avoir du HTTP
+    ):
+        return redirect(next_url)
+
+    return redirect('/auth/login/')
+
+
 # ──────────────────────────────────────────────
 # VUES WEB (Session Django)
 # ──────────────────────────────────────────────
@@ -79,17 +108,14 @@ def login_view(request):
                 messages.error(request, "Ce compte est désactivé.")
             else:
                 login(request, user)
-                user.last_login = timezone.now()
-                user.save(update_fields=['last_login'])
-                # C-10 fix : valider next_url avant de rediriger
-                next_url = request.GET.get('next')
-                if next_url and url_has_allowed_host_and_scheme(
-                    url=next_url,
-                    allowed_hosts=request.get_host(),
-                    require_https=request.is_secure(),
-                ):
-                    return redirect(next_url)
-                return redirect(get_login_redirect_url(user))
+                # Bug #7 fix : supprimer le double-write last_login.
+                # django.contrib.auth.login() déclenche le signal user_logged_in
+                # qui appelle update_last_login() automatiquement.
+                # Mettre à jour manuellement ici causait 2 écritures DB.
+                #
+                # Bug #6 fix : utiliser _safe_redirect au lieu de dupliquer
+                # la logique de validation du paramètre 'next'.
+                return _safe_redirect(request, fallback=get_login_redirect_url(user))
         else:
             messages.error(request, "Email ou mot de passe incorrect.")
 
@@ -106,10 +132,13 @@ def logout_view(request):
     C-10 fix : next_url validé pour éviter open redirect.
     """
     if request.user.is_authenticated:
+        # M-05 fix : message ajouté AVANT logout() — survit via cookie messages
         messages.success(request, "Vous avez été déconnecté.")
         logout(request)
 
-    return _safe_redirect(request, fallback='/')
+    # Bug fix : rediriger vers /auth/login/ (par défaut) ou vers une URL
+    # autorisée (ex: paramynd.com depuis le client via ?next=).
+    return _safe_logout_redirect(request)
 
 
 # ──────────────────────────────────────────────

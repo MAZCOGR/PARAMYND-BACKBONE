@@ -9,6 +9,14 @@ User = get_user_model()
 def is_admin(user):
     return user.is_authenticated and user.is_admin
 
+# Bug #8 fix : prédicat unique pour les superadmins
+# Remplace la triple condition (is_superuser, role, groups) incohérente.
+def is_superadmin(user):
+    """Retourne True uniquement pour les vrais superadmins (role ou flag Django)."""
+    return user.is_authenticated and (
+        getattr(user, 'role', None) == 'superadmin' or user.is_superuser
+    )
+
 @login_required
 @user_passes_test(is_admin)
 def user_list_view(request):
@@ -77,12 +85,12 @@ from django.contrib.auth.models import Group
 from .models import GroupAccess
 
 @login_required
+@user_passes_test(is_superadmin)
 def role_matrix_view(request):
     """Vue pour gérer la matrice dynamique des droits (RBAC)."""
-    # Seuls les superadmins peuvent modifier la matrice
-    if not (request.user.is_superuser or (hasattr(request.user, 'role') and request.user.role == 'superadmin') or request.user.groups.filter(name='Super Admin').exists()):
-        messages.error(request, "Accès refusé.")
-        return redirect('accounts:user_list')
+    # Bug #8 fix : accès garanti par @user_passes_test(is_superadmin).
+    # L'ancienne triple condition (is_superuser / role / groups) était
+    # incohérente et permettait un bypass via le groupe Django "Super Admin".
 
     if request.method == "POST":
         action = request.POST.get('action')

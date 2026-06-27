@@ -11,6 +11,11 @@ class EmailBackend(ModelBackend):
     """Authentification par email au lieu du username."""
 
     def authenticate(self, request, email=None, password=None, **kwargs):
+        # Bug #1 fix : guard explicite sur email=None.
+        # Sans ce guard, User.objects.get(email__iexact=None) lève une ValueError
+        # (pas un DoesNotExist) qui n'est pas catchée → 500 en production.
+        if not email:
+            return None
         try:
             user = User.objects.get(email__iexact=email)
         except User.DoesNotExist:
