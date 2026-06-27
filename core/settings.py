@@ -277,6 +277,11 @@ TWILIO_AUTH_TOKEN = env('TWILIO_AUTH_TOKEN', default='')
 TWILIO_FROM_NUMBER = env('TWILIO_FROM_NUMBER', default='')
 
 # ==============================================================================
+# GITHUB API
+# ==============================================================================
+GITHUB_TOKEN = env('GITHUB_TOKEN', default='')  # Requis pour 5000 req/h (vs 60 sans token)
+
+# ==============================================================================
 # SESSION
 # ==============================================================================
 SESSION_COOKIE_AGE = 86400 * 7  # 7 jours
@@ -302,8 +307,19 @@ LOGGING = {
             'formatter': 'simple',
         },
     },
+    'filters': {
+        'exclude_google_auth_refresh': {
+            '()': 'django.utils.log.CallbackFilter',
+            'callback': lambda record: 'RefreshError' not in record.getMessage() and 'Reauthentication is needed' not in record.getMessage(),
+        },
+    },
     'loggers': {
         '': {'handlers': ['console'], 'level': 'INFO'},
         'django': {'handlers': ['console'], 'level': 'WARNING', 'propagate': False},
+        # Silence Google Auth / gRPC reauthentication noise
+        'google.auth': {'handlers': ['console'], 'level': 'CRITICAL', 'propagate': False},
+        'google.oauth2': {'handlers': ['console'], 'level': 'CRITICAL', 'propagate': False},
+        'grpc': {'handlers': ['console'], 'level': 'CRITICAL', 'propagate': False},
+        '_plugin_wrapping': {'handlers': [], 'level': 'CRITICAL', 'propagate': False},
     },
 }
