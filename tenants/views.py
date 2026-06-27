@@ -711,17 +711,9 @@ def _build_saas_commits_context():
 def saas_commits_view(request):
     """
     Page principale des commits SaaS.
-    Lance une sync en arrière-plan (thread non-bloquant) puis affiche
-    immédiatement les données en DB. Le HTMX polling (every 30s) mettra
-    à jour l'affichage quand la sync aura terminé.
+    Lit directement la DB — la sync est gérée par le trigger HTMX (load + every 30s).
+    Pas de thread ni d'appel API bloquant pour ne pas saturer le pool de connexions.
     """
-    import threading
-    from tenants.services.sync_service import sync_builds_and_commits
-
-    # Sync en background — ne bloque pas le rendu de la page
-    t = threading.Thread(target=sync_builds_and_commits, daemon=True, name='saas-sync-view')
-    t.start()
-
     context = _build_saas_commits_context()
     context['page_title'] = 'SaaS Commits — Paramynd Admin'
     return render(request, 'tenants/saas_commits.html', context)
