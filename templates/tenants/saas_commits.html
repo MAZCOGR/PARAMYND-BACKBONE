@@ -18,9 +18,9 @@
   </div>
 </div>
 
-<!-- Déclencheur HTMX stable : toutes les 30s, swap innerHTML du tableau sans se détruire -->
+<!-- Déclencheur HTMX stable : au chargement + toutes les 30s, swap innerHTML du tableau sans se détruire -->
 <div hx-get="{% url 'tenants:saas_commits_sync' %}"
-     hx-trigger="every 30s"
+     hx-trigger="load, every 30s"
      hx-target="#saas-table-container"
      hx-swap="innerHTML"
      style="display:none;"
