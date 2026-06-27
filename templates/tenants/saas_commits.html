@@ -15,10 +15,16 @@
   </div>
   <div style="display:flex; align-items:center; gap:16px;">
     <a href="{% url 'tenants:list' %}" class="btn btn-outline btn-sm" style="height:fit-content;">← Retour</a>
-    <div id="saas-sync-indicator" style="display:none;">
-      <div hx-get="{% url 'tenants:saas_commits_sync' %}" hx-trigger="load, every 10s" hx-swap="outerHTML" hx-target="#saas-sync-indicator"></div>
-    </div>
   </div>
+</div>
+
+<!-- Déclencheur HTMX stable : toutes les 30s, swap innerHTML du tableau sans se détruire -->
+<div hx-get="{% url 'tenants:saas_commits_sync' %}"
+     hx-trigger="every 30s"
+     hx-target="#saas-table-container"
+     hx-swap="innerHTML"
+     style="display:none;"
+     aria-hidden="true">
 </div>
 
 <div class="builds-grid" style="grid-template-columns: 1fr; margin-top:24px;">

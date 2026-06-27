@@ -1,11 +1,8 @@
-<!-- Indication de fin de synchronisation silencieuse -->
-<div id="saas-sync-indicator" style="display:none;"></div>
+{# Ce partial est injecté comme innerHTML de #saas-table-container (hx-swap="innerHTML") #}
+<div class="card" style="padding: 0; animation: fadeIn 0.4s ease; border: none; background: transparent; box-shadow: none;">
+  <!-- KPIs Containers (en haut du tableau) -->
+  <div id="kpi-group" class="kpis-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
 
-<!-- Mise à jour de la table SaaS -->
-<div id="saas-table-container" hx-swap-oob="true">
-  <div class="card" style="padding: 0; animation: fadeIn 0.4s ease; border: none; background: transparent; box-shadow: none;">
-    <!-- KPIs Containers (en haut du tableau) -->
-    <div id="kpi-group" class="kpis-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
       
       <!-- KPI 1: Total Commits -->
       <div class="kpi-card" style="animation: fadeIn 0.4s ease; padding: 20px;">
@@ -128,5 +125,4 @@
       <p>Le dépôt SaaS n'a pas encore de commits ou n'est pas synchronisé.</p>
     </div>
     {% endif %}
-  </div>
 </div>

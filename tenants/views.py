@@ -640,132 +640,93 @@ def builds_rollback_view(request, build_id):
 # SAAS COMMITS
 # ──────────────────────────────────────────────
 
+def _build_saas_commits_context():
+    """
+    Helper privé : construit le contexte partagé entre la vue principale
+    et la vue de synchronisation HTMX. Évite la duplication de logique.
+    """
+    from tenants.models import SaaSGitCommitRecord, Tenant, TenantStatus, Deployment, DeploymentStatus
+    from django.utils import timezone
+    from .services import artifact_registry
+    import datetime
+
+    # Vrai total en base (pas limité par le slice)
+    total_commits = SaaSGitCommitRecord.objects.count()
+
+    # Les 50 plus récents pour l'affichage (triés par commit_date_iso DESC via le Meta.ordering)
+    recent_commits = list(SaaSGitCommitRecord.objects.all()[:50])
+
+    now = timezone.now()
+    commits_this_month = SaaSGitCommitRecord.objects.filter(
+        commit_date_iso__year=now.year,
+        commit_date_iso__month=now.month
+    ).count()
+
+    active_tenants = Tenant.objects.filter(status=TenantStatus.ACTIVE).count()
+    tenants_this_month = Tenant.objects.filter(
+        status=TenantStatus.ACTIVE,
+        created_at__year=now.year,
+        created_at__month=now.month
+    ).count()
+
+    thirty_days_ago = now - datetime.timedelta(days=30)
+    recent_deployments = Deployment.objects.filter(started_at__gte=thirty_days_ago)
+    total_recent = recent_deployments.count()
+    if total_recent > 0:
+        success_count = sum(1 for d in recent_deployments if d.status == DeploymentStatus.SUCCESS)
+        success_rate = int((success_count / total_recent) * 100)
+    else:
+        success_rate = 100
+
+    # Enrichissement : is_ready, short_date, short_time
+    ar_tags = artifact_registry.list_available_tags(limit=100)
+    ar_tag_names = {t['tag'] for t in ar_tags}
+
+    for c in recent_commits:
+        primary_tag = c.tag if c.tag else c.short_hash
+        c.is_ready = primary_tag in ar_tag_names
+
+        parts = c.date_str.split(' ')
+        if len(parts) == 2:
+            c.short_date = parts[0][:5]  # '23/06'
+            c.short_time = parts[1]
+        else:
+            c.short_date = c.date_str
+            c.short_time = ""
+
+    return {
+        'recent_commits':          recent_commits,
+        'total_commits':           total_commits,
+        'commits_this_month':      commits_this_month,
+        'active_tenants':          active_tenants,
+        'tenants_this_month':      tenants_this_month,
+        'success_rate':            success_rate,
+        'total_recent_deployments': total_recent,
+    }
+
+
 @login_required
 def saas_commits_view(request):
     """Page principale des commits SaaS."""
-    from tenants.models import SaaSGitCommitRecord, Tenant, TenantStatus, Deployment, DeploymentStatus
-    from django.utils import timezone
-    import datetime
-
-    recent_commits = SaaSGitCommitRecord.objects.all()[:50]
-    total_commits = recent_commits.count()
-
-    now = timezone.now()
-    commits_this_month = SaaSGitCommitRecord.objects.filter(
-        commit_date_iso__year=now.year,
-        commit_date_iso__month=now.month
-    ).count()
-
-    active_tenants = Tenant.objects.filter(status=TenantStatus.ACTIVE).count()
-    tenants_this_month = Tenant.objects.filter(
-        status=TenantStatus.ACTIVE,
-        created_at__year=now.year,
-        created_at__month=now.month
-    ).count()
-    
-    thirty_days_ago = now - datetime.timedelta(days=30)
-    recent_deployments = Deployment.objects.filter(started_at__gte=thirty_days_ago)
-    total_recent = recent_deployments.count()
-    if total_recent > 0:
-        success_count = sum(1 for d in recent_deployments if d.status == DeploymentStatus.SUCCESS)
-        success_rate = int((success_count / total_recent) * 100)
-    else:
-        success_rate = 100
-
-    from .services import artifact_registry
-    ar_tags = artifact_registry.list_available_tags(limit=100)
-    ar_tag_names = {t['tag'] for t in ar_tags}
-
-    for c in recent_commits:
-        primary_tag = c.tag if c.tag else c.short_hash
-        c.is_ready = primary_tag in ar_tag_names
-        
-        parts = c.date_str.split(' ')
-        if len(parts) == 2:
-            date_part, time_part = parts
-            c.short_date = date_part[:5]  # '23/06'
-            c.short_time = time_part
-        else:
-            c.short_date = c.date_str
-            c.short_time = ""
-
-    context = {
-        'recent_commits': recent_commits,
-        'total_commits': total_commits,
-        'commits_this_month': commits_this_month,
-        'active_tenants': active_tenants,
-        'tenants_this_month': tenants_this_month,
-        'success_rate': success_rate,
-        'total_recent_deployments': total_recent,
-        'page_title': 'SaaS Commits — Paramynd Admin',
-    }
+    context = _build_saas_commits_context()
+    context['page_title'] = 'SaaS Commits — Paramynd Admin'
     return render(request, 'tenants/saas_commits.html', context)
+
 
 @login_required
 def saas_commits_sync_view(request):
-    """Point d'entrée asynchrone HTMX pour SaaS."""
+    """
+    Point d'entrée asynchrone HTMX pour SaaS.
+    Retourne 204 (aucun changement) ou le HTML mis à jour.
+    Le 204 est ignoré silencieusement par HTMX, ce qui permet
+    au trigger 'every 30s' de continuer à fonctionner.
+    """
     from tenants.services.sync_service import sync_builds_and_commits
     has_changes = sync_builds_and_commits()
-    
+
     if not has_changes:
-        html = '<div id="saas-sync-indicator" style="display:none;"></div>'
-        return HttpResponse(html)
+        # 204 = HTMX ne modifie rien et le trigger persiste
+        return HttpResponse(status=204)
 
-    from tenants.models import SaaSGitCommitRecord, Tenant, TenantStatus, Deployment, DeploymentStatus
-    from django.utils import timezone
-    import datetime
-
-    recent_commits = SaaSGitCommitRecord.objects.all()[:50]
-    total_commits = recent_commits.count()
-
-    now = timezone.now()
-    commits_this_month = SaaSGitCommitRecord.objects.filter(
-        commit_date_iso__year=now.year,
-        commit_date_iso__month=now.month
-    ).count()
-
-    active_tenants = Tenant.objects.filter(status=TenantStatus.ACTIVE).count()
-    tenants_this_month = Tenant.objects.filter(
-        status=TenantStatus.ACTIVE,
-        created_at__year=now.year,
-        created_at__month=now.month
-    ).count()
-    
-    thirty_days_ago = now - datetime.timedelta(days=30)
-    recent_deployments = Deployment.objects.filter(started_at__gte=thirty_days_ago)
-    total_recent = recent_deployments.count()
-    if total_recent > 0:
-        success_count = sum(1 for d in recent_deployments if d.status == DeploymentStatus.SUCCESS)
-        success_rate = int((success_count / total_recent) * 100)
-    else:
-        success_rate = 100
-
-    from .services import artifact_registry
-    ar_tags = artifact_registry.list_available_tags(limit=100)
-    ar_tag_names = {t['tag'] for t in ar_tags}
-
-    for c in recent_commits:
-        primary_tag = c.tag if c.tag else c.short_hash
-        c.is_ready = primary_tag in ar_tag_names
-        
-        parts = c.date_str.split(' ')
-        if len(parts) == 2:
-            date_part, time_part = parts
-            c.short_date = date_part[:5]  # '23/06'
-            c.short_time = time_part
-        else:
-            c.short_date = c.date_str
-            c.short_time = ""
-
-    context = {
-        'recent_commits': recent_commits,
-        'total_commits': total_commits,
-        'commits_this_month': commits_this_month,
-        'active_tenants': active_tenants,
-        'tenants_this_month': tenants_this_month,
-        'success_rate': success_rate,
-        'total_recent_deployments': total_recent,
-    }
+    context = _build_saas_commits_context()
     return render(request, 'tenants/partials/saas_commits_sync_update.html', context)
-
-
