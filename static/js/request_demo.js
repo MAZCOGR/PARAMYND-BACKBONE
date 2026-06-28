@@ -192,9 +192,8 @@ const dialBadge    = document.getElementById('phoneDialBadge');
 const dialCodeText = document.getElementById('dialCodeText');
 const phoneInput   = document.getElementById('phone_number');
 const phoneHidden  = document.getElementById('phone_full');
-
-// Hide badge initially (no country selected yet)
-dialBadge.style.display = 'none';
+// Badge always visible — empty until a country is selected
+// (prevents layout shift and double dial-code entry)
 
 let selectedCountry  = null;
 let focusedIndex     = -1;
@@ -252,7 +251,6 @@ function selectCountry(c) {
   countryHidden.value = c.code;
 
   // Update phone dial badge — dial code only, no flag
-  dialBadge.style.display = 'flex';
   dialCodeText.textContent = c.dial;
   dialBadge.classList.add('has-code');
 
