@@ -27,6 +27,27 @@ DEFAULT_REGION    = getattr(settings, 'GCP_REGION', 'europe-west9')
 DEFAULT_SQL_INST  = getattr(settings, 'CLOUD_SQL_INSTANCE', 'yellow-455523:europe-west9:yellow-db-paris')
 DEFAULT_IMAGE_TAG = 'latest'
 
+# ──────────────────────────────────────────────────────────────────────────────
+# GESTION DES CONNEXIONS DB POUR LES THREADS
+# ──────────────────────────────────────────────────────────────────────────────
+from functools import wraps
+from django.db import connection
+
+def close_db_connections(func):
+    """
+    Décorateur CRITIQUE pour les fonctions exécutées en threading.Thread.
+    Django ne ferme pas automatiquement les connexions BDD à la fin d'un thread
+    (le signal request_finished n'est pas appelé). Sans ça, la pool (dj_db_conn_pool)
+    est rapidement épuisée, causant des erreurs 500 (TimeoutError).
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        finally:
+            connection.close()
+    return wrapper
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # HELPERS INTERNES
@@ -412,6 +433,7 @@ def get_available_pool_tenant():
 
 
 
+@close_db_connections
 def _cleanup_pool_cloud_run_service(pool_slug: str, project: str, region: str):
     """
     Supprime le service Cloud Run du pool apres assignation au client.
@@ -441,6 +463,7 @@ def _cleanup_pool_cloud_run_service(pool_slug: str, project: str, region: str):
         logger.warning(f"[POOL:CLEANUP] Echec suppression service '{pool_slug}': {out}")
 
 
+@close_db_connections
 def assign_pool_tenant(pool_tenant_id: str, client_slug: str, company: str,
                        admin_email: str, admin_password: str):
     """
@@ -602,6 +625,7 @@ def assign_pool_tenant(pool_tenant_id: str, client_slug: str, company: str,
 
 
 
+@close_db_connections
 def provision_pool_tenant():
     """
     Crée et provisionne un nouveau tenant de pool (réserve).
@@ -711,6 +735,7 @@ def provision_pool_tenant():
     _log(pool_slug, 'POOL:DONE', f"✅ Tenant de pool '{pool_slug}' prêt — en réserve.")
 
 
+@close_db_connections
 def ensure_pool_size(target_size: int = 3):
     """
     Vérifie la taille du pool et lance des provisions de pool si nécessaire.
@@ -758,6 +783,7 @@ def ensure_pool_size(target_size: int = 3):
 # ──────────────────────────────────────────────────────────────────────────────
 
 
+@close_db_connections
 def provision_tenant(tenant_id: str, admin_email: str, admin_password: str):
     """
     Orchestrateur principal du provisioning d'un tenant.
