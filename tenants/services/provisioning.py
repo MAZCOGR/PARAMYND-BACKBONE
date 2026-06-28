@@ -411,21 +411,62 @@ def get_available_pool_tenant():
         return tenant
 
 
+
+def _cleanup_pool_cloud_run_service(pool_slug: str, project: str, region: str):
+    """
+    Supprime le service Cloud Run du pool apres assignation au client.
+
+    Le service pool-abc123 est devenu inutile une fois qu'un nouveau service
+    avec le vrai slug client a ete deploye. On le supprime pour eviter des
+    couts GCP inutiles et garder le projet propre.
+
+    Appele en thread daemon — les erreurs sont loguees mais n'affectent pas
+    l'activation du tenant client.
+    """
+    import time
+    # Attendre 60s que le nouveau service client soit bien stable avant de supprimer
+    time.sleep(60)
+    _log(pool_slug, 'POOL:CLEANUP', f"Suppression du service Cloud Run pool '{pool_slug}'...")
+    ok, out = _run_gcloud([
+        'run', 'services', 'delete', pool_slug,
+        f'--region={region}',
+        f'--project={project}',
+        '--quiet',
+    ], pool_slug, 'POOL:CLEANUP', timeout=120)
+    if ok:
+        _log(pool_slug, 'POOL:CLEANUP', f"Service pool '{pool_slug}' supprime avec succes.")
+    else:
+        # Non bloquant : si la suppression echoue, le service restera inactif
+        # (scale-to-zero) et pourra etre supprime manuellement.
+        logger.warning(f"[POOL:CLEANUP] Echec suppression service '{pool_slug}': {out}")
+
+
 def assign_pool_tenant(pool_tenant_id: str, client_slug: str, company: str,
                        admin_email: str, admin_password: str):
     """
-    Assigne un tenant de pool pré-provisionné à un vrai client.
+    Assigne un tenant de pool pre-provisionne a un vrai client.
 
-    Cette fonction remplace provision_tenant() côté client quand le pool est disponible.
-    Elle est beaucoup plus rapide (~2–4 min) car la BDD et les migrations sont déjà prêtes.
+    CORRECTION URL MASK : Le NEG GCP utilise urlMask='<service>.paramynd.com',
+    ce qui signifie que acme.paramynd.com doit pointer vers un Cloud Run service
+    nomme exactement 'acme'. On NE PEUT PAS juste renommer le service pool-abc123.
 
-    Ce qui est fait :
-        1. Mettre à jour les env vars du service Cloud Run (domaine, OAuth)
-        2. Créer le superuser client via Cloud Run Job
-        3. Mettre à jour le record Tenant en base (slug, nom, email, statut)
+    Ce que cette fonction fait :
+        1. Creer l'app OAuth2 pour le vrai client
+        2. Deployer un NOUVEAU Cloud Run service avec le slug client (ex: 'acme')
+           en reutilisant la BDD deja migree du pool tenant (gain ~3-5 min)
+        3. Creer le superuser client
+        4. Mettre a jour le record Tenant (slug, nom, email, statut)
+        5. Supprimer le service Cloud Run pool en background (nettoyage)
+
+    Temps gagne vs provision classique :
+        - DB creation (~60s)     : economisee (deja faite dans le pool)
+        - Migrations (~2-3 min)  : economisees (deja faites dans le pool)
+        - CR deploy client slug  : ~2-3 min (necessaire a cause du URL mask)
+        - Superuser              : ~1-2 min
+        Total : ~3-5 min (vs 7-10 min sans pool) = gain 40-50%
 
     Args:
-        pool_tenant_id  : UUID du tenant de pool (déjà réservé en PROVISIONING)
+        pool_tenant_id  : UUID du tenant de pool (deja reserve en PROVISIONING)
         client_slug     : Slug final du client (ex: 'acme-corp')
         company         : Nom de l'entreprise du client
         admin_email     : Email du compte admin client
@@ -439,89 +480,118 @@ def assign_pool_tenant(pool_tenant_id: str, client_slug: str, company: str,
         logger.error(f"[POOL:ASSIGN] Tenant de pool {pool_tenant_id} introuvable en DB")
         return
 
-    pool_slug = tenant.slug  # Ex: pool-a3f8c2
+    pool_slug = tenant.slug           # ex: pool-a3f8c2
+    pool_db_name = tenant.db_name     # ex: pool_a3f8c2 — BDD deja migree, on la reutilise
     project = tenant.gcp_project_id or DEFAULT_PROJECT
     region = tenant.cloud_run_region or DEFAULT_REGION
     cloud_sql_instance = tenant.cloud_sql_instance or DEFAULT_SQL_INST
-    image_uri = tenant.current_image_tag and _get_latest_image_uri(project, region) or _get_latest_image_uri(project, region)
-
-    _log(pool_slug, 'POOL:ASSIGN', f"Assignation du pool tenant '{pool_slug}' → client '{client_slug}' ({admin_email})")
-
-    # ── Étape 1 : Créer l'app OAuth2 pour le vrai client ─────────────────────
-    tenant.provisioning_step = 'oauth_setup'
-    # Mettre à jour temporairement les champs client pour step_create_oauth_app
-    tenant.contact_email = admin_email
-    tenant.save(update_fields=['provisioning_step', 'contact_email', 'updated_at'])
-
-    client_id, client_secret = step_create_oauth_app(tenant, admin_email)
+    image_uri = _get_latest_image_uri(project, region)
+    image_tag = image_uri.split(':')[-1]
     public_domain = f"{client_slug}.paramynd.com"
 
-    # ── Étape 2 : Mettre à jour les env vars Cloud Run (pas de redéploiement complet) ──
-    tenant.provisioning_step = 'cr_update'
-    tenant.save(update_fields=['provisioning_step', 'updated_at'])
+    _log(client_slug, 'POOL:ASSIGN',
+         f"Assignation pool '{pool_slug}' (DB: {pool_db_name}) -> client '{client_slug}' ({admin_email})")
 
-    _log(pool_slug, 'POOL:CR_UPDATE', f"Mise à jour env vars Cloud Run '{pool_slug}' → PUBLIC_DOMAIN={public_domain}")
+    # Mettre a jour le slug et email pour le suivi pendant l'assignation
+    tenant.contact_email = admin_email
+    tenant.save(update_fields=['contact_email', 'updated_at'])
 
-    env_vars_str = (
-        f"PUBLIC_DOMAIN={public_domain},"
-        f"SOCIAL_AUTH_PARAMYND_ADMIN_KEY={client_id},"
-        f"SOCIAL_AUTH_PARAMYND_ADMIN_SECRET={client_secret},"
-        f"PARAMYND_ADMIN_URL={getattr(__import__('django.conf', fromlist=['settings']).settings, 'PARAMYND_ADMIN_URL', 'https://paramynd.com')}"
+    deployment = Deployment.objects.create(
+        tenant=tenant,
+        image_tag=image_tag,
+        image_uri=image_uri,
+        status=DeploymentStatus.IN_PROGRESS,
+        deployed_by='pool-assign',
     )
 
-    ok, out = _run_gcloud([
-        'run', 'services', 'update', pool_slug,
-        f'--region={region}',
-        f'--project={project}',
-        f'--update-env-vars={env_vars_str}',
-    ], pool_slug, 'POOL:CR_UPDATE', timeout=180)
+    # ── Etape 1 : Creer l'app OAuth2 pour le vrai client ─────────────────────
+    tenant.provisioning_step = 'oauth_setup'
+    tenant.save(update_fields=['provisioning_step', 'updated_at'])
+
+    client_id, client_secret = step_create_oauth_app(tenant, admin_email)
+
+    # ── Etape 2 : Deployer un NOUVEAU Cloud Run service avec le vrai slug ─────
+    # CRITIQUE : Le NEG urlMask='<service>.paramynd.com' exige que le nom du
+    # service Cloud Run soit exactement le slug client. On reutilise la BDD du pool.
+    tenant.provisioning_step = 'cr_deploy'
+    tenant.save(update_fields=['provisioning_step', 'updated_at'])
+
+    _log(client_slug, 'POOL:CR_DEPLOY',
+         f"Deploiement Cloud Run '{client_slug}' (reutilise DB pool: {pool_db_name})")
+
+    from django.conf import settings as django_settings
+    extra_env = {
+        'PUBLIC_DOMAIN': public_domain,
+        'SOCIAL_AUTH_PARAMYND_ADMIN_KEY': client_id,
+        'SOCIAL_AUTH_PARAMYND_ADMIN_SECRET': client_secret,
+        'PARAMYND_ADMIN_URL': getattr(django_settings, 'PARAMYND_ADMIN_URL', 'https://paramynd.com'),
+    }
+
+    ok, service_url = step_deploy_cloud_run(
+        client_slug,        # nom du nouveau service = slug client
+        pool_db_name,       # reutilise la BDD deja migree du pool
+        project, region, cloud_sql_instance, image_uri,
+        env_vars=extra_env,
+    )
 
     if not ok:
-        _log(pool_slug, 'POOL:CR_UPDATE', f"Échec mise à jour env vars : {out}", error=True)
-        # Rollback : remettre le tenant en POOLED pour qu'un autre thread puisse l'utiliser
-        # (ou lancer un provisioning classique — géré par le caller dans core/views.py)
-        _mark_failed(tenant, Deployment.objects.create(
-            tenant=tenant,
-            image_tag=image_uri.split(':')[-1] if image_uri else 'unknown',
-            image_uri=image_uri or '',
-            status=DeploymentStatus.FAILED,
-            deployed_by='pool-assign',
-            error_message='Échec mise à jour env vars Cloud Run'
-        ), 'Échec mise à jour env vars Cloud Run')
+        _log(client_slug, 'POOL:CR_DEPLOY', 'Echec deploiement Cloud Run client', error=True)
+        _mark_failed(tenant, deployment, 'Echec deploiement Cloud Run (pool assign)')
         return
 
-    # ── Étape 3 : Créer le superuser client ───────────────────────────────────
+    # ── Etape 3 : Creer le superuser client ───────────────────────────────────
     tenant.provisioning_step = 'superuser'
     tenant.save(update_fields=['provisioning_step', 'updated_at'])
 
     step_create_superuser(
-        pool_slug, tenant.db_name or pool_slug.replace('-', '_'),
+        client_slug, pool_db_name,
         project, region, cloud_sql_instance, image_uri,
         admin_email, admin_password
     )
 
-    # ── Étape 4 : Finaliser le record Tenant ──────────────────────────────────
+    # ── Etape 4 : Finaliser le record Tenant ──────────────────────────────────
     from django.utils import timezone as tz
     tenant.name = company
+    tenant.slug = client_slug                    # le slug devient celui du client
     tenant.contact_email = admin_email
     tenant.custom_domain = public_domain
     tenant.domain_status = DomainStatus.ACTIVE
+    tenant.cloud_run_url = service_url
+    tenant.cloud_run_service_name = client_slug  # service Cloud Run = slug client
+    tenant.current_image_tag = image_tag
     tenant.is_pool_tenant = False
     tenant.pool_created_at = None
     tenant.provisioning_step = 'done'
     tenant.status = TenantStatus.ACTIVE
     tenant.last_deployed_at = tz.now()
     tenant.save(update_fields=[
-        'name', 'contact_email', 'custom_domain', 'domain_status',
+        'name', 'slug', 'contact_email', 'custom_domain', 'domain_status',
+        'cloud_run_url', 'cloud_run_service_name', 'current_image_tag',
         'is_pool_tenant', 'pool_created_at', 'provisioning_step',
         'status', 'last_deployed_at', 'updated_at',
     ])
 
-    # Mettre à jour les redirect URIs OAuth2 avec le vrai domaine
+    deployment.status = DeploymentStatus.SUCCESS
+    deployment.completed_at = tz.now()
+    deployment.save(update_fields=['status', 'completed_at'])
+
+    # Mettre a jour les redirect URIs OAuth2 avec le vrai domaine
     step_update_oauth_app_urls(tenant)
 
-    _log(pool_slug, 'POOL:DONE',
-         f"✅ Pool tenant '{pool_slug}' assigné au client '{client_slug}' — URL: https://{public_domain}")
+    _log(client_slug, 'POOL:DONE',
+         f"[OK] Pool assign complete : '{client_slug}' actif sur https://{public_domain}")
+
+    # ── Etape 5 (async) : Supprimer le service Cloud Run pool devenu inutile ──
+    # Le service 'pool-abc123' ne sert plus — on le supprime en background
+    # pour ne pas bloquer l'activation du tenant client.
+    import threading
+    threading.Thread(
+        target=_cleanup_pool_cloud_run_service,
+        args=(pool_slug, project, region),
+        daemon=True,
+        name=f'pool-cleanup-{pool_slug}',
+    ).start()
+
 
 
 def provision_pool_tenant():

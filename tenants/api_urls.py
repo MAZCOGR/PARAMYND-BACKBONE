@@ -88,32 +88,22 @@ def tenant_status_by_slug(request, slug):
         'done':        (5, 'Finalisation de l\'espace de travail...'),
     }
 
-    # Recherche par slug direct OU par custom_domain (pour les tenants de pool assignés)
-    # Après assignation d'un pool tenant, le slug en DB est le slug temporaire du pool (ex: pool-abc123)
-    # mais le client poll avec son slug final (ex: acme-corp).
-    # On cherche donc aussi via custom_domain = "{slug}.paramynd.com".
-    from django.db.models import Q
+    # Recherche par slug direct.
+    # NOTE : Apres la correction URL mask, assign_pool_tenant() met a jour
+    # tenant.slug = client_slug en base, donc la recherche par slug est toujours correcte.
+    # Le fallback custom_domain n'est plus necessaire.
     try:
-        tenant = Tenant.objects.get(
-            Q(slug=slug) | Q(custom_domain=f"{slug}.paramynd.com")
-        )
+        tenant = Tenant.objects.get(slug=slug)
     except Tenant.DoesNotExist:
         return Response(
             {'status': 'not_found', 'url': None, 'message': 'Tenant introuvable.'},
             status=status.HTTP_404_NOT_FOUND
         )
-    except Tenant.MultipleObjectsReturned:
-        # Au cas très improbable où deux tenants matchent (slug et custom_domain différents)
-        tenant = Tenant.objects.filter(
-            Q(slug=slug) | Q(custom_domain=f"{slug}.paramynd.com")
-        ).order_by('-updated_at').first()
 
-    # Construire l'URL publique du tenant
-    # Pour un pool tenant assigné, utiliser le custom_domain (slug client)
+    # URL publique = https://{slug}.paramynd.com (le slug = nom du service Cloud Run)
+    public_url = f'https://{slug}.paramynd.com'
     if tenant.custom_domain and tenant.domain_status == 'active':
         public_url = f'https://{tenant.custom_domain}'
-    else:
-        public_url = f'https://{slug}.paramynd.com'
 
     if tenant.status == 'active':
         return Response({
