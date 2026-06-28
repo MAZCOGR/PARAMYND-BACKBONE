@@ -97,14 +97,15 @@ def sync_builds_and_commits() -> bool:
         if not is_builds_mock:
             api_builds_map = {b['id']: b for b in recent_builds}
             db_builds_map  = {
-                b.build_id: (b.status, b.progress)
+                b.build_id: (b.status, b.progress, b.duration)
                 for b in CloudBuildRecord.objects.filter(build_id__in=api_builds_map.keys())
             }
 
             for build_id, build in api_builds_map.items():
-                current = db_builds_map.get(build_id)
+                current      = db_builds_map.get(build_id)
                 new_status   = build['status']
                 new_progress = build.get('progress', 0)
+                new_duration = build['duration']
 
                 if current is None:
                     # Nouveau build
@@ -114,18 +115,23 @@ def sync_builds_and_commits() -> bool:
                         status=new_status,
                         progress=new_progress,
                         created_str=build['created'],
-                        duration=build['duration'],
+                        duration=new_duration,
                         commit_sha=build['commit_sha'],
                         branch_name=build['branch_name'],
                         tags=build['tags'],
                         images=build.get('images', []),
                     )
-                elif current != (new_status, new_progress):
-                    # Build existant mis à jour (statut ou progression changée)
+                elif current != (new_status, new_progress, new_duration):
+                    # Build mis à jour : statut, progression OU durée a changé.
+                    # Fix durée N/A : un build enregistré WORKING (duration='N/A')
+                    # reçoit sa durée réelle une fois terminé (WORKING → SUCCESS).
                     has_changes = True
                     CloudBuildRecord.objects.filter(build_id=build_id).update(
                         status=new_status,
                         progress=new_progress,
+                        duration=new_duration,
+                        commit_sha=build['commit_sha'],
+                        branch_name=build['branch_name'],
                     )
         elif CloudBuildRecord.objects.count() == 0:
             # DB vide et données mock : on insère quand même
