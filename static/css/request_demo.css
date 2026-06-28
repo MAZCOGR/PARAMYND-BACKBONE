@@ -1,6 +1,10 @@
 /* ════════════════════════════════════════════════
    VARIABLES THÈME PARAMYND
    ════════════════════════════════════════════════ */
+
+/* Prevent ALL SVGs from going full size by default */
+svg { display: inline-block; flex-shrink: 0; }
+
 :root {
   --r: 5px;
   --black: #050507;
@@ -210,7 +214,9 @@ body {
 }
 
 .picker-arrow {
-  width: 14px; height: 14px;
+  width: 14px !important; height: 14px !important;
+  min-width: 14px; min-height: 14px;
+  max-width: 14px; max-height: 14px;
   color: rgba(255,255,255,0.4);
   flex-shrink: 0;
   transition: transform 0.25s ease;
@@ -251,7 +257,9 @@ body {
   gap: 0.4rem;
 }
 .search-icon {
-  width: 13px; height: 13px;
+  width: 13px !important; height: 13px !important;
+  min-width: 13px; min-height: 13px;
+  max-width: 13px; max-height: 13px;
   color: rgba(255,255,255,0.3);
   flex-shrink: 0;
 }
@@ -385,7 +393,10 @@ body {
   display: flex; align-items: center;
 }
 .pwd-toggle:hover { color: rgba(255,255,255,0.7); }
-.pwd-toggle svg { width: 15px; height: 15px; }
+.pwd-toggle svg { 
+  width: 15px !important; height: 15px !important;
+  max-width: 15px; max-height: 15px;
+}
 
 /* ════════════════════════════════════════════════
    JAUGE MOT DE PASSE & TEXTES
@@ -443,7 +454,9 @@ body {
 }
 .submit-btn:active { transform: translateY(0); }
 .btn-arrow {
-  width: 14px; height: 14px;
+  width: 14px !important; height: 14px !important;
+  min-width: 14px; min-height: 14px;
+  max-width: 14px; max-height: 14px;
   transition: transform 0.3s;
 }
 .submit-btn:hover .btn-arrow { transform: translateX(4px); }
