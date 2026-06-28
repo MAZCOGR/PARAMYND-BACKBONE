@@ -20,4 +20,10 @@ urlpatterns = [
     path('builds/<str:build_id>/rollback/', views.builds_rollback_view, name='builds_rollback'),
     path('saas/commits/', views.saas_commits_view, name='saas_commits'),
     path('saas/commits/sync/', views.saas_commits_sync_view, name='saas_commits_sync'),
+
+    # ── Warm Pool ──
+    path('pool/status/', views.pool_status_view, name='pool_status'),
+    path('pool/refill/', views.pool_refill_view, name='pool_refill'),
+    path('pool/cron/', views.pool_cron_view, name='pool_cron'),
 ]
+

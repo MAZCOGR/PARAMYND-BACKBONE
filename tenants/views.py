@@ -55,12 +55,13 @@ def tenant_list_view(request):
                   tenants.filter(slug__icontains=search) | \
                   tenants.filter(contact_email__icontains=search)
 
-    # Stats globales
+    # Stats globales (on exclut les tenants de pool des stats clients)
     stats = {
-        'total': Tenant.objects.count(),
-        'active': Tenant.objects.filter(status=TenantStatus.ACTIVE).count(),
-        'provisioning': Tenant.objects.filter(status=TenantStatus.PROVISIONING).count(),
-        'failed': Tenant.objects.filter(status=TenantStatus.FAILED).count(),
+        'total': Tenant.objects.filter(is_pool_tenant=False).count(),
+        'active': Tenant.objects.filter(status=TenantStatus.ACTIVE, is_pool_tenant=False).count(),
+        'provisioning': Tenant.objects.filter(status=TenantStatus.PROVISIONING, is_pool_tenant=False).count(),
+        'failed': Tenant.objects.filter(status=TenantStatus.FAILED, is_pool_tenant=False).count(),
+        'pooled': Tenant.objects.filter(status=TenantStatus.POOLED, is_pool_tenant=True).count(),
     }
 
     # Formulaire de création pour le modal
@@ -690,3 +691,107 @@ def saas_commits_sync_view(request):
 
     context = _build_saas_commits_context()
     return render(request, 'tenants/partials/saas_commits_sync_update.html', context)
+
+
+# ──────────────────────────────────────────────
+# WARM POOL — VUES ADMIN & CRON
+# ──────────────────────────────────────────────
+
+@login_required
+def pool_status_view(request):
+    """
+    GET /tenants/pool/status/
+    Retourne l'état du pool en JSON (pour le widget du dashboard admin).
+    """
+    pooled_count = Tenant.objects.filter(status=TenantStatus.POOLED, is_pool_tenant=True).count()
+    provisioning_count = Tenant.objects.filter(status=TenantStatus.PROVISIONING, is_pool_tenant=True).count()
+    failed_count = Tenant.objects.filter(status=TenantStatus.FAILED, is_pool_tenant=True).count()
+
+    # Niveau d'alerte : green / orange / red
+    if pooled_count >= 2:
+        health = 'green'
+    elif pooled_count == 1:
+        health = 'orange'
+    else:
+        health = 'red'
+
+    return JsonResponse({
+        'pooled': pooled_count,
+        'provisioning': provisioning_count,
+        'failed': failed_count,
+        'health': health,
+        'target': 3,
+    })
+
+
+@admin_required
+@require_POST
+def pool_refill_view(request):
+    """
+    POST /tenants/pool/refill/
+    Déclenche manuellement un remplissage du pool depuis le panel admin.
+    Appelable aussi par Cloud Scheduler (voir pool_cron_view pour l'endpoint non-auth).
+    """
+    import threading
+    from tenants.services.provisioning import ensure_pool_size
+
+    target = int(request.POST.get('target', 3))
+
+    # Lancer en background
+    threading.Thread(
+        target=ensure_pool_size,
+        args=(target,),
+        daemon=True,
+        name='pool-manual-refill',
+    ).start()
+
+    messages.success(
+        request,
+        f"✅ Remplissage du pool lancé (cible : {target} tenant(s)). "
+        "Vérifiez l'état dans quelques minutes."
+    )
+    return redirect('tenants:list')
+
+
+@require_POST
+def pool_cron_view(request):
+    """
+    POST /tenants/pool/cron/
+    Endpoint HTTP appelé par Cloud Scheduler toutes les heures.
+
+    Sécurisé par un token secret dans le header X-Pool-Cron-Token.
+    Configurez Cloud Scheduler avec ce header pour éviter les appels non autorisés.
+
+    Configuration Cloud Scheduler recommandée :
+        - URL: https://paramynd.com/tenants/pool/cron/
+        - Méthode: POST
+        - Fréquence: 0 * * * * (toutes les heures)
+        - Header: X-Pool-Cron-Token: <POOL_CRON_SECRET>
+    """
+    import threading
+    from django.conf import settings
+    from tenants.services.provisioning import ensure_pool_size
+
+    # Vérification du token secret
+    expected_token = getattr(settings, 'POOL_CRON_SECRET', None)
+    provided_token = request.headers.get('X-Pool-Cron-Token', '')
+
+    if not expected_token or provided_token != expected_token:
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
+
+    target = int(request.POST.get('target', 3))
+
+    threading.Thread(
+        target=ensure_pool_size,
+        args=(target,),
+        daemon=True,
+        name='pool-cron-refill',
+    ).start()
+
+    import logging
+    logging.getLogger(__name__).info(
+        f"[POOL:CRON] Vérification du pool déclenchée par Cloud Scheduler (target={target})"
+    )
+
+    return JsonResponse({'status': 'ok', 'message': f'Pool check lancé (target={target})'})
+

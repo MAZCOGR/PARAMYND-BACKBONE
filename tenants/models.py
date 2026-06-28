@@ -10,6 +10,7 @@ from django.utils import timezone
 
 class TenantStatus(models.TextChoices):
     PROVISIONING = 'provisioning', 'En cours de provisionnement'
+    POOLED       = 'pooled',       'En réserve (pool)'
     ACTIVE       = 'active',       'Actif'
     PAUSED       = 'paused',       'Mis en pause'
     FAILED       = 'failed',       'En erreur'
@@ -64,6 +65,12 @@ class Tenant(models.Model):
     current_image_tag     = models.CharField(max_length=255, blank=True, null=True, verbose_name='Tag image courant')
     last_deployed_at      = models.DateTimeField(blank=True, null=True, verbose_name='Dernier déploiement')
 
+    # Pool — tenant de réserve pré-provisionné
+    is_pool_tenant        = models.BooleanField(default=False, verbose_name='Tenant de pool',
+                                               help_text='True si ce tenant est un tenant de réserve (pas encore assigné à un client).')
+    pool_created_at       = models.DateTimeField(blank=True, null=True, verbose_name='Créé dans le pool le',
+                                                help_text='Date à laquelle ce tenant a été placé dans le pool.')
+
     # Métadonnées
     notes                 = models.TextField(blank=True, verbose_name='Notes internes')
     created_at            = models.DateTimeField(auto_now_add=True, verbose_name='Créé le')
@@ -95,6 +102,7 @@ class Tenant(models.Model):
         """Classe CSS pour le badge de statut."""
         classes = {
             TenantStatus.ACTIVE:       'badge-active',
+            TenantStatus.POOLED:       'badge-pooled',
             TenantStatus.PROVISIONING: 'badge-provisioning',
             TenantStatus.PAUSED:       'badge-paused',
             TenantStatus.FAILED:       'badge-failed',

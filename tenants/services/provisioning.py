@@ -380,8 +380,305 @@ def step_update_oauth_app_urls(tenant):
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# WARM POOL — GESTION DU POOL DE TENANTS PRÉ-PROVISIONNÉS
+# ──────────────────────────────────────────────────────────────────────────────
+
+def get_available_pool_tenant():
+    """
+    Retourne le premier tenant de pool disponible (status=POOLED, is_pool_tenant=True).
+
+    Utilise select_for_update(skip_locked=True) pour garantir qu'un seul thread
+    peut réserver un tenant de pool à la fois, même en cas d'inscriptions simultanées.
+
+    Retourne None si le pool est vide.
+    """
+    from tenants.models import Tenant, TenantStatus
+    from django.db import transaction
+
+    with transaction.atomic():
+        tenant = (
+            Tenant.objects
+            .select_for_update(skip_locked=True)
+            .filter(status=TenantStatus.POOLED, is_pool_tenant=True)
+            .order_by('pool_created_at')  # FIFO : utiliser les plus anciens en premier
+            .first()
+        )
+        if tenant:
+            # Pré-réserver le tenant en le passant en PROVISIONING
+            # pour éviter qu'un autre thread le prenne pendant l'assignation
+            tenant.status = TenantStatus.PROVISIONING
+            tenant.save(update_fields=['status', 'updated_at'])
+        return tenant
+
+
+def assign_pool_tenant(pool_tenant_id: str, client_slug: str, company: str,
+                       admin_email: str, admin_password: str):
+    """
+    Assigne un tenant de pool pré-provisionné à un vrai client.
+
+    Cette fonction remplace provision_tenant() côté client quand le pool est disponible.
+    Elle est beaucoup plus rapide (~2–4 min) car la BDD et les migrations sont déjà prêtes.
+
+    Ce qui est fait :
+        1. Mettre à jour les env vars du service Cloud Run (domaine, OAuth)
+        2. Créer le superuser client via Cloud Run Job
+        3. Mettre à jour le record Tenant en base (slug, nom, email, statut)
+
+    Args:
+        pool_tenant_id  : UUID du tenant de pool (déjà réservé en PROVISIONING)
+        client_slug     : Slug final du client (ex: 'acme-corp')
+        company         : Nom de l'entreprise du client
+        admin_email     : Email du compte admin client
+        admin_password  : Mot de passe temporaire pour le superuser
+    """
+    from tenants.models import Tenant, TenantStatus, DomainStatus, Deployment, DeploymentStatus
+
+    try:
+        tenant = Tenant.objects.get(id=pool_tenant_id)
+    except Tenant.DoesNotExist:
+        logger.error(f"[POOL:ASSIGN] Tenant de pool {pool_tenant_id} introuvable en DB")
+        return
+
+    pool_slug = tenant.slug  # Ex: pool-a3f8c2
+    project = tenant.gcp_project_id or DEFAULT_PROJECT
+    region = tenant.cloud_run_region or DEFAULT_REGION
+    cloud_sql_instance = tenant.cloud_sql_instance or DEFAULT_SQL_INST
+    image_uri = tenant.current_image_tag and _get_latest_image_uri(project, region) or _get_latest_image_uri(project, region)
+
+    _log(pool_slug, 'POOL:ASSIGN', f"Assignation du pool tenant '{pool_slug}' → client '{client_slug}' ({admin_email})")
+
+    # ── Étape 1 : Créer l'app OAuth2 pour le vrai client ─────────────────────
+    tenant.provisioning_step = 'oauth_setup'
+    # Mettre à jour temporairement les champs client pour step_create_oauth_app
+    tenant.contact_email = admin_email
+    tenant.save(update_fields=['provisioning_step', 'contact_email', 'updated_at'])
+
+    client_id, client_secret = step_create_oauth_app(tenant, admin_email)
+    public_domain = f"{client_slug}.paramynd.com"
+
+    # ── Étape 2 : Mettre à jour les env vars Cloud Run (pas de redéploiement complet) ──
+    tenant.provisioning_step = 'cr_update'
+    tenant.save(update_fields=['provisioning_step', 'updated_at'])
+
+    _log(pool_slug, 'POOL:CR_UPDATE', f"Mise à jour env vars Cloud Run '{pool_slug}' → PUBLIC_DOMAIN={public_domain}")
+
+    env_vars_str = (
+        f"PUBLIC_DOMAIN={public_domain},"
+        f"SOCIAL_AUTH_PARAMYND_ADMIN_KEY={client_id},"
+        f"SOCIAL_AUTH_PARAMYND_ADMIN_SECRET={client_secret},"
+        f"PARAMYND_ADMIN_URL={getattr(__import__('django.conf', fromlist=['settings']).settings, 'PARAMYND_ADMIN_URL', 'https://paramynd.com')}"
+    )
+
+    ok, out = _run_gcloud([
+        'run', 'services', 'update', pool_slug,
+        f'--region={region}',
+        f'--project={project}',
+        f'--update-env-vars={env_vars_str}',
+    ], pool_slug, 'POOL:CR_UPDATE', timeout=180)
+
+    if not ok:
+        _log(pool_slug, 'POOL:CR_UPDATE', f"Échec mise à jour env vars : {out}", error=True)
+        # Rollback : remettre le tenant en POOLED pour qu'un autre thread puisse l'utiliser
+        # (ou lancer un provisioning classique — géré par le caller dans core/views.py)
+        _mark_failed(tenant, Deployment.objects.create(
+            tenant=tenant,
+            image_tag=image_uri.split(':')[-1] if image_uri else 'unknown',
+            image_uri=image_uri or '',
+            status=DeploymentStatus.FAILED,
+            deployed_by='pool-assign',
+            error_message='Échec mise à jour env vars Cloud Run'
+        ), 'Échec mise à jour env vars Cloud Run')
+        return
+
+    # ── Étape 3 : Créer le superuser client ───────────────────────────────────
+    tenant.provisioning_step = 'superuser'
+    tenant.save(update_fields=['provisioning_step', 'updated_at'])
+
+    step_create_superuser(
+        pool_slug, tenant.db_name or pool_slug.replace('-', '_'),
+        project, region, cloud_sql_instance, image_uri,
+        admin_email, admin_password
+    )
+
+    # ── Étape 4 : Finaliser le record Tenant ──────────────────────────────────
+    from django.utils import timezone as tz
+    tenant.name = company
+    tenant.contact_email = admin_email
+    tenant.custom_domain = public_domain
+    tenant.domain_status = DomainStatus.ACTIVE
+    tenant.is_pool_tenant = False
+    tenant.pool_created_at = None
+    tenant.provisioning_step = 'done'
+    tenant.status = TenantStatus.ACTIVE
+    tenant.last_deployed_at = tz.now()
+    tenant.save(update_fields=[
+        'name', 'contact_email', 'custom_domain', 'domain_status',
+        'is_pool_tenant', 'pool_created_at', 'provisioning_step',
+        'status', 'last_deployed_at', 'updated_at',
+    ])
+
+    # Mettre à jour les redirect URIs OAuth2 avec le vrai domaine
+    step_update_oauth_app_urls(tenant)
+
+    _log(pool_slug, 'POOL:DONE',
+         f"✅ Pool tenant '{pool_slug}' assigné au client '{client_slug}' — URL: https://{public_domain}")
+
+
+def provision_pool_tenant():
+    """
+    Crée et provisionne un nouveau tenant de pool (réserve).
+
+    Ce tenant aura un slug temporaire de type 'pool-{uuid}' et passera par
+    toutes les étapes normales (DB + Cloud Run + migrations) SAUF la création
+    du superuser (elle sera faite à l'assignation client).
+
+    Doit être appelé en thread background.
+    """
+    import uuid as _uuid
+    from django.utils import timezone as tz
+    from tenants.models import Tenant, TenantStatus, Deployment, DeploymentStatus
+
+    # Générer un slug unique pour ce tenant de pool
+    pool_slug = f"pool-{_uuid.uuid4().hex[:8]}"
+    db_name = pool_slug.replace('-', '_')  # ex: pool_a3f8c2ab
+    project = DEFAULT_PROJECT
+    region = DEFAULT_REGION
+    cloud_sql_instance = DEFAULT_SQL_INST
+
+    _log(pool_slug, 'POOL:PROVISION', f"Démarrage provisioning du tenant de pool '{pool_slug}'")
+
+    # Créer le record Tenant de pool
+    try:
+        tenant = Tenant.objects.create(
+            name=f"[POOL] {pool_slug}",
+            slug=pool_slug,
+            contact_email='pool@paramynd.com',
+            db_name=db_name,
+            gcp_project_id=project,
+            cloud_run_region=region,
+            cloud_sql_instance=cloud_sql_instance,
+            status=TenantStatus.PROVISIONING,
+            is_pool_tenant=True,
+            pool_created_at=tz.now(),
+        )
+    except Exception as e:
+        logger.error(f"[POOL:PROVISION] Impossible de créer le record Tenant pour '{pool_slug}': {e}")
+        return
+
+    image_uri = _get_latest_image_uri(project, region)
+    image_tag = image_uri.split(':')[-1]
+
+    deployment = Deployment.objects.create(
+        tenant=tenant,
+        image_tag=image_tag,
+        image_uri=image_uri,
+        status=DeploymentStatus.IN_PROGRESS,
+        deployed_by='pool-provisioning',
+    )
+
+    # ── Étape 1 : Créer la BDD ────────────────────────────────────────────────
+    tenant.provisioning_step = 'db_create'
+    tenant.save(update_fields=['provisioning_step', 'updated_at'])
+
+    if not step_create_database(pool_slug, db_name, project):
+        _log(pool_slug, 'POOL:DB_CREATE', 'Échec — abandon provisioning pool', error=True)
+        _mark_failed(tenant, deployment, 'Échec création BDD pool')
+        return
+
+    # ── Étape 2 : Déployer Cloud Run (env vars neutres pour le pool) ──────────
+    tenant.provisioning_step = 'cr_deploy'
+    tenant.save(update_fields=['provisioning_step', 'updated_at'])
+
+    # Env vars neutres : le domaine sera écrasé lors de l'assignation
+    pool_env_vars = {
+        'PUBLIC_DOMAIN': f"{pool_slug}.paramynd.com",
+        'PARAMYND_ADMIN_URL': getattr(__import__('django.conf', fromlist=['settings']).settings,
+                                      'PARAMYND_ADMIN_URL', 'https://paramynd.com'),
+    }
+
+    ok, service_url = step_deploy_cloud_run(
+        pool_slug, db_name, project, region, cloud_sql_instance, image_uri,
+        env_vars=pool_env_vars,
+    )
+    if not ok:
+        _log(pool_slug, 'POOL:CR_DEPLOY', 'Échec — abandon provisioning pool', error=True)
+        _mark_failed(tenant, deployment, 'Échec déploiement Cloud Run pool')
+        return
+
+    tenant.cloud_run_url = service_url
+    tenant.cloud_run_service_name = pool_slug
+    tenant.current_image_tag = image_tag
+    tenant.save(update_fields=['cloud_run_url', 'cloud_run_service_name', 'current_image_tag', 'updated_at'])
+
+    # ── Étape 3 : Migrations ──────────────────────────────────────────────────
+    tenant.provisioning_step = 'migrate'
+    tenant.save(update_fields=['provisioning_step', 'updated_at'])
+
+    if not step_run_migrations(pool_slug, db_name, project, region, cloud_sql_instance, image_uri):
+        _log(pool_slug, 'POOL:MIGRATE', 'Échec — abandon provisioning pool', error=True)
+        _mark_failed(tenant, deployment, 'Échec migrations pool')
+        return
+
+    # ── Étape 4 : Marquer comme POOLED ───────────────────────────────────────
+    from django.utils import timezone as tz2
+    tenant.provisioning_step = 'done'
+    tenant.status = TenantStatus.POOLED
+    tenant.last_deployed_at = tz2.now()
+    tenant.save(update_fields=['provisioning_step', 'status', 'last_deployed_at', 'updated_at'])
+
+    deployment.status = DeploymentStatus.SUCCESS
+    deployment.completed_at = tz2.now()
+    deployment.save(update_fields=['status', 'completed_at'])
+
+    _log(pool_slug, 'POOL:DONE', f"✅ Tenant de pool '{pool_slug}' prêt — en réserve.")
+
+
+def ensure_pool_size(target_size: int = 3):
+    """
+    Vérifie la taille du pool et lance des provisions de pool si nécessaire.
+
+    Compte les tenants POOLED + les tenants de pool en cours de provisioning.
+    Si le total est inférieur à target_size, crée les tenants manquants en background.
+
+    Args:
+        target_size : Nombre de tenants de pool à maintenir (défaut: 3)
+    """
+    import threading
+    from tenants.models import Tenant, TenantStatus
+
+    # Compter les tenants POOLED disponibles + ceux en cours de provisioning
+    pooled_count = Tenant.objects.filter(
+        status=TenantStatus.POOLED,
+        is_pool_tenant=True,
+    ).count()
+    provisioning_count = Tenant.objects.filter(
+        status=TenantStatus.PROVISIONING,
+        is_pool_tenant=True,
+    ).count()
+
+    total_in_pool = pooled_count + provisioning_count
+    missing = target_size - total_in_pool
+
+    if missing <= 0:
+        logger.info(f"[POOL] Pool en bonne santé : {pooled_count} prêts, {provisioning_count} en cours (target={target_size})")
+        return
+
+    logger.info(f"[POOL] Pool insuffisant : {pooled_count} prêts + {provisioning_count} en cours = {total_in_pool} (target={target_size}). "
+                f"Lancement de {missing} provisioning(s) de pool...")
+
+    for i in range(missing):
+        t = threading.Thread(
+            target=provision_pool_tenant,
+            daemon=False,
+            name=f'pool-provision-{i}',
+        )
+        t.start()
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # FONCTION PRINCIPALE
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def provision_tenant(tenant_id: str, admin_email: str, admin_password: str):
     """

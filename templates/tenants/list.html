@@ -68,7 +68,44 @@
           <div class="kpi-value" style="font-size: 28px; font-weight: 700; margin-top: 8px; color: var(--danger);">{{ stats.failed }}</div>
           <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">nécessitent attention</div>
         </div>
+
+        <!-- KPI 5: Pool de réserve — widget auto-rafraîchi -->
+        <div id="pool-kpi-card"
+             class="kpi-card"
+             style="animation: fadeIn 0.4s ease 0.4s backwards; padding: 20px; position:relative; border: 1px solid rgba(255,255,255,0.08);"
+             hx-get="{% url 'tenants:pool_status' %}"
+             hx-trigger="load, every 30s"
+             hx-swap="innerHTML"
+             hx-target="#pool-kpi-inner">
+          <div class="kpi-title" style="display:flex; justify-content:space-between; align-items:center; opacity:0.8;">
+            🏊 Pool de réserve
+            <svg width="14" height="14" fill="none" stroke="var(--text-muted)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          </div>
+          <div id="pool-kpi-inner">
+            <!-- Contenu initial rendu côté serveur, HTMX prend la relève -->
+            {% with pooled=stats.pooled|default:0 %}
+            <div class="kpi-value" style="font-size: 28px; font-weight: 700; margin-top: 8px;
+                 color: {% if pooled >= 2 %}var(--success){% elif pooled == 1 %}var(--warning, #f59e0b){% else %}var(--danger){% endif %};">
+              {{ pooled }}
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">tenant(s) prêt(s)</div>
+            {% endwith %}
+          </div>
+          {% if user.is_admin %}
+          <form method="post" action="{% url 'tenants:pool_refill' %}" style="margin-top: 12px;">
+            {% csrf_token %}
+            <button type="submit" class="btn" style="
+              width:100%; padding:6px 10px; font-size:11px; border-radius:4px;
+              border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.05);
+              color:var(--text-secondary); cursor:pointer;
+              transition: background 0.2s ease;">
+              + Alimenter le pool
+            </button>
+          </form>
+          {% endif %}
+        </div>
       </div>
+
 
       <!-- Recherche & Filtres -->
       <div style="margin-bottom: 24px; animation: fadeIn 0.4s ease 0.4s backwards;">

@@ -178,6 +178,24 @@ PARAMYND_IMAGE_NAME = env('PARAMYND_IMAGE_NAME', default='app')
 ARTIFACT_REGISTRY_BASE = f"{GCP_REGION}-docker.pkg.dev/{GCP_PROJECT_ID}/{ARTIFACT_REGISTRY_REPO}"
 
 # ==============================================================================
+# WARM POOL CONFIGURATION
+# ==============================================================================
+# Token secret partagé entre le control plane et Cloud Scheduler.
+# Cloud Scheduler l'envoie dans le header X-Pool-Cron-Token à chaque appel cron.
+# À stocker dans GCP Secret Manager : gcloud secrets create POOL_CRON_SECRET --data-file=-
+POOL_CRON_SECRET = env('POOL_CRON_SECRET', default=None)
+
+# Nombre de tenants de pool à maintenir en permanence
+POOL_TARGET_SIZE = int(env('POOL_TARGET_SIZE', default='3'))
+
+# URL publique du control plane (utilisé dans les env vars des tenants)
+PARAMYND_ADMIN_URL = env('PARAMYND_ADMIN_URL', default='https://paramynd.com')
+
+# URL du service Cloud SQL (partagé entre tenant et control plane)
+CLOUD_SQL_INSTANCE = env('CLOUD_SQL_INSTANCE', default='yellow-455523:europe-west9:yellow-db-paris')
+
+
+# ==============================================================================
 # AUTHENTIFICATION
 # ==============================================================================
 AUTH_USER_MODEL = 'accounts.User'

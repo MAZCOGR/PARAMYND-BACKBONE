@@ -296,26 +296,75 @@ def verify_otp_view(request):
                 request.session.pop('pending_user_id', None)
                 request.session.pop('pending_company', None)
 
-                # Lancer le provisioning en background
+                # ── Lancer le provisioning en background ──────────────────────
                 # C-04 fix : un mot de passe temporaire aléatoire est généré pour le superuser
                 # du tenant (jamais le mot de passe réel de l'utilisateur).
+                # POOL fix : on essaie d'abord le pool pré-provisionné (rapide : ~2–4 min).
+                # Si le pool est vide, on bascule sur le provisioning classique (~7–10 min).
                 if tenant_id:
                     import threading
-                    from tenants.services.provisioning import provision_tenant
                     import secrets
-                    temp_password = secrets.token_urlsafe(16)
-                    t = threading.Thread(
-                        target=provision_tenant,
-                        args=(tenant_id, locked_user.email, temp_password),
-                        daemon=False,  # BUG-D03 fix : daemon=True tuerait le thread si Cloud Run scale-to-zero
-                        name=f'provision-{final_slug}',
+                    from tenants.services.provisioning import (
+                        get_available_pool_tenant,
+                        assign_pool_tenant,
+                        provision_tenant,
+                        ensure_pool_size,
                     )
-                    t.start()
+                    temp_password = secrets.token_urlsafe(16)
+                    pool_tenant = get_available_pool_tenant()
+
+                    if pool_tenant:
+                        # ✅ Chemin rapide : tenant pré-provisionné disponible
+                        # On supprime le tenant "vide" qu'on vient de créer pour ce client
+                        # car le pool tenant sera mis à jour avec ses infos
+                        from tenants.models import Tenant as TenantModel
+                        TenantModel.objects.filter(id=tenant_id).delete()
+
+                        # Stocker le slug du pool pour le polling de /building-workspace/
+                        request.session['pending_slug'] = pool_tenant.slug
+
+                        t = threading.Thread(
+                            target=assign_pool_tenant,
+                            args=(str(pool_tenant.id), final_slug, company,
+                                  locked_user.email, temp_password),
+                            daemon=False,
+                            name=f'pool-assign-{final_slug}',
+                        )
+                        t.start()
+
+                        # 🔄 Auto-régénération : reconstituer le pool en background
+                        threading.Thread(
+                            target=ensure_pool_size,
+                            args=(3,),
+                            daemon=True,  # daemon OK : juste un déclencheur, le vrai thread est non-daemon
+                            name='pool-refill-after-assign',
+                        ).start()
+
+                    else:
+                        # ⚠️ Pool vide : fallback provisioning classique
+                        # (le client attendra ~7–10 min — normal, c'est le comportement originel)
+                        t = threading.Thread(
+                            target=provision_tenant,
+                            args=(tenant_id, locked_user.email, temp_password),
+                            daemon=False,  # BUG-D03 fix : daemon=True tuerait le thread si Cloud Run scale-to-zero
+                            name=f'provision-{final_slug}',
+                        )
+                        t.start()
+
+                        # 🔄 Auto-régénération : tenter de remplir le pool quand même
+                        threading.Thread(
+                            target=ensure_pool_size,
+                            args=(3,),
+                            daemon=True,
+                            name='pool-refill-fallback',
+                        ).start()
 
                 messages.success(request, "Votre compte et votre espace client ont été créés avec succès !")
                 request.session.pop('pending_slug', None)
-                if final_slug:
-                    return redirect(f'/building-workspace/?slug={final_slug}')
+                redirect_slug = pool_tenant.slug if (tenant_id and pool_tenant) else final_slug
+                if redirect_slug:
+                    return redirect(f'/building-workspace/?slug={redirect_slug}')
                 return redirect('building_workspace')
+
 
     return render(request, 'verify_otp.html', {'user': user})
