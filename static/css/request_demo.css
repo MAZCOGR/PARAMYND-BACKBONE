@@ -360,10 +360,10 @@ body {
 }
 .country-list li:hover,
 .country-list li.focused {
-  background: rgba(124,92,252,0.18);
+  background: rgba(255,255,255,0.06);
 }
 .country-list li.selected {
-  background: rgba(124,92,252,0.28);
+  background: rgba(255,255,255,0.10);
 }
 /* Flag image in list */
 .country-list li .c-flag {
