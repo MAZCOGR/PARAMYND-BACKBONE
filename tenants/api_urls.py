@@ -3,7 +3,7 @@ tenants/api_urls.py — API REST pour les tenants (optionnel, pour les intégrat
 """
 from django.urls import path
 from rest_framework import generics, permissions, status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from django.shortcuts import get_object_or_404
@@ -60,6 +60,7 @@ def deploy_api_view(request, pk):
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
+@throttle_classes([])
 def tenant_status_by_slug(request, slug):
     """
     GET /api/v1/tenants/status/<slug>/ — Statut de provisioning d'un tenant.
