@@ -197,6 +197,14 @@ const phoneHidden  = document.getElementById('phone_full');
 let selectedCountry  = null;
 let focusedIndex     = -1;
 
+/* Helper: returns a flag <img> tag URL from flagcdn.com */
+function flagUrl(code) {
+  return `https://flagcdn.com/20x15/${code.toLowerCase()}.png`;
+}
+function flagImg(code, cls = '') {
+  return `<img src="${flagUrl(code)}" class="${cls}" alt="" width="20" height="14" onerror="this.style.display='none'">`;
+}
+
 function renderList(filter = '') {
   const q = filter.trim().toLowerCase();
   const filtered = q
@@ -218,12 +226,12 @@ function renderList(filter = '') {
     if (selectedCountry && selectedCountry.code === c.code) li.classList.add('selected');
 
     li.innerHTML = `
-      <span class="c-flag">${c.flag}</span>
+      ${flagImg(c.code, 'c-flag')}
       <span class="c-name">${c.name}</span>
       <span class="c-dial">${c.dial}</span>
     `;
     li.addEventListener('mousedown', e => {
-      e.preventDefault(); // avoid blur before click
+      e.preventDefault();
       selectCountry(c);
     });
     countryList.appendChild(li);
@@ -233,16 +241,16 @@ function renderList(filter = '') {
 function selectCountry(c) {
   selectedCountry = c;
 
-  // Update trigger
-  selectedFlag.textContent = c.flag;
+  // Update trigger — inject real flag image
+  selectedFlag.innerHTML = flagImg(c.code, 'country-flag');
   selectedName.textContent = c.name;
   picker.classList.add('selected');
 
   // Update hidden field
   countryHidden.value = c.code;
 
-  // Update phone dial badge
-  dialCodeFlag.textContent = c.flag;
+  // Update phone dial badge — inject real flag image
+  dialCodeFlag.innerHTML = flagImg(c.code, 'country-flag');
   dialCodeText.textContent = c.dial;
   dialBadge.classList.add('has-code');
 

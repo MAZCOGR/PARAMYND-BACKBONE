@@ -54,7 +54,14 @@
         <label>Country *</label>
         <div class="country-picker" id="countryPicker" tabindex="0" role="combobox" aria-expanded="false" aria-haspopup="listbox">
           <div class="country-trigger" id="countryTrigger">
-            <span class="country-flag" id="selectedFlag">🌍</span>
+            <span class="flag-slot" id="selectedFlag">
+              <svg class="flag-placeholder-svg" viewBox="0 0 20 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="20" height="14" rx="2" fill="rgba(255,255,255,0.08)"/>
+                <circle cx="10" cy="7" r="4" stroke="rgba(255,255,255,0.3)" stroke-width="1" fill="none"/>
+                <line x1="10" y1="3" x2="10" y2="11" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+                <line x1="6" y1="7" x2="14" y2="7" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+              </svg>
+            </span>
             <span class="country-name" id="selectedCountryName">Select a country</span>
             <svg class="picker-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="6 9 12 15 18 9"></polyline>
@@ -79,7 +86,14 @@
         <label for="phone_number">Phone *</label>
         <div class="phone-input-wrap">
           <div class="phone-dial-badge" id="phoneDialBadge">
-            <span id="dialCodeFlag">🌍</span>
+            <span class="flag-slot" id="dialCodeFlag">
+              <svg class="flag-placeholder-svg" viewBox="0 0 20 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="20" height="14" rx="2" fill="rgba(255,255,255,0.08)"/>
+                <circle cx="10" cy="7" r="4" stroke="rgba(255,255,255,0.3)" stroke-width="1" fill="none"/>
+                <line x1="10" y1="3" x2="10" y2="11" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+                <line x1="6" y1="7" x2="14" y2="7" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+              </svg>
+            </span>
             <span id="dialCodeText">+?</span>
           </div>
           <input type="tel" id="phone_number" name="phone" placeholder="Enter phone number" required autocomplete="tel">
