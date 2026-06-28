@@ -364,6 +364,8 @@ def verify_otp_view(request):
                 # Toujours rediriger avec le slug CLIENT (final_slug),
                 # que ce soit via pool ou provisioning classique.
                 # Le slug pool (pool-abc123) n'est qu'un identifiant temporaire interne.
+                messages.success(request, "Votre compte et votre espace client ont ete crees avec succes !")
+                request.session.pop('pending_slug', None)
                 redirect_slug = final_slug
                 if redirect_slug:
                     return redirect(f'/building-workspace/?slug={redirect_slug}')
