@@ -1,6 +1,8 @@
-/* Variables de thème Paramynd */
+/* ════════════════════════════════════════════════
+   VARIABLES THÈME PARAMYND
+   ════════════════════════════════════════════════ */
 :root {
-  --r: 5px; /* Radius global demandé */
+  --r: 5px;
   --black: #050507;
   --purple: #7c5cfc;
   --teal: #06d6a0;
@@ -51,7 +53,7 @@ body {
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 430px;
+  max-width: 460px;
   padding: 1.2rem;
   margin: 24px auto;
   animation: fadeUp 0.8s ease-out;
@@ -63,26 +65,22 @@ body {
 }
 
 .demo-card {
-  /* Effet verre premium */
   background: rgba(18, 18, 24, 0.45);
   backdrop-filter: blur(24px) saturate(1.5);
   -webkit-backdrop-filter: blur(24px) saturate(1.5);
-  
-  /* Bordure délicate et radius global de 5px */
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: var(--r);
-  
   padding: 1.8rem 2.1rem;
   box-shadow: var(--shadow-lg), 0 0 100px rgba(124,92,252,0.12);
 }
 
 .demo-header {
   text-align: center;
-  margin-bottom: 1.4rem;
+  margin-bottom: 1.6rem;
 }
 
 .demo-logo {
-  width: 32px; height: 32px; 
+  width: 36px; height: 36px; 
   border-radius: var(--r);
   background: linear-gradient(135deg, var(--purple) 0%, var(--teal) 100%);
   display: flex; align-items: center; justify-content: center;
@@ -92,10 +90,16 @@ body {
 }
 
 .demo-header h1 {
-  font-size: 1.25rem;
+  font-size: 1.3rem;
   font-weight: 700;
-  margin: 0;
+  margin: 0 0 0.25rem;
   letter-spacing: -0.5px;
+}
+
+.demo-subtitle {
+  font-size: 0.72rem;
+  color: var(--gray-2);
+  margin: 0;
 }
 
 /* ════════════════════════════════════════════════
@@ -111,7 +115,10 @@ body {
   font-size: 0.7rem; color: var(--gray-2); margin-bottom: 0.3rem; font-weight: 500;
 }
 
-.form-group input, .form-group select {
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="password"],
+.form-group input[type="tel"] {
   width: 100%;
   padding: 0.5rem 0.7rem;
   border-radius: var(--r);
@@ -122,8 +129,9 @@ body {
   font-family: inherit;
   transition: all 0.2s ease;
 }
+.form-group input::placeholder { color: rgba(255,255,255,0.2); }
 
-/* Gérer le vilain fond blanc de l'autofill Chrome */
+/* Autofill Chrome */
 .form-group input:-webkit-autofill,
 .form-group input:-webkit-autofill:hover, 
 .form-group input:-webkit-autofill:focus, 
@@ -133,34 +141,268 @@ body {
   transition: background-color 5000s ease-in-out 0s;
 }
 
-.form-group input:focus, .form-group select:focus {
+.form-group input:focus {
   outline: none;
   border-color: var(--purple);
   background: rgba(255,255,255,0.08);
   box-shadow: 0 0 0 3px rgba(124,92,252,0.2);
 }
 
-/* Validation temps réel - Erreur */
-.form-group input.invalid, .form-group select.invalid {
+/* Validation */
+.form-group input.invalid {
   border-color: var(--error) !important;
   background: rgba(239, 71, 111, 0.05) !important;
   box-shadow: 0 0 0 3px rgba(239, 71, 111, 0.15) !important;
 }
-
-.form-group select {
-  appearance: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-  background-repeat: no-repeat; background-position: right 1rem center; background-size: 1em;
+.country-picker.invalid .country-trigger {
+  border-color: var(--error) !important;
+  box-shadow: 0 0 0 3px rgba(239, 71, 111, 0.15) !important;
 }
-.form-group select option { background: #1a1a24; color: #fff; }
+.phone-input-wrap.invalid input[type="tel"] {
+  border-color: var(--error) !important;
+  box-shadow: 0 0 0 3px rgba(239, 71, 111, 0.15) !important;
+}
 
 /* ════════════════════════════════════════════════
-   JAUGE DE MOT DE PASSE & TEXTES
+   COUNTRY FLAG PICKER
+   ════════════════════════════════════════════════ */
+.country-picker {
+  position: relative;
+  width: 100%;
+  outline: none;
+}
+
+.country-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: var(--r);
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.country-picker:focus .country-trigger,
+.country-picker.open .country-trigger {
+  border-color: var(--purple);
+  background: rgba(255,255,255,0.08);
+  box-shadow: 0 0 0 3px rgba(124,92,252,0.2);
+}
+
+.country-flag {
+  font-size: 1.1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.country-name {
+  flex: 1;
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.4);
+  font-family: inherit;
+  transition: color 0.2s;
+}
+.country-picker.selected .country-name {
+  color: #fff;
+}
+
+.picker-arrow {
+  width: 14px; height: 14px;
+  color: rgba(255,255,255,0.4);
+  flex-shrink: 0;
+  transition: transform 0.25s ease;
+}
+.country-picker.open .picker-arrow {
+  transform: rotate(180deg);
+}
+
+/* Dropdown */
+.country-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0; right: 0;
+  z-index: 1000;
+  background: #1a1a28;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--r);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+  overflow: hidden;
+
+  /* hidden by default */
+  max-height: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: max-height 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.2s ease;
+}
+.country-picker.open .country-dropdown {
+  max-height: 260px;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.country-search-wrap {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  gap: 0.4rem;
+}
+.search-icon {
+  width: 13px; height: 13px;
+  color: rgba(255,255,255,0.3);
+  flex-shrink: 0;
+}
+.country-search-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 0.78rem;
+  font-family: inherit;
+  width: 100%;
+  caret-color: var(--purple);
+}
+.country-search-input::placeholder { color: rgba(255,255,255,0.25); }
+
+.country-list {
+  list-style: none;
+  margin: 0; padding: 0.3rem 0;
+  max-height: 200px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(124,92,252,0.4) transparent;
+}
+.country-list::-webkit-scrollbar { width: 4px; }
+.country-list::-webkit-scrollbar-thumb { background: rgba(124,92,252,0.4); border-radius: 2px; }
+
+.country-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+  font-size: 0.78rem;
+  transition: background 0.15s;
+}
+.country-list li:hover,
+.country-list li.focused {
+  background: rgba(124,92,252,0.15);
+}
+.country-list li.selected {
+  background: rgba(124,92,252,0.25);
+}
+.country-list li .c-flag { font-size: 1.05rem; flex-shrink: 0; }
+.country-list li .c-name { flex: 1; color: rgba(255,255,255,0.85); }
+.country-list li .c-dial { 
+  font-size: 0.68rem; 
+  color: rgba(255,255,255,0.35);
+  font-variant-numeric: tabular-nums;
+}
+.country-list li.no-result {
+  color: rgba(255,255,255,0.3);
+  font-size: 0.75rem;
+  justify-content: center;
+  pointer-events: none;
+}
+
+/* ════════════════════════════════════════════════
+   PHONE INPUT AVEC INDICATIF
+   ════════════════════════════════════════════════ */
+.phone-input-wrap {
+  display: flex;
+  align-items: stretch;
+  border-radius: var(--r);
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+.phone-input-wrap:focus-within {
+  border-color: var(--purple);
+  background: rgba(255,255,255,0.08);
+  box-shadow: 0 0 0 3px rgba(124,92,252,0.2);
+}
+
+.phone-dial-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.5rem 0.6rem 0.5rem 0.7rem;
+  border-right: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.phone-dial-badge span:first-child { font-size: 1rem; }
+#dialCodeText {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.5);
+  min-width: 2.4rem;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.2s;
+}
+.phone-dial-badge.has-code #dialCodeText { color: var(--teal); }
+
+.phone-input-wrap input[type="tel"] {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 0.8rem;
+  font-family: inherit;
+  padding: 0.5rem 0.7rem;
+  min-width: 0;
+}
+.phone-input-wrap input[type="tel"]:focus { outline: none; box-shadow: none; }
+.phone-input-wrap input[type="tel"]::placeholder { color: rgba(255,255,255,0.2); }
+
+/* ════════════════════════════════════════════════
+   MOT DE PASSE AVEC TOGGLE
+   ════════════════════════════════════════════════ */
+.pwd-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.pwd-input-wrap input {
+  width: 100%;
+  padding-right: 2.2rem !important;
+}
+.pwd-toggle {
+  position: absolute;
+  right: 0.5rem;
+  background: none;
+  border: none;
+  padding: 0.3rem;
+  cursor: pointer;
+  color: rgba(255,255,255,0.35);
+  transition: color 0.2s;
+  display: flex; align-items: center;
+}
+.pwd-toggle:hover { color: rgba(255,255,255,0.7); }
+.pwd-toggle svg { width: 15px; height: 15px; }
+
+/* ════════════════════════════════════════════════
+   JAUGE MOT DE PASSE & TEXTES
    ════════════════════════════════════════════════ */
 .pwd-meter-container {
-  margin-top: 5px; background: rgba(255,255,255,0.1); 
-  height: 4px; border-radius: 2px; overflow: hidden; display: flex;
+  margin-top: 5px;
+  display: flex;
+  gap: 3px;
+  height: 3px;
 }
+.pwd-meter-container .seg {
+  flex: 1;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.08);
+  transition: background 0.3s ease;
+}
+
 #pwd-meter-bar {
   height: 100%; width: 0%; transition: all 0.3s ease; background: var(--error);
 }
@@ -174,18 +416,37 @@ body {
 .privacy-text a { color: var(--teal); text-decoration: none; }
 .privacy-text a:hover { text-decoration: underline; }
 
-/* Bouton principal */
+/* ════════════════════════════════════════════════
+   BOUTON SUBMIT PREMIUM
+   ════════════════════════════════════════════════ */
 .submit-btn {
-  width: 100%; padding: 0.7rem; border-radius: var(--r); border: none;
+  width: 100%; padding: 0.75rem;
+  border-radius: var(--r); border: none;
   background: linear-gradient(135deg, var(--purple), var(--teal));
-  color: #fff; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+  color: #fff; font-size: 0.82rem; font-weight: 600; cursor: pointer;
   transition: all 0.3s;
   box-shadow: 0 4px 15px rgba(124,92,252,0.3);
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  position: relative; overflow: hidden;
 }
+.submit-btn::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.submit-btn:hover::before { opacity: 1; }
 .submit-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(124,92,252,0.5);
 }
+.submit-btn:active { transform: translateY(0); }
+.btn-arrow {
+  width: 14px; height: 14px;
+  transition: transform 0.3s;
+}
+.submit-btn:hover .btn-arrow { transform: translateX(4px); }
 
 .back-link {
   display: block; text-align: center; margin-top: 1rem;
@@ -200,4 +461,3 @@ body {
 }
 
 @keyframes spin { 100% { transform: rotate(360deg); } }
-
