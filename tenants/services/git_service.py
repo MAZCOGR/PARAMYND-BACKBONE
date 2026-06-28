@@ -10,9 +10,11 @@ import logging
 import subprocess
 import datetime
 import time
+import requests
 from typing import List, Dict
 
 from django.conf import settings
+from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
@@ -22,27 +24,27 @@ REPO_PATH = str(settings.BASE_DIR)
 GITHUB_ORG  = getattr(settings, 'GITHUB_ORG',  'MAZCOGR')
 GITHUB_REPO = getattr(settings, 'GITHUB_REPO', 'PARAMYND')
 
-# Cache en mémoire : évite de dépasser la limite GitHub (60 req/h sans token, 5000 avec)
-_saas_cache: Dict = {'data': [], 'fetched_at': 0}
+# Cache TTL : évite de dépasser la limite GitHub (60 req/h sans token, 5000 avec).
+# Utilise Django cache (partagé entre tous les workers gunicorn) au lieu d'une
+# variable globale en mémoire processus (dupliquée par worker — MED-04 fix).
+_SAAS_CACHE_KEY = 'git_service_saas_commits'
 CACHE_TTL = 60  # secondes
 
 
 def get_saas_commits(limit: int = 50) -> List[Dict]:
     """
     Récupère les commits du repo SaaS via l'API GitHub.
-    Utilise un cache mémoire de 60s pour ne pas dépasser le rate limit.
-    Supporte la pagination pour récupérer plus de 100 commits.
+    Utilise Django cache (60s) partagé entre tous les workers gunicorn.
     Fallback sur git log local si l'API est indisponible.
     """
-    global _saas_cache
-    now = time.time()
-
-    # Retourner le cache si encore frais
-    if _saas_cache['data'] and (now - _saas_cache['fetched_at']) < CACHE_TTL:
-        return _saas_cache['data'][:limit]
+    # MED-04 fix : Django cache au lieu d'une variable globale par processus.
+    # Avec gunicorn multi-worker, chaque worker avait son propre cache →
+    # N appels GitHub par TTL au lieu de 1.
+    cached = cache.get(_SAAS_CACHE_KEY)
+    if cached:
+        return cached[:limit]
 
     try:
-        import requests
         token = getattr(settings, 'GITHUB_TOKEN', None)
         headers = {'Accept': 'application/vnd.github.v3+json'}
         if token:
@@ -66,7 +68,7 @@ def get_saas_commits(limit: int = 50) -> List[Dict]:
 
             for item in page_data:
                 sha    = item['sha']
-                msg    = item['commit']['message'].split('\n')[0]  # première ligne seulement
+                msg    = item['commit']['message'].split('\n')[0]
                 author = item['commit']['author']['name']
                 date_str = item['commit']['author']['date']  # ISO 8601
 
@@ -94,12 +96,11 @@ def get_saas_commits(limit: int = 50) -> List[Dict]:
 
             page += 1
 
-        _saas_cache = {'data': commits, 'fetched_at': now}
+        cache.set(_SAAS_CACHE_KEY, commits, timeout=CACHE_TTL)
         return commits[:limit]
 
     except Exception as e:
         logger.warning(f'GitHub API indisponible ({e}) — fallback git log local')
-        # Fallback : git log sur le clone local (peut être obsolète)
         import os
         local_path = '/app/paramynd_repo' if os.path.exists('/app/paramynd_repo') else r'c:\paramynd'
         return _get_commits_from_repo(local_path, limit)

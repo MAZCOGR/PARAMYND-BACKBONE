@@ -106,6 +106,17 @@ def deploy_service(
                     )
                 )
             ),
+            # BUG-D02 fix : JWT_SIGNING_KEY était absent — le service utilisait
+            # SECRET_KEY comme fallback (silencieux). Clé dédiée injecter explicitement.
+            run_v2.EnvVar(
+                name='JWT_SIGNING_KEY',
+                value_source=run_v2.EnvVarSource(
+                    secret_key_ref=run_v2.SecretKeySelector(
+                        secret='PARAMYND_JWT_SIGNING_KEY',
+                        version='latest'
+                    )
+                )
+            ),
         ]
 
         # Volume Cloud SQL
@@ -183,6 +194,7 @@ def deploy_service(
                 ],
                 capture_output=True,
                 text=True,
+                timeout=30,  # BUG-D08 fix : évite un blocage infini du worker gunicorn
             )
             if iam_result.returncode == 0:
                 logger.info(f"Permissions IAM configurées (allUsers → run.invoker) pour {service_name}.")

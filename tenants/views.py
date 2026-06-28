@@ -10,6 +10,9 @@ from django.utils import timezone
 from django.db.models import Count
 from functools import wraps
 
+import datetime
+from django.core.cache import cache
+
 from .models import Tenant, Deployment, TenantStatus, DeploymentStatus, GitCommitRecord, CloudBuildRecord
 from .forms import TenantCreateForm, TenantUpdateForm, DeployForm
 from .services import artifact_registry, cloud_run, cloud_build, git_service
@@ -241,7 +244,7 @@ def tenant_delete_view(request, pk):
         except Exception:
             pass
 
-    threading.Thread(target=_delete_and_remove, args=(tenant_id,), daemon=True).start()
+    threading.Thread(target=_delete_and_remove, args=(tenant_id,), daemon=False).start()
 
     messages.success(request, f"La suppression du tenant « {tenant_name} » a été lancée. Il sera retiré de la liste une fois toutes les ressources supprimées.")
     return redirect('tenants:list')
@@ -284,7 +287,7 @@ def tenant_reprovision_view(request, pk):
     t = threading.Thread(
         target=provision_tenant,
         args=(str(tenant.id), tenant.contact_email, temp_password),
-        daemon=True,
+        daemon=False,  # BUG-D03 fix : daemon=True tuerait le thread si Cloud Run scale-to-zero
         name=f'reprovision-{tenant.slug}',
     )
     t.start()
@@ -476,25 +479,23 @@ def tenant_status_view(request, pk):
 # BUILDS
 # ──────────────────────────────────────────────
 
-@login_required
-def builds_view(request):
-    """Page principale des builds. Charge instantanément depuis la DB."""
-    recent_commits = GitCommitRecord.objects.all()[:10]
-    import datetime
-    def parse_dt(s):
+def _get_builds_context():
+    """
+    Helper commun à builds_view et builds_sync_view.
+    DRY fix : évite la duplication de ~40 lignes identiques entre les deux vues.
+    """
+    def _parse_dt(s):
         try:
             return datetime.datetime.strptime(s, "%d/%m/%Y %H:%M")
-        except:
+        except Exception:
             return datetime.datetime.min
 
     builds_list = list(CloudBuildRecord.objects.all()[:30])
-    builds_list.sort(key=lambda x: parse_dt(x.created_str), reverse=True)
-    
-    from django.core.cache import cache
+    builds_list.sort(key=lambda x: _parse_dt(x.created_str), reverse=True)
+
     hidden_builds = cache.get('hidden_builds', set())
     builds = [b for b in builds_list if b.build_id not in hidden_builds][:10]
 
-    # Attach git commit info and format dates
     all_commits = {c.hash: c for c in GitCommitRecord.objects.all()}
     for b in builds:
         b.git_commit = all_commits.get(b.commit_sha)
@@ -503,93 +504,46 @@ def builds_view(request):
                 if chash.startswith(b.commit_sha):
                     b.git_commit = c
                     break
-        
-        # Parse '23/06/2026 04:11' to '23/06' and '04:11'
         parts = b.created_str.split(' ')
         if len(parts) == 2:
-            date_part, time_part = parts
-            b.short_date = date_part[:5]  # '23/06'
-            b.short_time = time_part
+            b.short_date = parts[0][:5]  # '23/06'
+            b.short_time = parts[1]
         else:
             b.short_date = b.created_str
-            b.short_time = ""
+            b.short_time = ''
 
-    total_tags = recent_commits.count()
-    
-    # Calculate KPIs in memory to avoid extra queries on small sets
-    success_count = sum(1 for b in builds if b.status == 'SUCCESS')
-    total_builds = len(builds)
-    success_rate = round((success_count / total_builds) * 100) if total_builds > 0 else 0
-    latest_status = builds[0].status if total_builds > 0 else 'N/A'
+    recent_commits = GitCommitRecord.objects.all()[:10]
+    total_tags     = recent_commits.count()
+    total_builds   = len(builds)
+    success_count  = sum(1 for b in builds if b.status == 'SUCCESS')
+    success_rate   = round((success_count / total_builds) * 100) if total_builds > 0 else 0
+    latest_status  = builds[0].status if total_builds > 0 else 'N/A'
 
-    context = {
+    return {
         'recent_commits': recent_commits,
-        'builds': builds,
-        'total_tags': total_tags,
-        'success_rate': success_rate,
-        'latest_status': latest_status,
+        'builds':         builds,
+        'total_tags':     total_tags,
+        'success_rate':   success_rate,
+        'latest_status':  latest_status,
     }
-    return render(request, 'tenants/builds.html', context)
+
+
+@login_required
+def builds_view(request):
+    """Page principale des builds. Charge instantanément depuis la DB."""
+    return render(request, 'tenants/builds.html', _get_builds_context())
 
 @login_required
 def builds_sync_view(request):
     """Point d'entrée asynchrone HTMX. Vérifie s'il y a de nouveaux commits ou builds."""
     from tenants.services.sync_service import sync_builds_and_commits
     has_changes = sync_builds_and_commits()
-    
+
     if not has_changes:
         return HttpResponse(status=204)
 
     # Si changements, on récupère les nouvelles données pour redessiner la page
-    recent_commits = GitCommitRecord.objects.all()[:10]
-    import datetime
-    def parse_dt(s):
-        try:
-            return datetime.datetime.strptime(s, "%d/%m/%Y %H:%M")
-        except:
-            return datetime.datetime.min
-
-    builds_list = list(CloudBuildRecord.objects.all()[:30])
-    builds_list.sort(key=lambda x: parse_dt(x.created_str), reverse=True)
-    
-    from django.core.cache import cache
-    hidden_builds = cache.get('hidden_builds', set())
-    builds = [b for b in builds_list if b.build_id not in hidden_builds][:10]
-    
-    # Attach git commit info and format dates
-    all_commits = {c.hash: c for c in GitCommitRecord.objects.all()}
-    for b in builds:
-        b.git_commit = all_commits.get(b.commit_sha)
-        if not b.git_commit and b.commit_sha:
-            for chash, c in all_commits.items():
-                if chash.startswith(b.commit_sha):
-                    b.git_commit = c
-                    break
-                    
-        # Parse '23/06/2026 04:11' to '23/06' and '04:11'
-        parts = b.created_str.split(' ')
-        if len(parts) == 2:
-            date_part, time_part = parts
-            b.short_date = date_part[:5]  # '23/06'
-            b.short_time = time_part
-        else:
-            b.short_date = b.created_str
-            b.short_time = ""
-    
-    total_tags = recent_commits.count()
-    success_count = sum(1 for b in builds if b.status == 'SUCCESS')
-    total_builds = len(builds)
-    success_rate = round((success_count / total_builds) * 100) if total_builds > 0 else 0
-    latest_status = builds[0].status if total_builds > 0 else 'N/A'
-
-    context = {
-        'recent_commits': recent_commits,
-        'builds': builds,
-        'total_tags': total_tags,
-        'success_rate': success_rate,
-        'latest_status': latest_status,
-    }
-    return render(request, 'tenants/partials/builds_sync_update.html', context)
+    return render(request, 'tenants/partials/builds_sync_update.html', _get_builds_context())
 
 @admin_required
 @require_POST

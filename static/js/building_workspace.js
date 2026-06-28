@@ -50,6 +50,16 @@ function setSubtext(msg) {
   }, 250);
 }
 
+// Labels des étapes (synchronisés avec STEP_MAP dans tenants/api_urls.py)
+const STEP_LABELS = {
+  db_create:   'Création de la base de données',
+  oauth_setup: 'Configuration des ressources cloud',
+  cr_deploy:   'Déploiement de l\'application',
+  migrate:     'Exécution des migrations',
+  superuser:   'Création du compte administrateur',
+  done:        'Finalisation',
+};
+
 function showSuccess(url) {
   clearInterval(pollInterval);
   spinner.style.display = 'none';
@@ -63,13 +73,38 @@ function showSuccess(url) {
   }, 1500);
 }
 
-function showError(message) {
+function showError(message, failedStep) {
   clearInterval(pollInterval);
   spinner.style.display = 'none';
   if (errorIcon) errorIcon.style.display = 'flex';
   title.textContent = 'Erreur de provisionnement';
   subtext.style.opacity = 1;
-  subtext.textContent = message || 'Une erreur est survenue. Contactez le support Paramynd.';
+
+  // Afficher l'étape où ça a échoué si disponible
+  const stepLabel = failedStep ? STEP_LABELS[failedStep] : null;
+  const stepInfo  = stepLabel ? `Échec à l’étape : <strong>${stepLabel}</strong>. ` : '';
+  subtext.innerHTML = stepInfo + (message || 'Contactez le support Paramynd.');
+
+  // Boutons d'action
+  const card = document.querySelector('.demo-card');
+  if (card && !card.querySelector('.error-actions')) {
+    const actions = document.createElement('div');
+    actions.className = 'error-actions';
+    actions.style.cssText = 'display:flex;gap:12px;justify-content:center;margin-top:24px;flex-wrap:wrap;';
+    actions.innerHTML = `
+      <button onclick="window.location.reload()"
+        style="padding:10px 22px;border-radius:8px;border:none;background:#7c5ef0;color:#fff;
+               font-size:14px;font-weight:600;cursor:pointer;">
+        ↻ Réessayer
+      </button>
+      <a href="mailto:support@paramynd.com?subject=Erreur provisionnement ${slug}&body=Slug: ${slug}%0AÉtape: ${failedStep || 'inconnue'}"
+        style="padding:10px 22px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);
+               color:#ccc;font-size:14px;text-decoration:none;display:inline-flex;
+               align-items:center;gap:6px;">
+        ✉ Contacter le support
+      </a>`;
+    card.appendChild(actions);
+  }
 }
 
 // Timeout global : 10 minutes
@@ -100,7 +135,7 @@ async function pollStatus() {
     }
 
     if (data.status === 'failed') {
-      showError(data.message);
+      showError(data.message, data.step);
       return;
     }
 

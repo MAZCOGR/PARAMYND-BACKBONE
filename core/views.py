@@ -307,7 +307,7 @@ def verify_otp_view(request):
                     t = threading.Thread(
                         target=provision_tenant,
                         args=(tenant_id, locked_user.email, temp_password),
-                        daemon=True,
+                        daemon=False,  # BUG-D03 fix : daemon=True tuerait le thread si Cloud Run scale-to-zero
                         name=f'provision-{final_slug}',
                     )
                     t.start()

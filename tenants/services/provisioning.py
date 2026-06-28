@@ -223,7 +223,7 @@ def step_run_migrations(tenant_slug: str, db_name: str, project: str, region: st
         '--command=python',
         '--args=manage.py,migrate',
         '--max-retries=1',
-    ], tenant_slug, step, timeout=60)
+    ], tenant_slug, step, timeout=120)  # BUG-D06 fix : 60s → 120s
 
     if not ok:
         return False
@@ -281,9 +281,12 @@ def step_create_superuser(tenant_slug: str, db_name: str, project: str, region: 
         ),
         '--set-secrets=DB_PASSWORD=DB_PASS:latest,SECRET_KEY=PARAMYND_SECRET_KEY:latest,JWT_SIGNING_KEY=PARAMYND_JWT_SIGNING_KEY:latest',
         '--command=python',
-        '--args=manage.py,createsuperuser,--noinput',
+        # BUG-D01 fix : utilise la commande custom create_tenant_superuser
+        # qui sait gérer accounts.User (email comme identifiant unique).
+        # createsuperuser vanilla Django échoue sur ce modèle custom.
+        '--args=manage.py,create_tenant_superuser,--email,' + admin_email + ',--noinput',
         '--max-retries=1',
-    ], tenant_slug, step, timeout=60)
+    ], tenant_slug, step, timeout=120)  # BUG-D06 fix : 60s → 120s (GCP peut être lent)
 
     if not ok:
         # C-03 fix : la voie de secours avec shell -c a été supprimée.
@@ -299,7 +302,7 @@ def step_create_superuser(tenant_slug: str, db_name: str, project: str, region: 
         f'--region={region}',
         f'--project={project}',
         '--wait',
-    ], tenant_slug, step, timeout=180)
+    ], tenant_slug, step, timeout=240)  # BUG-D06 fix : 180s → 240s
 
     if not ok:
         _log(tenant_slug, step, "Superuser job failed — tenant will still be active.", error=True)

@@ -15,8 +15,15 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 # ==============================================================================
 # SÉCURITÉ
 # ==============================================================================
-SECRET_KEY = env('SECRET_KEY', default='changeme-in-production')
-DEBUG = env('DEBUG', default=True)
+# BUG-A-CRIT02 fix : ne jamais utiliser une SECRET_KEY prévisible en fallback.
+# Si la variable est absente du .env (ex: CI sans .env), on génère une clé aléatoire
+# par-processus (non reproductible entre redémarrages — correct en dev, invalide les
+# sessions à chaque redémarrage, ce qui est acceptable hors prod).
+import secrets as _secrets
+SECRET_KEY = env('SECRET_KEY', default=_secrets.token_hex(50))
+# BUG-A-CRIT03 fix : DEBUG=False par défaut — ne jamais exposer les tracebacks
+# si la variable d'env est absente (staging, CI, déploiement manuel sans .env).
+DEBUG = env('DEBUG', default=False)
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[]) + [
     'localhost',
     '127.0.0.1',

@@ -17,6 +17,7 @@
     <div class="demo-header">
       <div class="demo-logo">P</div>
       <h1>Create your workspace</h1>
+      <p class="demo-subtitle">Set up your Paramynd account in seconds</p>
     </div>
 
     <form method="post" id="demoForm">
@@ -24,53 +25,79 @@
       <div class="form-row">
         <div class="form-group">
           <label for="first_name">First name *</label>
-          <input type="text" id="first_name" name="first_name" required>
+          <input type="text" id="first_name" name="first_name" placeholder="John" required>
         </div>
         <div class="form-group">
           <label for="last_name">Last name *</label>
-          <input type="text" id="last_name" name="last_name" required>
+          <input type="text" id="last_name" name="last_name" placeholder="Doe" required>
         </div>
       </div>
       
       <div class="form-group">
         <label for="email">Email *</label>
-        <input type="email" id="email" name="email" required>
+        <input type="email" id="email" name="email" placeholder="john.doe@company.com" required>
       </div>
 
       <div class="form-row">
         <div class="form-group">
           <label for="company">Company *</label>
-          <input type="text" id="company" name="company" required>
+          <input type="text" id="company" name="company" placeholder="Acme Corp" required>
         </div>
         <div class="form-group">
           <label for="job_title">Job title *</label>
-          <input type="text" id="job_title" name="job_title" required>
+          <input type="text" id="job_title" name="job_title" placeholder="CEO" required>
         </div>
       </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label for="country">Select country *</label>
-          <select id="country" name="country" required>
-            <option value="" disabled selected>Select a country</option>
-            <option value="US">United States</option>
-            <option value="UK">United Kingdom</option>
-            <option value="FR">France</option>
-            <option value="DE">Germany</option>
-            <option value="CA">Canada</option>
-            <option value="AU">Australia</option>
-            <option value="OTHER">Other</option>
-          </select>
+      <!-- ═══ COUNTRY FLAG PICKER ═══ -->
+      <div class="form-group">
+        <label>Country *</label>
+        <div class="country-picker" id="countryPicker" tabindex="0" role="combobox" aria-expanded="false" aria-haspopup="listbox">
+          <div class="country-trigger" id="countryTrigger">
+            <span class="country-flag" id="selectedFlag">🌍</span>
+            <span class="country-name" id="selectedCountryName">Select a country</span>
+            <svg class="picker-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+          <div class="country-dropdown" id="countryDropdown" role="listbox">
+            <div class="country-search-wrap">
+              <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input type="text" id="countrySearch" class="country-search-input" placeholder="Search country…" autocomplete="off">
+            </div>
+            <ul class="country-list" id="countryList"></ul>
+          </div>
         </div>
-        <div class="form-group">
-          <label for="phone">Phone *</label>
-          <input type="tel" id="phone" name="phone" required>
+        <!-- hidden input for form submission -->
+        <input type="hidden" id="country" name="country" required>
+      </div>
+
+      <!-- ═══ PHONE WITH AUTO DIAL CODE ═══ -->
+      <div class="form-group">
+        <label for="phone_number">Phone *</label>
+        <div class="phone-input-wrap">
+          <div class="phone-dial-badge" id="phoneDialBadge">
+            <span id="dialCodeFlag">🌍</span>
+            <span id="dialCodeText">+?</span>
+          </div>
+          <input type="tel" id="phone_number" name="phone" placeholder="Enter phone number" required autocomplete="tel">
+          <input type="hidden" id="phone_full" name="phone_full">
         </div>
       </div>
 
       <div class="form-group">
         <label for="password">Password *</label>
-        <input type="password" id="password" name="password" required>
+        <div class="pwd-input-wrap">
+          <input type="password" id="password" name="password" placeholder="Min. 8 characters" required>
+          <button type="button" class="pwd-toggle" id="pwdToggle" aria-label="Show password">
+            <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
+        </div>
         <div class="pwd-meter-container">
           <div id="pwd-meter-bar"></div>
         </div>
@@ -79,14 +106,19 @@
       
       <div class="form-group">
         <label for="confirm_password">Confirm Password *</label>
-        <input type="password" id="confirm_password" name="confirm_password" required>
+        <input type="password" id="confirm_password" name="confirm_password" placeholder="Repeat your password" required>
       </div>
 
       <div class="privacy-text">
         By submitting this form, you acknowledge Paramynd's <a href="#">Privacy Statement</a>.<br>
       </div>
 
-      <button type="submit" class="submit-btn" id="submitBtn">Submit</button>
+      <button type="submit" class="submit-btn" id="submitBtn">
+        <span class="btn-text">Create workspace</span>
+        <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M5 12h14M12 5l7 7-7 7"></path>
+        </svg>
+      </button>
     </form>
     
     <a href="{% url 'home' %}" class="back-link">← Back to home</a>
@@ -96,5 +128,4 @@
 
 {% block extra_js %}
 <script src="/static/js/request_demo.js"></script>
-<link rel="stylesheet" href="/static/css/request_demo.css">
 {% endblock %}
