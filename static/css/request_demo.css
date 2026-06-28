@@ -330,10 +330,24 @@ body {
   max-height: 215px;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: rgba(124,92,252,0.5) transparent;
+  scrollbar-color: rgba(124,92,252,0.4) transparent;
 }
-.country-list::-webkit-scrollbar { width: 3px; }
-.country-list::-webkit-scrollbar-thumb { background: rgba(124,92,252,0.5); border-radius: 2px; }
+.country-list::-webkit-scrollbar {
+  width: 3px;
+  background: transparent;
+}
+.country-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.country-list::-webkit-scrollbar-thumb {
+  background: rgba(124,92,252,0.4);
+  border-radius: 99px;
+}
+.country-list::-webkit-scrollbar-button {
+  display: none;
+  height: 0;
+  width: 0;
+}
 
 .country-list li {
   display: flex;
