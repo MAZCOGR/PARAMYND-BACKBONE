@@ -189,10 +189,12 @@ const countryHidden= document.getElementById('country');
 
 // Phone badge elements
 const dialBadge    = document.getElementById('phoneDialBadge');
-const dialCodeFlag = document.getElementById('dialCodeFlag');
 const dialCodeText = document.getElementById('dialCodeText');
 const phoneInput   = document.getElementById('phone_number');
 const phoneHidden  = document.getElementById('phone_full');
+
+// Hide badge initially (no country selected yet)
+dialBadge.style.display = 'none';
 
 let selectedCountry  = null;
 let focusedIndex     = -1;
@@ -249,8 +251,8 @@ function selectCountry(c) {
   // Update hidden field
   countryHidden.value = c.code;
 
-  // Update phone dial badge — inject real flag image
-  dialCodeFlag.innerHTML = flagImg(c.code, 'country-flag');
+  // Update phone dial badge — dial code only, no flag
+  dialBadge.style.display = 'flex';
   dialCodeText.textContent = c.dial;
   dialBadge.classList.add('has-code');
 
