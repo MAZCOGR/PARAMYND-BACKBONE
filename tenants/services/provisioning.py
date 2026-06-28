@@ -492,9 +492,17 @@ def assign_pool_tenant(pool_tenant_id: str, client_slug: str, company: str,
     _log(client_slug, 'POOL:ASSIGN',
          f"Assignation pool '{pool_slug}' (DB: {pool_db_name}) -> client '{client_slug}' ({admin_email})")
 
-    # Mettre a jour le slug et email pour le suivi pendant l'assignation
+    # CRITIQUE POLLING FIX : Set custom_domain = acme.paramynd.com DES LE DEBUT.
+    # Le frontend poll avec final_slug='acme' (pas pool-abc123).
+    # Pendant toute la duree de l'assignation, tenant.slug reste 'pool-abc123'.
+    # En settant custom_domain ici, le polling via Q(custom_domain='acme.paramynd.com')
+    # trouve le tenant immediatement et peut retourner l'etape en cours.
+    # A la fin, tenant.slug = 'acme' et le lookup direct par slug prend le relais.
     tenant.contact_email = admin_email
-    tenant.save(update_fields=['contact_email', 'updated_at'])
+    tenant.custom_domain = public_domain          # ← cle du fix polling
+    tenant.domain_status = 'pending'              # pas encore ACTIVE tant que CR n'est pas deploye
+    tenant.save(update_fields=['contact_email', 'custom_domain', 'domain_status', 'updated_at'])
+
 
     deployment = Deployment.objects.create(
         tenant=tenant,

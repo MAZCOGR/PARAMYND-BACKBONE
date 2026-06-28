@@ -320,8 +320,10 @@ def verify_otp_view(request):
                         from tenants.models import Tenant as TenantModel
                         TenantModel.objects.filter(id=tenant_id).delete()
 
-                        # Stocker le slug du pool pour le polling de /building-workspace/
-                        request.session['pending_slug'] = pool_tenant.slug
+                        # Stocker le slug CLIENT (final) pour le polling — pas le slug pool
+                        # car assign_pool_tenant() renommera tenant.slug = client_slug a la fin,
+                        # et le frontend doit continuer a polling avec le bon slug.
+                        request.session['pending_slug'] = final_slug
 
                         t = threading.Thread(
                             target=assign_pool_tenant,
@@ -359,9 +361,10 @@ def verify_otp_view(request):
                             name='pool-refill-fallback',
                         ).start()
 
-                messages.success(request, "Votre compte et votre espace client ont été créés avec succès !")
-                request.session.pop('pending_slug', None)
-                redirect_slug = pool_tenant.slug if (tenant_id and pool_tenant) else final_slug
+                # Toujours rediriger avec le slug CLIENT (final_slug),
+                # que ce soit via pool ou provisioning classique.
+                # Le slug pool (pool-abc123) n'est qu'un identifiant temporaire interne.
+                redirect_slug = final_slug
                 if redirect_slug:
                     return redirect(f'/building-workspace/?slug={redirect_slug}')
                 return redirect('building_workspace')
