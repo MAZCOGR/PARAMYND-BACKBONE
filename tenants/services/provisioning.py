@@ -106,7 +106,8 @@ def _get_latest_image_uri(project: str = DEFAULT_PROJECT, region: str = DEFAULT_
 def step_create_database(tenant_slug: str, db_name: str, project: str) -> bool:
     """
     Étape 1 — Crée la base PostgreSQL dans Cloud SQL.
-    Ignore l'erreur si la base existe déjà.
+    Si la base existe déjà (tenant supprimé puis recréé avec le même slug),
+    on la supprime et recrée proprement pour éviter les conflits de migrations Django.
     """
     step = 'DB_CREATE'
     _log(tenant_slug, step, f"Creating database '{db_name}' on instance yellow-db-paris...")
@@ -120,9 +121,42 @@ def step_create_database(tenant_slug: str, db_name: str, project: str) -> bool:
     ], tenant_slug, step, timeout=60)
 
     if not ok:
-        # Ignorer si la DB existe déjà
         if 'already exists' in out.lower() or 'duplicate' in out.lower():
-            _log(tenant_slug, step, f"Database '{db_name}' already exists — skipping.")
+            # La base existe déjà (tenant supprimé puis recréé avec le même slug).
+            # On la supprime et recrée proprement pour éviter les conflits
+            # de schéma Django (tables django_migrations obsolètes, etc.).
+            _log(tenant_slug, step,
+                 f"Database '{db_name}' already exists — dropping and recreating for a clean state...")
+
+            drop_ok, drop_out = _run_gcloud([
+                'sql', 'databases', 'delete', db_name,
+                '--instance=yellow-db-paris',
+                f'--project={project}',
+            ], tenant_slug, step, timeout=60)
+
+            if not drop_ok:
+                _log(tenant_slug, step,
+                     f"Failed to drop existing database '{db_name}': {drop_out}", error=True)
+                return False
+
+            # Petite pause pour laisser Cloud SQL libérer les ressources
+            time.sleep(3)
+
+            # Recréer la base
+            recreate_ok, recreate_out = _run_gcloud([
+                'sql', 'databases', 'create', db_name,
+                '--instance=yellow-db-paris',
+                f'--project={project}',
+                '--charset=UTF8',
+                '--collation=en_US.UTF8',
+            ], tenant_slug, step, timeout=60)
+
+            if not recreate_ok:
+                _log(tenant_slug, step,
+                     f"Failed to recreate database '{db_name}': {recreate_out}", error=True)
+                return False
+
+            _log(tenant_slug, step, f"Database '{db_name}' dropped and recreated successfully.")
             return True
         return False
     return True
@@ -170,11 +204,12 @@ def step_run_migrations(tenant_slug: str, db_name: str, project: str, region: st
     job_name = f'{tenant_slug}-migrate'
     _log(tenant_slug, step, f"Creating migration job '{job_name}'...")
 
-    # Supprimer le job s'il existe déjà
+    # Supprimer le job s'il existe déjà (peut rester d'un provisioning précédent
+    # avec le même slug si le tenant a été supprimé et recréé).
     _run_gcloud([
         'run', 'jobs', 'delete', job_name,
         f'--region={region}', f'--project={project}',
-    ], tenant_slug, step, timeout=30)
+    ], tenant_slug, step, timeout=60)
 
     # Créer le job
     ok, out = _run_gcloud([
