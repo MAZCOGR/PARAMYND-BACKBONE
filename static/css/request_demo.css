@@ -298,7 +298,7 @@ body {
   display: flex;
   align-items: center;
   padding: 0.55rem 0.75rem;
-  border: none;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
   background: transparent;
   gap: 0.45rem;
 }
@@ -310,13 +310,15 @@ body {
   flex-shrink: 0;
 }
 .country-search-input {
-  background: transparent;
-  border: none;
-  outline: none;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
   color: #fff;
   font-size: 0.78rem;
   font-family: inherit;
   width: 100%;
+  padding: 0 !important;
   caret-color: var(--purple);
   letter-spacing: 0.01em;
 }
