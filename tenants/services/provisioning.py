@@ -332,7 +332,7 @@ def step_create_superuser(tenant_slug: str, db_name: str, project: str, region: 
     _log(tenant_slug, step, f"Admin account created for {admin_email} ✅")
     return True
 
-def step_create_oauth_app(tenant, admin_email: str) -> tuple[str, str]:
+def step_create_oauth_app(tenant, admin_email: str, target_slug: str = None) -> tuple[str, str]:
     """
     Crée une application OAuth2 First-Party pour ce tenant sans configurer les URLs (fait après).
     Client PUBLIC + PKCE : le code challenge est obligatoire côté serveur (PKCE_REQUIRED=True),
@@ -347,9 +347,10 @@ def step_create_oauth_app(tenant, admin_email: str) -> tuple[str, str]:
 
     client_id = secrets.token_urlsafe(32)
     client_secret = secrets.token_urlsafe(64)
+    slug_to_use = target_slug or tenant.slug
 
     app, created = Application.objects.get_or_create(
-        name=f"SSO-{tenant.slug}",
+        name=f"SSO-{slug_to_use}",
         defaults={
             'user': user,
             'client_id': client_id,
@@ -379,6 +380,19 @@ def step_update_oauth_app_urls(tenant):
     """Met à jour les URIs de redirection de l'application OAuth2."""
     from oauth2_provider.models import Application
     app = Application.objects.filter(name=f"SSO-{tenant.slug}").first()
+    
+    # Résilience : si on ne trouve pas l'app (bug ancien tenant de pool),
+    # on cherche l'application orpheline de cet utilisateur qui commence par SSO-pool-
+    if not app:
+        app = Application.objects.filter(
+            name__startswith="SSO-pool-",
+            user__email=tenant.contact_email
+        ).first()
+        if app:
+            # On la renomme avec le bon slug client
+            app.name = f"SSO-{tenant.slug}"
+            app.save(update_fields=['name'])
+
     if app:
         uris = []
         # URL Cloud Run directe (interne)
@@ -539,7 +553,7 @@ def assign_pool_tenant(pool_tenant_id: str, client_slug: str, company: str,
     tenant.provisioning_step = 'oauth_setup'
     tenant.save(update_fields=['provisioning_step', 'updated_at'])
 
-    client_id, client_secret = step_create_oauth_app(tenant, admin_email)
+    client_id, client_secret = step_create_oauth_app(tenant, admin_email, target_slug=client_slug)
 
     # ── Etape 2 : Deployer un NOUVEAU Cloud Run service avec le vrai slug ─────
     # CRITIQUE : Le NEG urlMask='<service>.paramynd.com' exige que le nom du
