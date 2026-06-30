@@ -181,42 +181,52 @@ def deploy_service(
         result = operation.result(timeout=300)
         revision = result.latest_created_revision if hasattr(result, 'latest_created_revision') else 'unknown'
 
-        # Rendre le service public (invoker allUsers) via gcloud.
-        # Note : run_v2.ServicesClient n'expose pas get_iam_policy/set_iam_policy,
-        # ces méthodes appartiennent à l'IAM REST API. On passe directement par gcloud.
-        # FIX-403 : Pour un NOUVEAU service (pas une mise à jour), GCP peut mettre
-        # plusieurs secondes avant que l'IAM API accepte la commande.
-        # On retry jusqu'à 4 fois avec 15s de délai entre chaque tentative.
+        # Rendre le service public via l'API Python (IAM).
+        # POURQUOI PAS gcloud : depuis Cloud Run, gcloud utilise le Compute SA
+        # (343192497073-compute@developer.gserviceaccount.com) qui n'a pas
+        # 'run.services.setIamPolicy' → PERMISSION_DENIED systématique.
+        # L'API Python utilise les Application Default Credentials de l'instance
+        # qui peuvent être configurés avec roles/run.admin sur le projet.
         try:
-            import subprocess
-            import time as _time
-            iam_ok = False
-            for attempt in range(1, 5):
-                iam_result = subprocess.run(
-                    [
-                        'gcloud', 'run', 'services', 'add-iam-policy-binding', service_name,
-                        '--member=allUsers', '--role=roles/run.invoker',
-                        f'--region={region}', f'--project={gcp_project_id}', '--quiet'
-                    ],
-                    capture_output=True,
-                    text=True,
-                    timeout=60,
-                )
-                if iam_result.returncode == 0:
-                    logger.info(f"Permissions IAM configurées (allUsers → run.invoker) pour {service_name} (tentative {attempt}).")
-                    iam_ok = True
-                    break
-                else:
-                    logger.warning(
-                        f"IAM tentative {attempt}/4 échouée pour {service_name} "
-                        f"(code {iam_result.returncode}): {iam_result.stderr.strip()}"
+            from google.iam.v1 import iam_policy_pb2, policy_pb2
+            iam_client = run_v2.ServicesClient()
+            policy = policy_pb2.Policy(
+                bindings=[
+                    policy_pb2.Binding(
+                        role='roles/run.invoker',
+                        members=['allUsers'],
                     )
-                    if attempt < 4:
-                        _time.sleep(15)
-            if not iam_ok:
-                logger.error(f"ECHEC IAM définitif pour {service_name} après 4 tentatives — service inaccessible au public !")
+                ]
+            )
+            iam_client.set_iam_policy(
+                request=iam_policy_pb2.SetIamPolicyRequest(
+                    resource=service_fqn,
+                    policy=policy,
+                )
+            )
+            logger.info(f"Permissions IAM configurées (allUsers → run.invoker) pour {service_name} via Python SDK.")
         except Exception as iam_exc:
-            logger.error(f"Exception lors de la configuration IAM pour {service_name}: {iam_exc}")
+            # Fallback : essai via gcloud subprocess (contexte de dev local ou CI)
+            logger.warning(f"Python IAM SDK échoué pour {service_name}: {iam_exc} — fallback gcloud subprocess")
+            try:
+                import subprocess, time as _time
+                for attempt in range(1, 4):
+                    r = subprocess.run(
+                        ['gcloud', 'run', 'services', 'add-iam-policy-binding', service_name,
+                         '--member=allUsers', '--role=roles/run.invoker',
+                         f'--region={region}', f'--project={gcp_project_id}', '--quiet'],
+                        capture_output=True, text=True, timeout=60,
+                    )
+                    if r.returncode == 0:
+                        logger.info(f"IAM gcloud OK pour {service_name} (tentative {attempt}).")
+                        break
+                    logger.warning(f"IAM gcloud tentative {attempt}/3 échouée: {r.stderr.strip()}")
+                    if attempt < 3:
+                        _time.sleep(15)
+            except Exception as sub_exc:
+                logger.error(f"IAM fallback gcloud aussi échoué pour {service_name}: {sub_exc}")
+
+
 
         return {
             'success': True,
