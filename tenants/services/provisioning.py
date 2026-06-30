@@ -757,13 +757,28 @@ def ensure_pool_size(target_size: int = 3):
     Compte les tenants POOLED + les tenants de pool en cours de provisioning.
     Si le total est inférieur à target_size, crée les tenants manquants en background.
 
+    CRITICAL FIX: purge les tenants FAILED avant de compter pour éviter la boucle
+    infinie "0 POOLED + 0 PROVISIONING → lancer 3 threads → tous échouent → retry".
+
     Args:
         target_size : Nombre de tenants de pool à maintenir (défaut: 3)
     """
     import threading
     from tenants.models import Tenant, TenantStatus
 
-    # Compter les tenants POOLED disponibles + ceux en cours de provisioning
+    # ── Étape 0 : Purger les pools FAILED (jamais utilisables) ───────────────
+    # Sans cette purge, ensure_pool_size() voit toujours 0 disponible et relance
+    # indéfiniment des threads qui échouent, saturant la base avec des orphelins.
+    failed_qs = Tenant.objects.filter(
+        status=TenantStatus.FAILED,
+        is_pool_tenant=True,
+    )
+    failed_count = failed_qs.count()
+    if failed_count > 0:
+        failed_qs.delete()
+        logger.info(f"[POOL] Purge : {failed_count} pool(s) en erreur supprimés de la BDD.")
+
+    # ── Étape 1 : Compter les pools vraiment utilisables ──────────────────────
     pooled_count = Tenant.objects.filter(
         status=TenantStatus.POOLED,
         is_pool_tenant=True,
@@ -780,6 +795,10 @@ def ensure_pool_size(target_size: int = 3):
         logger.info(f"[POOL] Pool en bonne santé : {pooled_count} prêts, {provisioning_count} en cours (target={target_size})")
         return
 
+    # Sécurité : ne jamais lancer plus de `target_size` threads simultanément
+    # même si missing est aberrant (ex: données corrompues)
+    missing = min(missing, target_size)
+
     logger.info(f"[POOL] Pool insuffisant : {pooled_count} prêts + {provisioning_count} en cours = {total_in_pool} (target={target_size}). "
                 f"Lancement de {missing} provisioning(s) de pool...")
 
@@ -790,6 +809,7 @@ def ensure_pool_size(target_size: int = 3):
             name=f'pool-provision-{i}',
         )
         t.start()
+
 
 
 # ──────────────────────────────────────────────────────────────────────────────
