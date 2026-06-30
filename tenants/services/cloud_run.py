@@ -181,28 +181,40 @@ def deploy_service(
         result = operation.result(timeout=300)
         revision = result.latest_created_revision if hasattr(result, 'latest_created_revision') else 'unknown'
 
-        # Rendre le service public (invoker allUsers) via gcloud
+        # Rendre le service public (invoker allUsers) via gcloud.
         # Note : run_v2.ServicesClient n'expose pas get_iam_policy/set_iam_policy,
         # ces méthodes appartiennent à l'IAM REST API. On passe directement par gcloud.
+        # FIX-403 : Pour un NOUVEAU service (pas une mise à jour), GCP peut mettre
+        # plusieurs secondes avant que l'IAM API accepte la commande.
+        # On retry jusqu'à 4 fois avec 15s de délai entre chaque tentative.
         try:
             import subprocess
-            iam_result = subprocess.run(
-                [
-                    'gcloud', 'run', 'services', 'add-iam-policy-binding', service_name,
-                    '--member=allUsers', '--role=roles/run.invoker',
-                    f'--region={region}', f'--project={gcp_project_id}', '--quiet'
-                ],
-                capture_output=True,
-                text=True,
-                timeout=30,  # BUG-D08 fix : évite un blocage infini du worker gunicorn
-            )
-            if iam_result.returncode == 0:
-                logger.info(f"Permissions IAM configurées (allUsers → run.invoker) pour {service_name}.")
-            else:
-                logger.error(
-                    f"Erreur gcloud IAM pour {service_name} (code {iam_result.returncode}): "
-                    f"{iam_result.stderr.strip()}"
+            import time as _time
+            iam_ok = False
+            for attempt in range(1, 5):
+                iam_result = subprocess.run(
+                    [
+                        'gcloud', 'run', 'services', 'add-iam-policy-binding', service_name,
+                        '--member=allUsers', '--role=roles/run.invoker',
+                        f'--region={region}', f'--project={gcp_project_id}', '--quiet'
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=60,
                 )
+                if iam_result.returncode == 0:
+                    logger.info(f"Permissions IAM configurées (allUsers → run.invoker) pour {service_name} (tentative {attempt}).")
+                    iam_ok = True
+                    break
+                else:
+                    logger.warning(
+                        f"IAM tentative {attempt}/4 échouée pour {service_name} "
+                        f"(code {iam_result.returncode}): {iam_result.stderr.strip()}"
+                    )
+                    if attempt < 4:
+                        _time.sleep(15)
+            if not iam_ok:
+                logger.error(f"ECHEC IAM définitif pour {service_name} après 4 tentatives — service inaccessible au public !")
         except Exception as iam_exc:
             logger.error(f"Exception lors de la configuration IAM pour {service_name}: {iam_exc}")
 
