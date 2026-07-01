@@ -955,54 +955,97 @@ def _mark_failed(tenant, deployment, error_message: str):
     deployment.save(update_fields=['status', 'error_message', 'completed_at'])
 
 
+@close_db_connections
 def deprovision_tenant(tenant_id: str):
     """
-    Supprime toutes les ressources GCP associées à un tenant, puis supprime le tenant de la base.
-    Peut être exécuté de façon asynchrone ou synchrone.
+    Supprime toutes les ressources GCP associées à un tenant.
+    Appelé en background thread depuis tenant_delete_view.
+
+    Ordre de suppression (chaque étape est idempotente — les erreurs 404 sont ignorées) :
+      1. Service Cloud Run
+      2. Jobs Cloud Run ({slug}-migrate, {slug}-superuser)
+      3. Domain mapping custom (si configuré)
+      4. Application OAuth2 dans le backbone
+      5. Base de données Cloud SQL
+      6. Enregistrement Tenant en base Django (cascade → Deployments)
     """
     from tenants.models import Tenant
-    
+
     try:
         tenant = Tenant.objects.get(id=tenant_id)
     except Tenant.DoesNotExist:
-        logger.error(f"[DEPROVISION] Tenant {tenant_id} not found in DB")
+        logger.error(f"[DEPROVISION] Tenant {tenant_id} not found in DB — already deleted?")
         return
 
-    slug = tenant.slug
-    db_name = tenant.db_name or slug.replace('-', '_')
-    project = tenant.gcp_project_id or DEFAULT_PROJECT
-    region = tenant.cloud_run_region or DEFAULT_REGION
+    slug        = tenant.slug
+    db_name     = tenant.db_name or slug.replace('-', '_')
+    project     = tenant.gcp_project_id or DEFAULT_PROJECT
+    region      = tenant.cloud_run_region or DEFAULT_REGION
+    sql_instance = (
+        tenant.cloud_sql_instance.split(':')[-1]  # ex: 'yellow-455523:europe-west9:yellow-db-paris' → 'yellow-db-paris'
+        if tenant.cloud_sql_instance and ':' in (tenant.cloud_sql_instance or '')
+        else 'yellow-db-paris'
+    )
 
-    _log(slug, 'DEPROVISION_START', f"Starting full deprovisioning for tenant '{slug}'")
+    _log(slug, 'DEPROVISION:START', f"Déprovisionnement complet du tenant '{slug}'")
 
-    # 1. Supprimer le service Cloud Run
-    _log(slug, 'CR_DELETE', f"Deleting Cloud Run service {slug}...")
-    _run_gcloud([
-        'run', 'services', 'delete', slug,
-        f'--region={region}', f'--project={project}'
-    ], slug, 'CR_DELETE', timeout=60)
+    # ── 1. Service Cloud Run ──────────────────────────────────────────────────
+    _log(slug, 'DEPROVISION:CR', f"Suppression du service Cloud Run '{slug}'...")
+    _run_gcloud(
+        ['run', 'services', 'delete', slug,
+         f'--region={region}', f'--project={project}', '--quiet'],
+        slug, 'DEPROVISION:CR', timeout=60
+    )
 
-    # 2. Supprimer les jobs Cloud Run
-    _log(slug, 'CR_JOBS_DELETE', "Deleting Cloud Run jobs...")
+    # ── 2. Jobs Cloud Run ({slug}-migrate, {slug}-superuser) ─────────────────
+    _log(slug, 'DEPROVISION:JOBS', "Suppression des jobs Cloud Run...")
     for job_suffix in ['migrate', 'superuser']:
-        _run_gcloud([
-            'run', 'jobs', 'delete', f"{slug}-{job_suffix}",
-            f'--region={region}', f'--project={project}'
-        ], slug, 'CR_JOBS_DELETE', timeout=30)
+        _run_gcloud(
+            ['run', 'jobs', 'delete', f"{slug}-{job_suffix}",
+             f'--region={region}', f'--project={project}', '--quiet'],
+            slug, 'DEPROVISION:JOBS', timeout=30
+        )
 
-    # 3. Supprimer la base de données Cloud SQL
-    _log(slug, 'DB_DELETE', f"Deleting Cloud SQL database {db_name}...")
-    _run_gcloud([
-        'sql', 'databases', 'delete', db_name,
-        '--instance=yellow-db-paris',
-        f'--project={project}'
-    ], slug, 'DB_DELETE', timeout=120)
+    # ── 3. Domain mapping Cloud Run (custom domain) ───────────────────────────
+    custom_domain = tenant.custom_domain
+    if custom_domain:
+        _log(slug, 'DEPROVISION:DOMAIN', f"Suppression du domain mapping '{custom_domain}'...")
+        _run_gcloud(
+            ['run', 'domain-mappings', 'delete',
+             f'--domain={custom_domain}',
+             f'--region={region}', f'--project={project}', '--quiet'],
+            slug, 'DEPROVISION:DOMAIN', timeout=30
+        )
 
-    # 4. Supprimer l'instance Tenant dans la base de données Django
-    # Note: Cela déclenchera la suppression en cascade si d'autres objets sont liés (Deployment, etc.)
-    _log(slug, 'DB_RECORD_DELETE', f"Deleting Tenant record for '{slug}'...")
+    # ── 4. Application OAuth2 dans le backbone ────────────────────────────────
+    _log(slug, 'DEPROVISION:OAUTH', f"Suppression de l'app OAuth2 SSO-{slug}...")
+    try:
+        from oauth2_provider.models import Application
+        deleted_count, _ = Application.objects.filter(
+            name__in=[f"SSO-{slug}", f"SSO-{slug}-old"]
+        ).delete()
+        _log(slug, 'DEPROVISION:OAUTH', f"{deleted_count} app(s) OAuth2 supprimée(s).")
+    except Exception as e:
+        _log(slug, 'DEPROVISION:OAUTH', f"Impossible de supprimer l'app OAuth2: {e}", error=True)
+
+    # ── 5. Base de données Cloud SQL ─────────────────────────────────────────
+    if db_name:
+        _log(slug, 'DEPROVISION:DB', f"Suppression de la DB Cloud SQL '{db_name}' sur {sql_instance}...")
+        _run_gcloud(
+            ['sql', 'databases', 'delete', db_name,
+             f'--instance={sql_instance}',
+             f'--project={project}', '--quiet'],
+            slug, 'DEPROVISION:DB', timeout=120
+        )
+    else:
+        _log(slug, 'DEPROVISION:DB', "Pas de db_name connu — suppression DB Cloud SQL ignorée.")
+
+    # ── 6. Enregistrement Tenant en base Django ───────────────────────────────
+    # NB: la suppression cascade supprime aussi les Deployment liés.
+    # NB: views.py ne fait PAS de delete() supplémentaire — une seule suppression ici.
+    _log(slug, 'DEPROVISION:RECORD', f"Suppression de l'enregistrement DB du tenant '{slug}'...")
     try:
         tenant.delete()
-        _log(slug, 'DONE', f"✅ Tenant '{slug}' deprovisioned and deleted successfully.")
+        _log(slug, 'DEPROVISION:DONE', f"✅ Tenant '{slug}' entièrement déprovisionné et supprimé.")
     except Exception as e:
-        _log(slug, 'ERROR', f"Failed to delete Tenant record: {e}", error=True)
+        _log(slug, 'DEPROVISION:ERROR', f"Échec suppression enregistrement DB: {e}", error=True)

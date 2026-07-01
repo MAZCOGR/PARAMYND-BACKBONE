@@ -223,32 +223,44 @@ def tenant_detail_view(request, pk):
 @admin_required
 @require_POST
 def tenant_delete_view(request, pk):
-    """Supprime complètement un tenant et ses ressources associées."""
+    """
+    Supprime complètement un tenant et ses ressources GCP associées.
+    Le déprovisionnement tourne en arrière-plan (thread daemon=False) pour
+    ne pas bloquer la réponse HTTP. Le statut DELETING est visible immédiatement
+    dans la liste.
+    """
     tenant = get_object_or_404(Tenant, pk=pk)
     tenant_name = tenant.name
-    tenant_id = tenant.id
+    tenant_id   = str(tenant.id)
 
-    # Marquer immédiatement le tenant comme « en cours de suppression »
-    # pour que la liste affiche le bon statut dès la redirection.
+    # Garde-fou : ne pas supprimer un tenant déjà en cours de suppression
+    if tenant.status == TenantStatus.DELETING:
+        messages.warning(request, f"La suppression de « {tenant_name} » est déjà en cours.")
+        return redirect('tenants:list')
+
+    # Marquer immédiatement comme DELETING pour affichage dans la liste
     tenant.status = TenantStatus.DELETING
-    tenant.save(update_fields=['status'])
+    tenant.save(update_fields=['status', 'updated_at'])
 
-    # Lancement du déprovisionnement en arrière-plan
+    # Lancement en arrière-plan — deprovision_tenant() supprime aussi le record DB
     import threading
     from tenants.services.provisioning import deprovision_tenant
 
-    def _delete_and_remove(tid):
-        deprovision_tenant(tid)
-        # Une fois les ressources GCP supprimées, supprimer l'enregistrement en base
-        try:
-            Tenant.objects.filter(pk=tid).delete()
-        except Exception:
-            pass
+    t = threading.Thread(
+        target=deprovision_tenant,
+        args=(tenant_id,),
+        daemon=False,
+        name=f'deprovision-{tenant.slug}',
+    )
+    t.start()
 
-    threading.Thread(target=_delete_and_remove, args=(tenant_id,), daemon=False).start()
-
-    messages.success(request, f"La suppression du tenant « {tenant_name} » a été lancée. Il sera retiré de la liste une fois toutes les ressources supprimées.")
+    messages.success(
+        request,
+        f"Suppression de « {tenant_name} » lancée — le tenant disparaîtra de la liste "
+        f"une fois toutes les ressources GCP supprimées (~2 min)."
+    )
     return redirect('tenants:list')
+
 
 
 # ──────────────────────────────────────────────
