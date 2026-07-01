@@ -47,15 +47,28 @@ def get_login_redirect_url(user):
 def _safe_redirect(request, fallback='/'):
     """
     C-10 / N-07 fix : valide le paramètre 'next' pour éviter les open redirects.
-    N'autorise que les redirections vers le même host.
+    Faille #3 fix : autorise les redirections cross-domain vers *.paramynd.com
+    afin que le backbone puisse renvoyer l'utilisateur vers son tenant après login
+    (ex: jedox.paramynd.com/dashboard/).
+    N'autorise que les hosts listés dans LOGIN_REDIRECT_ALLOWED_HOSTS + host courant.
     """
+    from django.conf import settings as _settings
     next_url = request.GET.get('next') or request.POST.get('next')
-    if next_url and url_has_allowed_host_and_scheme(
-        url=next_url,
-        allowed_hosts=request.get_host(),
-        require_https=request.is_secure(),
-    ):
-        return redirect(next_url)
+
+    if next_url:
+        # Construire la liste des hosts autorisés pour le login redirect
+        allowed_hosts = {request.get_host()}
+        extra = getattr(_settings, 'LOGIN_REDIRECT_ALLOWED_HOSTS',
+                        ['paramynd.com', 'www.paramynd.com', '.paramynd.com'])
+        allowed_hosts.update(extra)
+
+        if url_has_allowed_host_and_scheme(
+            url=next_url,
+            allowed_hosts=allowed_hosts,
+            require_https=request.is_secure(),
+        ):
+            return redirect(next_url)
+
     return redirect(fallback)
 
 

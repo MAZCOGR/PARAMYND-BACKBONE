@@ -45,7 +45,28 @@ CSRF_TRUSTED_ORIGINS = [
     'https://paramynd.web.app',
     'https://paramynd-admin-343192497073.europe-west9.run.app',
     'https://admin.paramynd.com',
+    # Faille #5 fix : accepter les requêtes POST de tous les subdomains clients
+    'https://*.paramynd.com',
 ]
+
+# Faille #4 fix : autoriser les redirections après logout vers les subdomains clients.
+# Utilisé par _safe_logout_redirect() dans accounts/views.py.
+# On autorise *.paramynd.com mais jamais de wildcard global (open redirect).
+LOGOUT_REDIRECT_ALLOWED_HOSTS = [
+    'paramynd.com',
+    'www.paramynd.com',
+    '.paramynd.com',   # préfixe point = wildcard Django pour les subdomains
+]
+
+# Faille #3 fix : autoriser les redirections après login vers les subdomains clients.
+# Utilisé par _safe_redirect() dans accounts/views.py.
+# Même périmètre que LOGOUT_REDIRECT_ALLOWED_HOSTS — cohérence de sécurité.
+LOGIN_REDIRECT_ALLOWED_HOSTS = [
+    'paramynd.com',
+    'www.paramynd.com',
+    '.paramynd.com',   # préfixe point = wildcard Django pour les subdomains
+]
+
 
 # ==============================================================================
 # APPLICATIONS
