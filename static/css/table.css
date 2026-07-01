@@ -8,8 +8,8 @@
 }
 
 .table-scroll-limit {
-  height: calc(100vh - 300px);
-  overflow-y: auto;
+  height: auto;
+  overflow-y: visible;
 }
 
 .table-scroll-limit thead {

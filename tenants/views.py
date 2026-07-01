@@ -507,7 +507,7 @@ def _get_builds_context():
     builds_list.sort(key=lambda x: _parse_dt(x.created_str), reverse=True)
 
     hidden_builds = cache.get('hidden_builds', set())
-    builds = [b for b in builds_list if b.build_id not in hidden_builds][:10]
+    builds = [b for b in builds_list if b.build_id not in hidden_builds]
 
     all_commits = {c.hash: c for c in GitCommitRecord.objects.all()}
     for b in builds:
