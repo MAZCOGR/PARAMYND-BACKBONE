@@ -37,17 +37,33 @@ def send_otp_email(user, code) -> bool:
 def send_otp_sms(phone, code) -> bool:
     """
     Envoie un OTP par SMS via Twilio SDK.
+    Utilise TWILIO_MESSAGING_SERVICE_SID si disponible (sélection automatique
+    du meilleur expéditeur selon le pays de destination).
+    Sinon, fallback sur TWILIO_FROM_NUMBER (limité géographiquement).
     Retourne True si l'envoi a réussi, False sinon.
     """
     try:
         from twilio.rest import Client
 
         client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
-        msg = client.messages.create(
-            body=f"Votre code de vérification Paramynd : {code}. Ce code expire dans 30 minutes.",
-            from_=settings.TWILIO_FROM_NUMBER,
-            to=phone
-        )
+
+        messaging_service_sid = getattr(settings, 'TWILIO_MESSAGING_SERVICE_SID', None)
+
+        if messaging_service_sid:
+            # Messaging Service : Twilio choisit automatiquement le meilleur sender
+            msg = client.messages.create(
+                body=f"Your Paramynd verification code: {code}. Expires in 30 minutes.",
+                messaging_service_sid=messaging_service_sid,
+                to=phone,
+            )
+        else:
+            # Fallback : numéro direct (portée internationale limitée)
+            msg = client.messages.create(
+                body=f"Your Paramynd verification code: {code}. Expires in 30 minutes.",
+                from_=settings.TWILIO_FROM_NUMBER,
+                to=phone,
+            )
+
         logger.info(f"[SMS] Sent OTP to {phone}, SID: {msg.sid}")
         return True
     except Exception as e:
