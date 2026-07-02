@@ -318,9 +318,10 @@ OAUTH2_PROVIDER = {
 # ==============================================================================
 # SMS (TWILIO)
 # ==============================================================================
-TWILIO_ACCOUNT_SID = env('TWILIO_ACCOUNT_SID', default='')
-TWILIO_AUTH_TOKEN = env('TWILIO_AUTH_TOKEN', default='')
-TWILIO_FROM_NUMBER = env('TWILIO_FROM_NUMBER', default='')
+TWILIO_ACCOUNT_SID  = env('TWILIO_ACCOUNT_SID', default='')
+TWILIO_AUTH_TOKEN   = env('TWILIO_AUTH_TOKEN', default='')
+TWILIO_FROM_NUMBER  = env('TWILIO_FROM_NUMBER', default='')         # fallback legacy
+TWILIO_VERIFY_SERVICE_SID = env('TWILIO_VERIFY_SERVICE_SID', default='')  # Verify API
 
 # ==============================================================================
 # GITHUB API

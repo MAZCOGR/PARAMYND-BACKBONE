@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.utils import timezone
 from django.db import transaction
 from datetime import timedelta
-from accounts.services import send_otp_email, send_otp_sms
+from accounts.services import send_otp_email, send_otp_sms, send_phone_verification, check_phone_verification
 from tenants.models import Tenant
 import re
 
@@ -53,9 +53,8 @@ def request_demo_view(request):
             messages.error(request, "Un compte avec cet email existe déjà.")
             return render(request, 'request_demo.html')
 
-        # Générer les codes OTP
+        # Générer le code OTP email (Twilio Verify gère le code SMS nativement)
         email_code = get_random_string(length=6, allowed_chars='0123456789')
-        phone_code = get_random_string(length=6, allowed_chars='0123456789')
         otp_expiry = timezone.now() + timedelta(minutes=OTP_VALIDITY_MINUTES)
 
         user = User.objects.create_user(
@@ -68,10 +67,8 @@ def request_demo_view(request):
             email_verified=False,
             phone_verified=False,
             email_verification_code=email_code,
-            phone_verification_code=phone_code,
-            # H-06 fix : stocker la date d'expiration des OTPs
+            # H-06 fix : stocker la date d'expiration de l'OTP email
             otp_email_expires_at=otp_expiry,
-            otp_phone_expires_at=otp_expiry,
         )
 
         # Bug #14 fix : régénérer le session ID après create_user() pour
@@ -83,7 +80,17 @@ def request_demo_view(request):
         # Si les DEUX envois échouent → supprimer l'utilisateur pour éviter
         # qu'il soit bloqué définitivement (ni activation ni ré-inscription possible).
         email_sent = send_otp_email(user, email_code)
-        sms_sent = send_otp_sms(phone, phone_code)
+        # Twilio Verify API : code généré et envoyé directement par Twilio (international)
+        use_verify = bool(getattr(__import__('django.conf', fromlist=['settings']).conf.settings, 'TWILIO_VERIFY_SERVICE_SID', ''))
+        if use_verify:
+            sms_sent = send_phone_verification(phone)
+        else:
+            from django.utils.crypto import get_random_string as _grs
+            phone_code = _grs(length=6, allowed_chars='0123456789')
+            user.phone_verification_code = phone_code
+            user.otp_phone_expires_at = otp_expiry
+            user.save(update_fields=['phone_verification_code', 'otp_phone_expires_at'])
+            sms_sent = send_otp_sms(phone, phone_code)
 
         if not email_sent and not sms_sent:
             user.delete()
@@ -154,26 +161,34 @@ def verify_otp_view(request):
 
         elif action == 'verify_sms':
             code = request.POST.get('sms_code', '').strip()
-            # H-06 fix : vérifier l'expiration de l'OTP
-            if user.otp_phone_expires_at and now > user.otp_phone_expires_at:
-                messages.error(request, "Le code SMS a expiré. Veuillez en demander un nouveau.")
-            elif user.otp_attempts >= MAX_OTP_ATTEMPTS:
-                messages.error(
-                    request,
-                    f"Trop de tentatives ({MAX_OTP_ATTEMPTS} max). Demandez un nouveau code."
-                )
-            elif code and code == user.phone_verification_code:
-                user.phone_verified = True
-                user.phone_verification_code = None
-                user.otp_phone_expires_at = None
-                user.otp_attempts = 0  # Réinitialiser après succès
-                user.save(update_fields=['phone_verified', 'phone_verification_code', 'otp_phone_expires_at', 'otp_attempts'])
-                messages.success(request, "Téléphone vérifié avec succès.")
+            use_verify = bool(getattr(__import__('django.conf', fromlist=['settings']).conf.settings, 'TWILIO_VERIFY_SERVICE_SID', ''))
+            if use_verify:
+                # Twilio Verify gère expiration, brute-force et validité nativement
+                approved, err_msg = check_phone_verification(user.phone_number, code)
+                if approved:
+                    user.phone_verified = True
+                    user.save(update_fields=['phone_verified'])
+                    messages.success(request, "Téléphone vérifié avec succès.")
+                else:
+                    messages.error(request, err_msg or "Code SMS invalide.")
             else:
-                user.otp_attempts = (user.otp_attempts or 0) + 1
-                user.save(update_fields=['otp_attempts'])
-                remaining = max(0, MAX_OTP_ATTEMPTS - user.otp_attempts)
-                messages.error(request, f"Code SMS invalide. {remaining} tentative(s) restante(s).")
+                # Fallback : vérification manuelle (legacy)
+                if user.otp_phone_expires_at and now > user.otp_phone_expires_at:
+                    messages.error(request, "Le code SMS a expiré. Veuillez en demander un nouveau.")
+                elif user.otp_attempts >= MAX_OTP_ATTEMPTS:
+                    messages.error(request, f"Trop de tentatives ({MAX_OTP_ATTEMPTS} max). Demandez un nouveau code.")
+                elif code and code == user.phone_verification_code:
+                    user.phone_verified = True
+                    user.phone_verification_code = None
+                    user.otp_phone_expires_at = None
+                    user.otp_attempts = 0
+                    user.save(update_fields=['phone_verified', 'phone_verification_code', 'otp_phone_expires_at', 'otp_attempts'])
+                    messages.success(request, "Téléphone vérifié avec succès.")
+                else:
+                    user.otp_attempts = (user.otp_attempts or 0) + 1
+                    user.save(update_fields=['otp_attempts'])
+                    remaining = max(0, MAX_OTP_ATTEMPTS - user.otp_attempts)
+                    messages.error(request, f"Code SMS invalide. {remaining} tentative(s) restante(s).")
 
         elif action == 'resend_email':
             new_code = get_random_string(length=6, allowed_chars='0123456789')
@@ -196,16 +211,25 @@ def verify_otp_view(request):
                     "Contactez le support pour le mettre à jour."
                 )
             else:
-                new_code = get_random_string(length=6, allowed_chars='0123456789')
-                new_expiry = timezone.now() + timedelta(minutes=OTP_VALIDITY_MINUTES)
-                user.phone_verification_code = new_code
-                user.otp_phone_expires_at = new_expiry
-                user.otp_attempts = 0  # Réinitialiser les tentatives après renvoi
-                user.save(update_fields=['phone_verification_code', 'otp_phone_expires_at', 'otp_attempts'])
-                if send_otp_sms(user.phone_number, new_code):
-                    messages.success(request, "Nouveau code SMS envoyé.")
+                use_verify = bool(getattr(__import__('django.conf', fromlist=['settings']).conf.settings, 'TWILIO_VERIFY_SERVICE_SID', ''))
+                if use_verify:
+                    # Twilio Verify : simple renvoi, gère le rate-limiting nativement
+                    if send_phone_verification(user.phone_number):
+                        messages.success(request, "Nouveau code SMS envoyé.")
+                    else:
+                        messages.error(request, "Impossible d'envoyer le SMS. Réessayez plus tard.")
                 else:
-                    messages.error(request, "Impossible d'envoyer le SMS. Réessayez plus tard.")
+                    # Fallback legacy
+                    new_code = get_random_string(length=6, allowed_chars='0123456789')
+                    new_expiry = timezone.now() + timedelta(minutes=OTP_VALIDITY_MINUTES)
+                    user.phone_verification_code = new_code
+                    user.otp_phone_expires_at = new_expiry
+                    user.otp_attempts = 0
+                    user.save(update_fields=['phone_verification_code', 'otp_phone_expires_at', 'otp_attempts'])
+                    if send_otp_sms(user.phone_number, new_code):
+                        messages.success(request, "Nouveau code SMS envoyé.")
+                    else:
+                        messages.error(request, "Impossible d'envoyer le SMS. Réessayez plus tard.")
 
         # Recharger l'utilisateur après les saves
         user.refresh_from_db()
