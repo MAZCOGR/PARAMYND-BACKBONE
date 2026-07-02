@@ -7,6 +7,7 @@ from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.utils import timezone
 from django.db import transaction
+from django.conf import settings as django_settings
 from datetime import timedelta
 from accounts.services import send_otp_email, send_otp_sms, send_phone_verification, check_phone_verification
 from tenants.models import Tenant
@@ -81,7 +82,7 @@ def request_demo_view(request):
         # qu'il soit bloqué définitivement (ni activation ni ré-inscription possible).
         email_sent = send_otp_email(user, email_code)
         # Twilio Verify API : code généré et envoyé directement par Twilio (international)
-        use_verify = bool(getattr(__import__('django.conf', fromlist=['settings']).conf.settings, 'TWILIO_VERIFY_SERVICE_SID', ''))
+        use_verify = bool(getattr(django_settings, 'TWILIO_VERIFY_SERVICE_SID', ''))
         if use_verify:
             sms_sent = send_phone_verification(phone)
         else:
@@ -161,7 +162,7 @@ def verify_otp_view(request):
 
         elif action == 'verify_sms':
             code = request.POST.get('sms_code', '').strip()
-            use_verify = bool(getattr(__import__('django.conf', fromlist=['settings']).conf.settings, 'TWILIO_VERIFY_SERVICE_SID', ''))
+            use_verify = bool(getattr(django_settings, 'TWILIO_VERIFY_SERVICE_SID', ''))
             if use_verify:
                 # Twilio Verify gère expiration, brute-force et validité nativement
                 approved, err_msg = check_phone_verification(user.phone_number, code)
@@ -211,7 +212,7 @@ def verify_otp_view(request):
                     "Contactez le support pour le mettre à jour."
                 )
             else:
-                use_verify = bool(getattr(__import__('django.conf', fromlist=['settings']).conf.settings, 'TWILIO_VERIFY_SERVICE_SID', ''))
+                use_verify = bool(getattr(django_settings, 'TWILIO_VERIFY_SERVICE_SID', ''))
                 if use_verify:
                     # Twilio Verify : simple renvoi, gère le rate-limiting nativement
                     if send_phone_verification(user.phone_number):
