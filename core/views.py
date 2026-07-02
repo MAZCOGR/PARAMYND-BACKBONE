@@ -35,7 +35,7 @@ def request_demo_view(request):
         first_name = request.POST.get('first_name', '').strip()
         last_name = request.POST.get('last_name', '').strip()
         email = request.POST.get('email', '').strip().lower()
-        phone = request.POST.get('phone', '').strip()
+        phone = (request.POST.get('phone_full') or request.POST.get('phone', '')).strip()
         company = request.POST.get('company', '').strip()
         password = request.POST.get('password', '').strip()
 
