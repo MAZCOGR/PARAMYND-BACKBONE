@@ -7,6 +7,16 @@
 
     <div class="sidebar-nav-container">
 
+        <!-- ══ GESTION DE PROJET ══ -->
+        <div class="sidebar-sect">
+            <span>Projets</span>
+        </div>
+        <div class="nav-sect-group">
+            <a href="{% url 'projects:board' %}" class="nav-item single {% if request.resolver_match.namespace == 'projects' %}active{% endif %}">
+                <span class="nav-text">Tableau de bord</span>
+            </a>
+        </div>
+
         <!-- ══ VUE D'ENSEMBLE ══ -->
         {% if request.user|has_module_access:'tenants' %}
         <div class="sidebar-sect">

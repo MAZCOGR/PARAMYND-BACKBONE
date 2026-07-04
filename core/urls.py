@@ -14,6 +14,7 @@ urlpatterns = [
     path('auth/', include('accounts.urls', namespace='accounts')),
     path('tenants/', include('tenants.urls', namespace='tenants')),
     path('monitoring/', include('monitoring.urls', namespace='monitoring')),
+    path('projects/', include('projects.urls', namespace='projects')),
     path('admin/', admin.site.urls),
 
     # API REST

@@ -27,6 +27,7 @@ DEBUG = env('DEBUG', default=False)
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[]) + [
     'localhost',
     '127.0.0.1',
+    'host.docker.internal',
     'paramynd.com',
     'www.paramynd.com',
     'paramynd.web.app',
@@ -91,6 +92,7 @@ INSTALLED_APPS = [
     'accounts',
     'tenants',
     'monitoring',
+    'projects',
 ]
 
 MIDDLEWARE = [

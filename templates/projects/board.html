@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Gestion de Projet - Paramynd{% endblock %}
+
+{% block content %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/board.css' %}?v=15">
+
+
+<div id="graph-page">
+
+<!-- Header -->
+<div id="graph-header" style="display:flex; justify-content:space-between; align-items:center;">
+  <div>
+    <h1 style="margin-bottom:2px;">Graphe de Projet</h1>
+    <p style="margin:0; opacity:0.45; font-size:12px;">
+      🟣 Projets &nbsp;→&nbsp; 🟢 Sprints &nbsp;→&nbsp; ◻ Tâches &nbsp;|&nbsp; Glissez une tâche près d'un sprint pour la relier.
+    </p>
+  </div>
+  <div style="display:flex; align-items:center; gap:10px;">
+    <select id="project-filter" style="background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); color:white; padding:7px 11px; border-radius:6px; font-size:12px; outline:none;" onchange="filterGraph()">
+      <option value="all">Tous les projets</option>
+      {% for project in projects %}<option value="{{ project.id }}">{{ project.name }}</option>{% endfor %}
+    </select>
+    <button onclick="openModal('sprint')" style="display:inline-flex; align-items:center; gap:6px; background:rgba(6,214,160,0.15); border:1px solid rgba(6,214,160,0.3); color:#06d6a0; padding:7px 14px; border-radius:7px; font-size:12px; font-weight:600; cursor:pointer;">
+      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+      Sprint
+    </button>
+    <button onclick="openModal('task')" style="display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg,#7c5cfc,#9d7cff); color:white; padding:7px 14px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; box-shadow:0 4px 12px rgba(124,92,252,0.35);">
+      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+      Tâche
+    </button>
+  </div>
+</div>
+
+<!-- Canvas -->
+<div id="canvas-wrapper">
+  <div id="canvas-inner">
+  <svg id="canvas-svg" style="position:absolute;top:0;left:0;width:20000px;height:20000px;pointer-events:none;z-index:1;overflow:visible;"></svg>
+
+  <!-- Smart Guides (in canvas-inner, pan/zoom space) -->
+  <div id="guide-v" style="display:none; position:absolute; width:1px; background:rgba(6,214,160,0.6); top:0; bottom:0; pointer-events:none; z-index:900;"></div>
+  <div id="guide-h" style="display:none; position:absolute; height:1px; background:rgba(6,214,160,0.6); left:0; right:0; pointer-events:none; z-index:900;"></div>
+
+  <!-- PROJECT nodes -->
+  {% for project in projects %}
+  <div class="gnode gnode-project"
+       id="proj-{{ project.id }}"
+       data-type="project" data-id="{{ project.id }}"
+       data-project-id="{{ project.id }}"
+       style="left:{{ project.x_position|floatformat:0 }}px; top:{{ project.y_position|floatformat:0 }}px;">
+    <div class="node-name">{{ project.name }}</div>
+    <div class="node-meta">{{ project.sprints.count }} sprint{{ project.sprints.count|pluralize }}</div>
+  </div>
+  {% endfor %}
+
+  <!-- SPRINT nodes -->
+  {% for sprint in sprints %}
+  <div class="gnode gnode-sprint"
+       id="sprint-{{ sprint.id }}"
+       data-type="sprint" data-id="{{ sprint.id }}"
+       data-project-id="{{ sprint.project.id }}"
+       style="left:{{ sprint.x_position|floatformat:0 }}px; top:{{ sprint.y_position|floatformat:0 }}px;">
+    <span class="node-badge">Sprint</span>
+    <div class="node-name">{{ sprint.name }}</div>
+    <div class="node-project">{{ sprint.project.name }}</div>
+  </div>
+  {% endfor %}
+
+  <!-- TASK nodes -->
+  {% for task in tasks %}
+  <div class="gnode gnode-task status-{{ task.status }}"
+       id="task-{{ task.id }}"
+       data-type="task" data-id="{{ task.id }}"
+       data-project-id="{{ task.project.id }}"
+       data-sprint-id="{{ task.sprint.id|default:''}}"
+       style="left:{{ task.x_position|floatformat:0 }}px; top:{{ task.y_position|floatformat:0 }}px;">
+
+    <!-- Header: badge (clickable) -->
+    <div class="task-head" style="position:relative;">
+      <span class="task-badge" onclick="togglePopup('popup-{{ task.id }}', event)">
+        {% if task.status == 'TODO' %}À faire
+        {% elif task.status == 'IN_PROGRESS' %}En cours
+        {% elif task.status == 'TESTED' %}Testé
+        {% elif task.status == 'DEPLOYED' %}Déployé
+        {% else %}Terminé{% endif %}
+      </span>
+      <button class="task-toggle-btn" onclick="window._graphToggleDetails({{ task.id }})">▾</button>
+
+      <!-- Status popup: pill grid -->
+      <div class="gnode-popup" id="popup-{{ task.id }}">
+        <button class="popup-pill s-todo     {% if task.status == 'TODO' %}active{% endif %}"        onclick="updateTaskStatus('{{ task.id }}', 'TODO')">À faire</button>
+        <button class="popup-pill s-wip      {% if task.status == 'IN_PROGRESS' %}active{% endif %}" onclick="updateTaskStatus('{{ task.id }}', 'IN_PROGRESS')">En cours</button>
+        <button class="popup-pill s-tested   {% if task.status == 'TESTED' %}active{% endif %}"      onclick="updateTaskStatus('{{ task.id }}', 'TESTED')">Testé</button>
+        <button class="popup-pill s-deployed {% if task.status == 'DEPLOYED' %}active{% endif %}"    onclick="updateTaskStatus('{{ task.id }}', 'DEPLOYED')">Déployé</button>
+        <button class="popup-pill s-done     {% if task.status == 'DONE' %}active{% endif %}"        onclick="updateTaskStatus('{{ task.id }}', 'DONE')">Terminé</button>
+      </div>
+    </div>
+
+    <!-- Title -->
+    <div class="task-title">{{ task.title }}</div>
+
+    <!-- Hover detail panel -->
+    <div class="task-detail">
+      <div class="task-detail-divider"></div>
+      <div class="task-detail-row">
+        <span class="task-detail-label">Créé</span>
+        <span class="task-detail-value">{{ task.created_at|date:"d M Y" }}</span>
+      </div>
+      <div class="task-detail-row">
+        <span class="task-detail-label">Deadline</span>
+        <span class="task-detail-value{% if not task.expected_finish_date %} empty{% endif %}">
+          {% if task.expected_finish_date %}{{ task.expected_finish_date|date:"d M Y" }}{% else %}Non définie{% endif %}
+        </span>
+      </div>
+      
+      <div class="task-detail-row">
+        <span class="task-detail-label">Sprint</span>
+        <select class="task-sprint-select" id="task-sprint-select-{{ task.id }}" onchange="window._graphLinkTaskToSprint({{ task.id }}, this.value)">
+          <option value="">Aucun sprint</option>
+          {% for sprint in sprints %}
+            {% if sprint.project == task.project %}
+            <option value="{{ sprint.id }}" {% if task.sprint and task.sprint.id == sprint.id %}selected{% endif %}>{{ sprint.name }}</option>
+            {% endif %}
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="margin-top: 15px;">
+        <div class="task-detail-label" style="margin-bottom: 4px;">Notes</div>
+        <textarea class="task-notes-input" placeholder="Ajouter des notes..." onblur="window._graphUpdateNotes({{ task.id }}, this)">{{ task.notes|default:"" }}</textarea>
+      </div>
+
+      <button class="task-delete-btn" onclick="window._graphDeleteTask({{ task.id }})">Supprimer la tâche</button>
+    </div>
+  </div>
+  {% endfor %}
+  </div><!-- /#canvas-inner -->
+
+  <!-- Lasso Box: position:fixed = viewport coords, no parent offset issues -->
+  <div id="lasso-box" style="display:none; position:fixed; border:1px solid #3b82f6; background:rgba(59,130,246,0.1); z-index:9999; pointer-events:none;"></div>
+
+</div>
+</div><!-- /#graph-page -->
+
+{% include "projects/partials/board_modals.html" %}
+
+<script>
+// ── HTMX-safe globals (window.* to avoid re-declaration errors) ──
+window._graphSPLinks    = [ {% for sprint in sprints %}{ sprintId: {{ sprint.id }}, projectId: {{ sprint.project.id }} },{% endfor %} ];
+window._graphTSLinks    = {};
+{% for task in tasks %}{% if task.sprint %}window._graphTSLinks[{{ task.id }}] = {{ task.sprint.id }};{% endif %}{% endfor %}
+window._graphSnapDist   = 900;
+</script>
+<script src="{% static 'js/board.js' %}?v=15"></script>
+{% endblock %}

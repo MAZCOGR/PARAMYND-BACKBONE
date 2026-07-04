@@ -1,0 +1,75 @@
+<!-- Modal Sprint -->
+<div id="modal-sprint" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); backdrop-filter:blur(5px); align-items:center; justify-content:center; z-index:9000;">
+  <div style="background:#1a1a26; border:1px solid rgba(6,214,160,0.2); border-radius:14px; width:440px; padding:26px; box-shadow:0 24px 48px rgba(0,0,0,0.5);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <div style="font-size:15px; font-weight:700; color:#06d6a0;">🟢 Nouveau Sprint</div>
+      <button onclick="closeModals()" style="background:rgba(255,255,255,0.07); border:none; color:rgba(255,255,255,0.5); cursor:pointer; width:28px; height:28px; border-radius:6px; font-size:16px;">&times;</button>
+    </div>
+    <form action="{% url 'projects:create_sprint' %}" method="POST">
+      {% csrf_token %}
+      <div style="margin-bottom:14px;">
+        <label style="display:block; font-size:11px; font-weight:600; color:rgba(255,255,255,0.35); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Nom du sprint</label>
+        <input type="text" name="name" required placeholder="Ex: Sprint 1 – Auth & Login"
+          style="width:100%; box-sizing:border-box; background:rgba(255,255,255,0.05); border:1px solid rgba(6,214,160,0.2); color:white; padding:10px 12px; border-radius:7px; font-size:13px; outline:none;">
+      </div>
+      <div style="margin-bottom:22px;">
+        <label style="display:block; font-size:11px; font-weight:600; color:rgba(255,255,255,0.35); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Projet</label>
+        <select name="project_id" required style="width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(6,214,160,0.2); color:white; padding:10px 12px; border-radius:7px; font-size:13px; outline:none;">
+          <option value="" disabled selected>Sélectionner un projet...</option>
+          {% for project in projects %}<option value="{{ project.id }}">{{ project.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" onclick="closeModals()" style="background:rgba(255,255,255,0.07); border:none; color:rgba(255,255,255,0.6); padding:8px 16px; border-radius:7px; cursor:pointer; font-size:13px;">Annuler</button>
+        <button type="submit" style="background:rgba(6,214,160,0.2); border:1px solid rgba(6,214,160,0.4); color:#06d6a0; padding:8px 16px; border-radius:7px; cursor:pointer; font-size:13px; font-weight:600;">Créer le sprint</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Task -->
+<div id="modal-task" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); backdrop-filter:blur(5px); align-items:center; justify-content:center; z-index:9000;">
+  <div style="background:#1a1a26; border:1px solid rgba(124,92,252,0.2); border-radius:14px; width:440px; padding:26px; box-shadow:0 24px 48px rgba(0,0,0,0.5);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <div style="font-size:15px; font-weight:700; color:#a78bfa;">🟣 Nouvelle Tâche</div>
+      <button onclick="closeModals()" style="background:rgba(255,255,255,0.07); border:none; color:rgba(255,255,255,0.5); cursor:pointer; width:28px; height:28px; border-radius:6px; font-size:16px;">&times;</button>
+    </div>
+    <form action="{% url 'projects:create_task' %}" method="POST">
+      {% csrf_token %}
+      <div style="margin-bottom:14px;">
+        <label style="display:block; font-size:11px; font-weight:600; color:rgba(255,255,255,0.35); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Titre</label>
+        <input type="text" name="title" required placeholder="Ex: Intégrer l'API Stripe"
+          style="width:100%; box-sizing:border-box; background:rgba(255,255,255,0.05); border:1px solid rgba(124,92,252,0.2); color:white; padding:10px 12px; border-radius:7px; font-size:13px; outline:none;">
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="display:block; font-size:11px; font-weight:600; color:rgba(255,255,255,0.35); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Projet</label>
+        <select name="project_id" required style="width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(124,92,252,0.2); color:white; padding:10px 12px; border-radius:7px; font-size:13px; outline:none;">
+          <option value="" disabled selected>Sélectionner un projet...</option>
+          {% for project in projects %}<option value="{{ project.id }}">{{ project.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div style="margin-bottom:22px;">
+        <label style="display:block; font-size:11px; font-weight:600; color:rgba(255,255,255,0.35); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Sprint (optionnel)</label>
+        <select name="sprint_id" style="width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(124,92,252,0.2); color:white; padding:10px 12px; border-radius:7px; font-size:13px; outline:none;">
+          <option value="">— Aucun sprint</option>
+          {% for sprint in sprints %}<option value="{{ sprint.id }}">{{ sprint.project.name }} › {{ sprint.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="display:block; font-size:11px; font-weight:600; color:rgba(255,255,255,0.35); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Deadline (optionnel)</label>
+        <input type="date" name="expected_finish_date"
+          style="width:100%; box-sizing:border-box; background:rgba(255,255,255,0.05); border:1px solid rgba(124,92,252,0.2); color:white; padding:10px 12px; border-radius:7px; font-size:13px; outline:none; color-scheme:dark;">
+      </div>
+      <div style="margin-bottom:22px;">
+        <label style="display:block; font-size:11px; font-weight:600; color:rgba(255,255,255,0.35); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Notes (optionnel)</label>
+        <textarea name="notes" rows="2" placeholder="Contexte, liens, détails..."
+          style="width:100%; box-sizing:border-box; background:rgba(255,255,255,0.05); border:1px solid rgba(124,92,252,0.2); color:white; padding:10px 12px; border-radius:7px; font-size:13px; outline:none; resize:vertical; font-family:inherit;"></textarea>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" onclick="closeModals()" style="background:rgba(255,255,255,0.07); border:none; color:rgba(255,255,255,0.6); padding:8px 16px; border-radius:7px; cursor:pointer; font-size:13px;">Annuler</button>
+        <button type="submit" style="background:linear-gradient(135deg,#7c5cfc,#9d7cff); border:none; color:white; padding:8px 16px; border-radius:7px; cursor:pointer; font-size:13px; font-weight:600; box-shadow:0 4px 12px rgba(124,92,252,0.4);">Créer la tâche</button>
+      </div>
+    </form>
+  </div>
+</div>
+

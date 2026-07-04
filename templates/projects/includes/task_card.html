@@ -1,0 +1,20 @@
+<div class="graph-node status-{{ task.status }}" id="task-{{ task.id }}" data-task-id="{{ task.id }}" style="left: {{ task.x_position }}px; top: {{ task.y_position }}px;" data-project-id="{{ task.project.id }}">
+    <div class="node-header">
+        <div class="node-project 
+            {% if task.project.name|lower == 'backbone' %}project-tag-backbone
+            {% elif task.project.name|lower == 'saas' %}project-tag-saas
+            {% else %}project-tag-default{% endif %}">
+            {{ task.project.name }}
+        </div>
+        <button class="delete-task-btn" onclick="deleteTask('{{ task.id }}')" style="background:none; border:none; color:rgba(255,255,255,0.3); cursor:pointer;" title="Supprimer (Non implémenté)">
+            &times;
+        </button>
+    </div>
+    <div class="node-title">{{ task.title }}</div>
+    
+    <select class="node-status-select" onchange="updateTaskStatus('{{ task.id }}', this.value)">
+        <option value="TODO" {% if task.status == 'TODO' %}selected{% endif %}>À faire</option>
+        <option value="IN_PROGRESS" {% if task.status == 'IN_PROGRESS' %}selected{% endif %}>En cours</option>
+        <option value="DONE" {% if task.status == 'DONE' %}selected{% endif %}>Terminé</option>
+    </select>
+</div>

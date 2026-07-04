@@ -1,0 +1,324 @@
+/* ── Canvas ───────────────────────────────────────── */
+/* ── Force full-height layout chain (this page only) ── */
+/* Every ancestor needs a height so flex:1 can propagate down */
+html, body { height: 100%; }
+
+.layout, .main {
+    height: 100%;
+    overflow: hidden;
+}
+
+.page-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 0 !important;
+    overflow: hidden;
+}
+
+/* ── Graph page wrapper ───────────────────────────── */
+#graph-page {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    padding: 16px 32px 0 32px;
+    overflow: hidden;
+}
+
+#graph-header {
+    flex-shrink: 0;
+    padding-bottom: 10px;
+}
+
+#canvas-wrapper {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    background: transparent;
+    border: none;
+    overflow: hidden;        /* hide overflow, use transform for pan */
+    cursor: default;
+}
+
+#canvas-inner {
+    position: absolute;
+    top: 0; left: 0;
+    width: 0; height: 0;     /* 0x0 size prevents Chrome from creating a huge composited layer, keeping text crisp when scaled! */
+    overflow: visible;
+    transform-origin: 0 0;
+}
+
+/* ── Shared node base ─────────────────────────────── */
+.gnode {
+    position: absolute;
+    cursor: move;
+    user-select: none;
+    border-radius: 5px;
+    padding: 14px 16px;
+    border: 1px solid rgba(255,255,255,0.08); /* minimalist border */
+    transition: box-shadow 0.15s, border-color 0.15s, transform 0.1s;
+    z-index: 2;
+}
+.gnode:hover { transform: translateY(-2px); z-index: 999 !important; }
+.gnode.dragging {
+    z-index: 100;
+    opacity: 0.92;
+    border-color: #FFF !important;
+}
+.gnode.selected {
+    box-shadow: 0 0 0 2px #3b82f6, 0 4px 20px rgba(59,130,246,0.3) !important;
+    border-color: #3b82f6 !important;
+}
+
+/* ── PROJECT cards ── large, top ──────────────────── */
+.gnode-project {
+    width: 240px;
+    background: linear-gradient(135deg, rgba(20,20,35,0.98) 0%, rgba(30,20,50,0.98) 100%);
+    border-color: rgba(124,92,252,0.5);
+    box-shadow: 0 0 0 1px rgba(124,92,252,0.15), 0 8px 24px rgba(0,0,0,0.5);
+}
+.gnode-project:hover { box-shadow: 0 0 0 2px rgba(124,92,252,0.35), 0 12px 28px rgba(0,0,0,0.6); }
+.gnode-project .node-icon { font-size: 22px; margin-bottom: 8px; display: block; }
+.gnode-project .node-name { font-size: 15px; font-weight: 700; color: white; margin-bottom: 4px; }
+.gnode-project .node-meta { font-size: 10px; color: rgba(124,92,252,0.8); font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; }
+
+/* ── SPRINT cards ── medium ───────────────────────── */
+.gnode-sprint {
+    width: 210px;
+    background: rgba(18,22,36,0.97);
+    border-color: rgba(6,214,160,0.4);
+    box-shadow: 0 0 0 1px rgba(6,214,160,0.1), 0 6px 20px rgba(0,0,0,0.4);
+}
+.gnode-sprint:hover { box-shadow: 0 0 0 2px rgba(6,214,160,0.25), 0 10px 24px rgba(0,0,0,0.5); }
+.gnode-sprint.snap-target {
+    border-color: #06d6a0 !important;
+    box-shadow: 0 0 0 3px rgba(6,214,160,0.35), 0 8px 24px rgba(0,0,0,0.5);
+    transform: scale(1.04);
+}
+.gnode-sprint .node-badge { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; color: #06d6a0; background: rgba(6,214,160,0.12); padding: 2px 7px; border-radius: 5px; display: inline-block; margin-bottom: 8px; }
+.gnode-sprint .node-name { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.9); margin-bottom: 8px; word-break: break-word; }
+.gnode-sprint .node-project { font-size: 10px; color: rgba(255,255,255,0.3); }
+
+/* ── TASK cards ─────────────────────────────────── */
+
+/* Status color tokens */
+:root {
+  --s-todo:     #64748b;
+  --s-wip:      #7c5cfc;
+  --s-tested:   #f59e0b;
+  --s-deployed: #06d6a0;
+  --s-done:     #10b981;
+}
+
+.gnode-task {
+    width: 420px;
+    background: rgba(18,18,28,0.96);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.45);
+    padding: 12px 13px;
+    border-radius: 5px;
+    transition: box-shadow 0.2s ease,
+                width 0.28s cubic-bezier(0.4,0,0.2,1),
+                transform 0.15s ease;
+    will-change: width;
+}
+.gnode-task.dragging { border-color: #FFF !important; }
+
+/* ── Status badge (clickable pill) ───────────── */
+.task-head { margin-bottom: 10px; }
+.task-badge {
+    font-size: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding: 3px 9px;
+    border-radius: 5px;
+    border: 1px solid currentColor;
+    opacity: 0.85;
+    flex-shrink: 0;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.12s;
+    user-select: none;
+}
+.task-badge:hover  { opacity: 1; transform: scale(1.06); }
+.task-badge:active { transform: scale(0.96); }
+.gnode-task:hover .task-badge { opacity: 1; }
+.gnode-task.status-TODO        .task-badge { color: var(--s-todo);     background: rgba(100,116,139,0.12); }
+.gnode-task.status-IN_PROGRESS .task-badge { color: var(--s-wip);      background: rgba(124,92,252,0.12); }
+.gnode-task.status-TESTED      .task-badge { color: var(--s-tested);   background: rgba(245,158,11,0.12); }
+.gnode-task.status-DEPLOYED    .task-badge { color: var(--s-deployed); background: rgba(6,214,160,0.12); }
+.gnode-task.status-DONE        .task-badge { color: var(--s-done);     background: rgba(16,185,129,0.12); }
+
+/* ── Status popup (pill row) ───────────────── */
+.gnode-popup {
+    position: absolute;
+    top: 50%;
+    left: -4px;
+    transform: translateY(-50%);
+    background: rgba(12,12,20,0.97);
+    border: none;
+    border-radius: 5px;
+    padding: 6px;
+    display: none;
+    flex-direction: row;
+    gap: 6px;
+    z-index: 600;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.7);
+    backdrop-filter: blur(12px);
+}
+.gnode-popup.visible { display: flex; }
+
+/* Each option is a pill */
+.popup-pill {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 5px 12px;
+    border-radius: 5px;
+    border: 1px solid currentColor;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    background: transparent;
+    transition: background 0.15s, transform 0.1s;
+    text-align: center;
+    width: auto;
+    white-space: nowrap;
+    font-family: inherit;
+}
+.popup-pill:hover  { transform: scale(1.03); }
+.popup-pill:active { transform: scale(0.97); }
+.popup-pill.s-todo     { color: var(--s-todo);     } .popup-pill.s-todo:hover     { background: rgba(100,116,139,0.15); }
+.popup-pill.s-wip      { color: var(--s-wip);      } .popup-pill.s-wip:hover      { background: rgba(124,92,252,0.15); }
+.popup-pill.s-tested   { color: var(--s-tested);   } .popup-pill.s-tested:hover   { background: rgba(245,158,11,0.15); }
+.popup-pill.s-deployed { color: var(--s-deployed); } .popup-pill.s-deployed:hover { background: rgba(6,214,160,0.15); }
+.popup-pill.s-done     { color: var(--s-done);     } .popup-pill.s-done:hover     { background: rgba(16,185,129,0.15); }
+.popup-pill.active { border-width: 2px; opacity: 1; }
+.task-detail {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition:
+        max-height 0.32s cubic-bezier(0.4,0,0.2,1),
+        opacity    0.22s ease 0.05s,
+        margin-top 0.25s ease;
+    margin-top: 0;
+}
+.gnode-task.expanded .task-detail {
+    max-height: 400px;
+    opacity: 1;
+    margin-top: 10px;
+}
+
+.task-toggle-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.6);
+    border-radius: 5px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+}
+.task-toggle-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+.gnode-task.expanded .task-toggle-btn { transform: rotate(180deg); }
+
+.task-sprint-select {
+    background: rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.8);
+    border-radius: 5px;
+    padding: 3px 6px;
+    font-size: 11px;
+    font-family: inherit;
+    outline: none;
+    cursor: pointer;
+    margin-left: 8px;
+    width: 150px;
+}
+.task-sprint-select:focus {
+    border-color: rgba(255,255,255,0.2);
+}
+.task-sprint-select option {
+    background: #1e1e1e;
+    color: #fff;
+}
+
+.task-notes-input {
+    width: 100%;
+    box-sizing: border-box;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.8);
+    border-radius: 5px;
+    padding: 8px;
+    font-size: 11px;
+    line-height: 1.4;
+    resize: vertical;
+    min-height: 60px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s, background-color 0.3s;
+    margin-bottom: 12px;
+}
+.task-notes-input:focus { border-color: rgba(124,92,252,0.5); background: rgba(0,0,0,0.3); }
+
+.task-delete-btn {
+    width: 100%;
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    color: #ef4444;
+    border-radius: 5px;
+    padding: 8px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.task-delete-btn:hover { background: rgba(239,68,68,0.2); transform: scale(1.02); }
+.task-detail-divider {
+    height: 1px;
+    background: rgba(255,255,255,0.055);
+    margin-bottom: 10px;
+}
+.task-detail-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-bottom: 7px;
+}
+.task-detail-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: rgba(255,255,255,0.25);
+    white-space: nowrap;
+    min-width: 52px;
+}
+.task-detail-value {
+    font-size: 10px;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.45;
+    word-break: break-word;
+}
+.task-detail-value.empty {
+    color: rgba(255,255,255,0.18);
+    font-style: italic;
+}
+.task-detail-value.deadline-soon { color: #f87171; }
+
