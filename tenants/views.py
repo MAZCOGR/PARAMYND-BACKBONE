@@ -321,13 +321,13 @@ def tenant_reprovision_view(request, pk):
 @admin_required
 @require_POST
 def tenant_deploy_view(request, pk):
-    """Lance un déploiement pour un tenant."""
+    """Lance un déploiement pour un tenant (migration Django incluse avant le deploy)."""
     tenant = get_object_or_404(Tenant, pk=pk)
-    
-    # 1. Utiliser la même liste de tags que la vue de détail pour la validation
+
+    # 1. Construire la liste des tags disponibles pour validation du formulaire
     from .models import SaaSGitCommitRecord
     saas_commits = SaaSGitCommitRecord.objects.all()[:30]
-    
+
     ar_tags = artifact_registry.list_available_tags(limit=100)
     ar_tag_names = {t['tag'] for t in ar_tags}
 
@@ -343,10 +343,10 @@ def tenant_deploy_view(request, pk):
                 'uri': artifact_registry.get_image_uri(primary_tag),
                 'is_ready': is_ready
             })
-            
+
     if not available_tags:
         available_tags = artifact_registry.list_available_tags()
-        
+
     form = DeployForm(request.POST, available_tags=available_tags)
 
     if not form.is_valid():
@@ -356,7 +356,7 @@ def tenant_deploy_view(request, pk):
     image_tag = form.cleaned_data['image_tag']
     image_uri = artifact_registry.get_image_uri(image_tag)
 
-    # Créer l'entrée de déploiement en base
+    # ── Créer l'entrée de déploiement en base ────────────────────────────────
     deployment = Deployment.objects.create(
         tenant=tenant,
         image_tag=image_tag,
@@ -365,31 +365,90 @@ def tenant_deploy_view(request, pk):
         deployed_by=request.user.email,
     )
 
-    # Mettre à jour le statut du tenant
     tenant.status = TenantStatus.PROVISIONING
     tenant.save(update_fields=['status'])
 
-    # Récupérer les identifiants SSO existants si configurés
+    # ── ÉTAPE 1 : Migrations Django ───────────────────────────────────────────
+    # On met à jour (ou crée) le Cloud Run Job migrate du tenant avec la
+    # nouvelle image, puis on l'exécute et on attend sa complétion.
+    # Si les migrations échouent → le déploiement est annulé.
+    from tenants.services.provisioning import step_run_migrations
+
+    db_name          = tenant.db_name or tenant.slug.replace('-', '_')
+    project          = tenant.gcp_project_id or 'yellow-455523'
+    region           = tenant.cloud_run_region or 'europe-west9'
+    cloud_sql_instance = tenant.cloud_sql_instance or ''
+
+    # En mode mock (GCP non configuré localement), on ignore les migrations
+    # plutôt que de bloquer le développement.
+    gcp_available = bool(cloud_sql_instance)
+
+    if gcp_available:
+        tenant.provisioning_step = 'migrate'
+        tenant.save(update_fields=['provisioning_step'])
+
+        migration_ok = step_run_migrations(
+            tenant_slug=tenant.slug,
+            db_name=db_name,
+            project=project,
+            region=region,
+            cloud_sql_instance=cloud_sql_instance,
+            image_uri=image_uri,
+        )
+
+        if not migration_ok:
+            deployment.status = DeploymentStatus.FAILED
+            deployment.error_message = "Echec des migrations Django — deploy annule."
+            deployment.completed_at = timezone.now()
+            deployment.save()
+
+            tenant.status = TenantStatus.FAILED
+            tenant.provisioning_step = ''
+            tenant.save(update_fields=['status', 'provisioning_step'])
+
+            messages.error(
+                request,
+                f"[{image_tag}] Migrations Django echouees sur la base '{db_name}'. "
+                f"Le deploiement a ete annule pour eviter une mise en production cassee. "
+                f"Verifiez les logs du job Cloud Run '{tenant.slug}-migrate'."
+            )
+            return redirect('tenants:detail', pk=pk)
+
+        tenant.provisioning_step = 'cr_deploy'
+        tenant.save(update_fields=['provisioning_step'])
+    else:
+        # Mode local / mock : migrations ignorees, avertissement affiché
+        messages.warning(
+            request,
+            "Mode mock : GCP non configure localement, migrations ignorees. "
+            "En production les migrations seront lancees automatiquement."
+        )
+
+    # ── ÉTAPE 2 : Récupérer les credentials SSO du tenant ────────────────────
     env_vars = {}
     from oauth2_provider.models import Application
     from django.conf import settings
     import secrets
     app = Application.objects.filter(name=f"SSO-{tenant.slug}").first()
     if app:
-        # Rotation du secret client pour éviter d'envoyer le hash de la DB
+        # Rotation du secret client pour eviter d'envoyer le hash de la DB
         new_secret = secrets.token_urlsafe(64)
         app.client_secret = new_secret
         app.save()
-        
+
         env_vars = {
-            'SOCIAL_AUTH_PARAMYND_ADMIN_KEY': app.client_id,
+            'SOCIAL_AUTH_PARAMYND_ADMIN_KEY':    app.client_id,
             'SOCIAL_AUTH_PARAMYND_ADMIN_SECRET': new_secret,
             'PARAMYND_ADMIN_URL': getattr(settings, 'PARAMYND_ADMIN_URL', 'https://paramynd.com'),
-            # PUBLIC_DOMAIN : domaine public du tenant pour le CloudRunHostMiddleware
-            'PUBLIC_DOMAIN': tenant.custom_domain if (tenant.custom_domain and tenant.domain_status == 'active') else f"{tenant.slug}.paramynd.com",
+            # PUBLIC_DOMAIN : domaine public pour le CloudRunHostMiddleware
+            'PUBLIC_DOMAIN': (
+                tenant.custom_domain
+                if (tenant.custom_domain and tenant.domain_status == 'active')
+                else f"{tenant.slug}.paramynd.com"
+            ),
         }
 
-    # Appel au service Cloud Run
+    # ── ÉTAPE 3 : Déploiement Cloud Run ──────────────────────────────────────
     result = cloud_run.deploy_service(
         tenant_slug=tenant.slug,
         image_uri=image_uri,
@@ -414,9 +473,9 @@ def tenant_deploy_view(request, pk):
         tenant.current_image_tag = image_tag
         tenant.cloud_run_url = result.get('url')
         tenant.last_deployed_at = timezone.now()
-        
+        tenant.provisioning_step = 'done'
+
         domain_notice = ""
-        # Avec le Load Balancer GCP (URL Mask + Wildcard SSL), le sous-domaine est actif dès le déploiement !
         if tenant.custom_domain:
             from .models import DomainStatus
             tenant.domain_status = DomainStatus.ACTIVE
