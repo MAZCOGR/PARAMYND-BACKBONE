@@ -68,7 +68,7 @@ function showSuccess(url) {
   updateSteps(0, true);
   setSubtext('Redirection vers votre tableau de bord...');
   setTimeout(() => {
-    const redirectBase = url || `https://${slug}.paramynd.com`;
+    const redirectBase = url || `https://${slug}.ripanna.com`;
     window.location.href = `${redirectBase}/auth/login/`;
   }, 1500);
 }
@@ -97,7 +97,7 @@ function showError(message, failedStep) {
                font-size:14px;font-weight:600;cursor:pointer;">
         ↻ Réessayer
       </button>
-      <a href="mailto:support@paramynd.com?subject=Erreur provisionnement ${slug}&body=Slug: ${slug}%0AÉtape: ${failedStep || 'inconnue'}"
+      <a href="mailto:support@ripanna.com?subject=Erreur provisionnement ${slug}&body=Slug: ${slug}%0AÉtape: ${failedStep || 'inconnue'}"
         style="padding:10px 22px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);
                color:#ccc;font-size:14px;text-decoration:none;display:inline-flex;
                align-items:center;gap:6px;">

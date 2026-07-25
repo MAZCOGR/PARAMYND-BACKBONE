@@ -37,7 +37,7 @@ class TenantCreateForm(forms.ModelForm):
             'cloud_run_region': forms.TextInput(attrs={'class': 'form-input'}),
             'cloud_sql_instance': forms.TextInput(attrs={'placeholder': 'project:region:instance', 'class': 'form-input'}),
             'db_name': forms.TextInput(attrs={'placeholder': 'paramynd_acme', 'class': 'form-input'}),
-            'custom_domain': forms.TextInput(attrs={'placeholder': 'acme.paramynd.com', 'class': 'form-input'}),
+            'custom_domain': forms.TextInput(attrs={'placeholder': 'acme.ripanna.com', 'class': 'form-input'}),
             'notes': forms.Textarea(attrs={'rows': 3, 'class': 'form-input', 'placeholder': 'Notes internes...'}),
         }
         help_texts = {

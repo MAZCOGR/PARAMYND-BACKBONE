@@ -28,12 +28,10 @@ ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[]) + [
     'localhost',
     '127.0.0.1',
     'host.docker.internal',
-    'paramynd.com',
-    'www.paramynd.com',
-    'paramynd.web.app',
+    'ripanna.com',
+    'www.ripanna.com',
     'paramynd-admin-343192497073.europe-west9.run.app',
-    'paramynd-admin.com',
-    'admin.paramynd.com',
+    'admin.ripanna.com',
 ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -41,31 +39,30 @@ CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8002',
     'http://127.0.0.1:8001',
     'http://127.0.0.1:8002',
-    'https://paramynd.com',
-    'https://www.paramynd.com',
-    'https://paramynd.web.app',
+    'https://ripanna.com',
+    'https://www.ripanna.com',
     'https://paramynd-admin-343192497073.europe-west9.run.app',
-    'https://admin.paramynd.com',
+    'https://admin.ripanna.com',
     # Faille #5 fix : accepter les requêtes POST de tous les subdomains clients
-    'https://*.paramynd.com',
+    'https://*.ripanna.com',
 ]
 
 # Faille #4 fix : autoriser les redirections après logout vers les subdomains clients.
 # Utilisé par _safe_logout_redirect() dans accounts/views.py.
 # On autorise *.paramynd.com mais jamais de wildcard global (open redirect).
 LOGOUT_REDIRECT_ALLOWED_HOSTS = [
-    'paramynd.com',
-    'www.paramynd.com',
-    '.paramynd.com',   # préfixe point = wildcard Django pour les subdomains
+    'ripanna.com',
+    'www.ripanna.com',
+    '.ripanna.com',   # préfixe point = wildcard Django pour les subdomains
 ]
 
 # Faille #3 fix : autoriser les redirections après login vers les subdomains clients.
 # Utilisé par _safe_redirect() dans accounts/views.py.
 # Même périmètre que LOGOUT_REDIRECT_ALLOWED_HOSTS — cohérence de sécurité.
 LOGIN_REDIRECT_ALLOWED_HOSTS = [
-    'paramynd.com',
-    'www.paramynd.com',
-    '.paramynd.com',   # préfixe point = wildcard Django pour les subdomains
+    'ripanna.com',
+    'www.ripanna.com',
+    '.ripanna.com',   # préfixe point = wildcard Django pour les subdomains
 ]
 
 
@@ -212,7 +209,7 @@ POOL_CRON_SECRET = env('POOL_CRON_SECRET', default=None)
 POOL_TARGET_SIZE = int(env('POOL_TARGET_SIZE', default='3'))
 
 # URL publique du control plane (utilisé dans les env vars des tenants)
-PARAMYND_ADMIN_URL = env('PARAMYND_ADMIN_URL', default='https://paramynd.com')
+PARAMYND_ADMIN_URL = env('PARAMYND_ADMIN_URL', default='https://admin.ripanna.com')
 
 # URL du service Cloud SQL (partagé entre tenant et control plane)
 CLOUD_SQL_INSTANCE = env('CLOUD_SQL_INSTANCE', default='yellow-455523:europe-west9:yellow-db-paris')

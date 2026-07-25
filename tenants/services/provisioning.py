@@ -398,8 +398,8 @@ def step_update_oauth_app_urls(tenant):
         # URL Cloud Run directe (interne)
         if tenant.cloud_run_url:
             uris.append(f"{tenant.cloud_run_url}/social-auth/complete/paramynd-admin/")
-        # URL wildcard paramynd.com (via Load Balancer) — toujours présente
-        uris.append(f"https://{tenant.slug}.paramynd.com/social-auth/complete/paramynd-admin/")
+        # URL wildcard ripanna.com (via Load Balancer) — toujours présente
+        uris.append(f"https://{tenant.slug}.ripanna.com/social-auth/complete/paramynd-admin/")
         # URL Cloud Run alternative (format region)
         project = tenant.gcp_project_id or 'yellow-455523'
         region = tenant.cloud_run_region or 'europe-west9'
@@ -483,8 +483,8 @@ def assign_pool_tenant(pool_tenant_id: str, client_slug: str, company: str,
     """
     Assigne un tenant de pool pre-provisionne a un vrai client.
 
-    CORRECTION URL MASK : Le NEG GCP utilise urlMask='<service>.paramynd.com',
-    ce qui signifie que acme.paramynd.com doit pointer vers un Cloud Run service
+    CORRECTION URL MASK : Le NEG GCP utilise urlMask='<service>.ripanna.com',
+    ce qui signifie que acme.ripanna.com doit pointer vers un Cloud Run service
     nomme exactement 'acme'. On NE PEUT PAS juste renommer le service pool-abc123.
 
     Ce que cette fonction fait :
@@ -524,15 +524,15 @@ def assign_pool_tenant(pool_tenant_id: str, client_slug: str, company: str,
     cloud_sql_instance = tenant.cloud_sql_instance or DEFAULT_SQL_INST
     image_uri = _get_latest_image_uri(project, region)
     image_tag = image_uri.split(':')[-1]
-    public_domain = f"{client_slug}.paramynd.com"
+    public_domain = f"{client_slug}.ripanna.com"
 
     _log(client_slug, 'POOL:ASSIGN',
          f"Assignation pool '{pool_slug}' (DB: {pool_db_name}) -> client '{client_slug}' ({admin_email})")
 
-    # CRITIQUE POLLING FIX : Set custom_domain = acme.paramynd.com DES LE DEBUT.
+    # CRITIQUE POLLING FIX : Set custom_domain = acme.ripanna.com DES LE DEBUT.
     # Le frontend poll avec final_slug='acme' (pas pool-abc123).
     # Pendant toute la duree de l'assignation, tenant.slug reste 'pool-abc123'.
-    # En settant custom_domain ici, le polling via Q(custom_domain='acme.paramynd.com')
+    # En settant custom_domain ici, le polling via Q(custom_domain='acme.ripanna.com')
     # trouve le tenant immediatement et peut retourner l'etape en cours.
     # A la fin, tenant.slug = 'acme' et le lookup direct par slug prend le relais.
     tenant.contact_email = admin_email
@@ -556,7 +556,7 @@ def assign_pool_tenant(pool_tenant_id: str, client_slug: str, company: str,
     client_id, client_secret = step_create_oauth_app(tenant, admin_email, target_slug=client_slug)
 
     # ── Etape 2 : Deployer un NOUVEAU Cloud Run service avec le vrai slug ─────
-    # CRITIQUE : Le NEG urlMask='<service>.paramynd.com' exige que le nom du
+    # CRITIQUE : Le NEG urlMask='<service>.ripanna.com' exige que le nom du
     # service Cloud Run soit exactement le slug client. On reutilise la BDD du pool.
     tenant.provisioning_step = 'cr_deploy'
     tenant.save(update_fields=['provisioning_step', 'updated_at'])
@@ -569,7 +569,7 @@ def assign_pool_tenant(pool_tenant_id: str, client_slug: str, company: str,
         'PUBLIC_DOMAIN': public_domain,
         'SOCIAL_AUTH_PARAMYND_ADMIN_KEY': client_id,
         'SOCIAL_AUTH_PARAMYND_ADMIN_SECRET': client_secret,
-        'PARAMYND_ADMIN_URL': getattr(django_settings, 'PARAMYND_ADMIN_URL', 'https://paramynd.com'),
+        'PARAMYND_ADMIN_URL': getattr(django_settings, 'PARAMYND_ADMIN_URL', 'https://admin.ripanna.com'),
     }
 
     ok, service_url = step_deploy_cloud_run(
@@ -668,7 +668,7 @@ def provision_pool_tenant():
         tenant = Tenant.objects.create(
             name=f"[POOL] {pool_slug}",
             slug=pool_slug,
-            contact_email='pool@paramynd.com',
+            contact_email='pool@ripanna.com',
             db_name=db_name,
             gcp_project_id=project,
             cloud_run_region=region,
@@ -707,9 +707,9 @@ def provision_pool_tenant():
 
     # Env vars neutres : le domaine sera écrasé lors de l'assignation
     pool_env_vars = {
-        'PUBLIC_DOMAIN': f"{pool_slug}.paramynd.com",
+        'PUBLIC_DOMAIN': f"{pool_slug}.ripanna.com",
         'PARAMYND_ADMIN_URL': getattr(__import__('django.conf', fromlist=['settings']).settings,
-                                      'PARAMYND_ADMIN_URL', 'https://paramynd.com'),
+                                      'PARAMYND_ADMIN_URL', 'https://admin.ripanna.com'),
     }
 
     ok, service_url = step_deploy_cloud_run(
@@ -882,10 +882,10 @@ def provision_tenant(tenant_id: str, admin_email: str, admin_password: str):
     env_vars = {
         'SOCIAL_AUTH_PARAMYND_ADMIN_KEY': client_id,
         'SOCIAL_AUTH_PARAMYND_ADMIN_SECRET': client_secret,
-        'PARAMYND_ADMIN_URL': getattr(settings, 'PARAMYND_ADMIN_URL', 'https://paramynd.com'),
+        'PARAMYND_ADMIN_URL': getattr(settings, 'PARAMYND_ADMIN_URL', 'https://admin.ripanna.com'),
         # PUBLIC_DOMAIN : domaine public du tenant, utilisé par CloudRunHostMiddleware
         # pour réécrire le header HTTP_HOST quand la requête arrive depuis .a.run.app
-        'PUBLIC_DOMAIN': f"{tenant.slug}.paramynd.com",
+        'PUBLIC_DOMAIN': f"{tenant.slug}.ripanna.com",
     }
 
     # ── Étape 2 : Déployer Cloud Run ──────────────────────────────────────

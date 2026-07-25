@@ -97,7 +97,7 @@ def tenant_status_by_slug(request, slug):
     from django.db.models import Q
     try:
         tenant = Tenant.objects.get(
-            Q(slug=slug) | Q(custom_domain=f"{slug}.paramynd.com")
+            Q(slug=slug) | Q(custom_domain=f"{slug}.ripanna.com")
         )
     except Tenant.DoesNotExist:
         return Response(
@@ -107,11 +107,11 @@ def tenant_status_by_slug(request, slug):
     except Tenant.MultipleObjectsReturned:
         # Cas improbable — prendre le plus recent
         tenant = Tenant.objects.filter(
-            Q(slug=slug) | Q(custom_domain=f"{slug}.paramynd.com")
+            Q(slug=slug) | Q(custom_domain=f"{slug}.ripanna.com")
         ).order_by('-updated_at').first()
 
-    # URL publique = https://{slug}.paramynd.com (le slug = nom du service Cloud Run)
-    public_url = f'https://{slug}.paramynd.com'
+    # URL publique = https://{slug}.ripanna.com (le slug = nom du service Cloud Run)
+    public_url = f'https://{slug}.ripanna.com'
     if tenant.custom_domain and tenant.domain_status == 'active':
         public_url = f'https://{tenant.custom_domain}'
 

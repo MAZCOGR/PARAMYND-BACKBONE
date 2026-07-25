@@ -47,7 +47,7 @@
           dbNameInput.placeholder = slug ? `paramynd_${slug.replace(/-/g,'_')}` : 'paramynd_acme';
         }
         if (customDomainInput && !domainManuallyEdited) {
-          customDomainInput.value = slug ? `${slug}.paramynd.com` : '';
+          customDomainInput.value = slug ? `${slug}.ripanna.com` : '';
         }
       }
     })();
