@@ -320,7 +320,7 @@ OAUTH2_PROVIDER = {
 TWILIO_ACCOUNT_SID  = env('TWILIO_ACCOUNT_SID', default='')
 TWILIO_AUTH_TOKEN   = env('TWILIO_AUTH_TOKEN', default='')
 TWILIO_FROM_NUMBER  = env('TWILIO_FROM_NUMBER', default='')         # fallback legacy
-TWILIO_VERIFY_SERVICE_SID = env('TWILIO_VERIFY_SERVICE_SID', default='')  # Verify API
+TWILIO_VERIFY_SERVICE_SID = env('TWILIO_VERIFY_SERVICE_SID', default='VAc812dd1e03ef2c0a33cfdd6205c8da96')  # Twilio Verify API
 
 # ==============================================================================
 # GITHUB API
