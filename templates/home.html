@@ -15,10 +15,7 @@
     font-size: 22px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    background: linear-gradient(135deg, #ffffff 0%, #c8b8ff 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: #ffffff;
     line-height: 1;
   }
   .ripanna-wordmark-sm {
@@ -27,43 +24,8 @@
     font-size: 16px;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    background: linear-gradient(135deg, #ffffff 0%, #c8b8ff 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: #ffffff;
     line-height: 1;
-  }
-  .hero-acronym {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-    margin-bottom: 40px;
-    padding: 20px 28px;
-    border: 1px solid rgba(200, 184, 255, 0.25);
-    border-radius: 14px;
-    background: rgba(200, 184, 255, 0.06);
-    backdrop-filter: blur(12px);
-  }
-  .hero-acronym-name {
-    font-family: 'Outfit', sans-serif;
-    font-weight: 900;
-    font-size: 52px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    background: linear-gradient(135deg, #ffffff 0%, #c8b8ff 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    line-height: 1;
-  }
-  .hero-acronym-sub {
-    font-family: 'Inter', sans-serif;
-    font-size: 13px;
-    font-weight: 400;
-    color: rgba(200, 184, 255, 0.8);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
   }
 </style>
 {% endblock %}
@@ -96,17 +58,16 @@
   <div class="hero-ambient"></div>
   <div class="hero-content">
 
-    <div class="eyebrow">
-      <span class="eyebrow-line"></span>
-      Orchestration Agent-to-Agent
-    </div>
-
     <h1 class="hero-title" style="margin-bottom: 16px;">
-      <span class="accent-word" style="font-family: 'Outfit', sans-serif; letter-spacing: -2px; font-weight: 900;">RIPANNA</span>
+      <span style="font-family: 'Outfit', sans-serif; letter-spacing: -2px; font-weight: 900; color: #ffffff;">RIPANNA</span>
     </h1>
 
-    <p class="hero-sub" style="font-family: 'Outfit', 'Inter', sans-serif; font-size: clamp(16px, 2.2vw, 22px); font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; background: linear-gradient(120deg, rgba(255,255,255,0.95) 0%, #c8b8ff 60%, var(--teal) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; max-width: 720px; margin-bottom: 40px;">
+    <p class="hero-sub" style="font-family: 'Outfit', 'Inter', sans-serif; font-size: clamp(15px, 2vw, 20px); font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.7); max-width: 720px; margin-bottom: 20px; background: none; -webkit-text-fill-color: initial;">
       Real-time Intelligent Planning, Analytics &amp; Neural-Network Agent
+    </p>
+
+    <p style="font-size: clamp(16px, 1.8vw, 19px); color: var(--gray-2); max-width: 620px; margin: 0 auto 40px; line-height: 1.6; font-weight: 400;">
+      La plateforme d'orchestration IA nouvelle génération qui unifie vos ERP, EPM et systèmes opérationnels pour analyser, planifier et exécuter vos décisions en temps réel.
     </p>
 
     <div class="hero-ctas">
