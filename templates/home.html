@@ -6,8 +6,66 @@
 {% block extra_head %}
 <meta name="description" content="Ripanna unifie vos ERP, EPM et OMP via une couche d'orchestration IA pour analyser, planifier et décider en temps réel.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/css/home.css">
+<style>
+  .ripanna-wordmark {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #ffffff 0%, #c8b8ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+  }
+  .ripanna-wordmark-sm {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 16px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #ffffff 0%, #c8b8ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+  }
+  .hero-acronym {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin-bottom: 28px;
+    padding: 14px 20px;
+    border: 1px solid rgba(200, 184, 255, 0.2);
+    border-radius: 10px;
+    background: rgba(200, 184, 255, 0.05);
+    backdrop-filter: blur(10px);
+  }
+  .hero-acronym-name {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 32px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #ffffff 0%, #c8b8ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+  }
+  .hero-acronym-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 11.5px;
+    font-weight: 400;
+    color: rgba(200, 184, 255, 0.75);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+</style>
 {% endblock %}
 
 {% block body %}
@@ -15,8 +73,7 @@
 <!-- ══════════════ NAV ══════════════ -->
 <nav class="nav" id="nav">
   <a href="{% url 'home' %}" class="nav-logo">
-    <div class="nav-logo-mark">🧠</div>
-    <span class="nav-logo-name">Ripanna Admin</span>
+    <span class="ripanna-wordmark">RIPANNA</span>
   </a>
 
   <div class="nav-center">
@@ -38,6 +95,11 @@
 <section class="hero">
   <div class="hero-ambient"></div>
   <div class="hero-content">
+
+    <div class="hero-acronym">
+      <span class="hero-acronym-name">RIPANNA</span>
+      <span class="hero-acronym-sub">Real-time Intelligent Planning, Analytics &amp; Neural-Network Agent</span>
+    </div>
 
     <div class="eyebrow">
       <span class="eyebrow-line"></span>
@@ -367,7 +429,7 @@
 <!-- ══════════════ FOOTER ══════════════ -->
 <footer class="footer">
   <div class="footer-left">
-    <div class="nav-logo-mark" style="width:24px;height:24px;font-size:12px;">🧠</div>
+    <span class="ripanna-wordmark-sm">RIPANNA</span>
     <span class="footer-copy">© 2026 Ripanna</span>
   </div>
   <div class="footer-links">
