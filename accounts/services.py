@@ -42,11 +42,15 @@ def send_phone_verification(phone: str) -> bool:
     """
     try:
         from twilio.rest import Client
-        client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+        sid = (getattr(settings, 'TWILIO_ACCOUNT_SID', '') or '').strip()
+        token = (getattr(settings, 'TWILIO_AUTH_TOKEN', '') or '').strip()
+        service_sid = (getattr(settings, 'TWILIO_VERIFY_SERVICE_SID', '') or '').strip()
+
+        client = Client(sid, token)
         verification = client.verify.v2 \
-            .services(settings.TWILIO_VERIFY_SERVICE_SID) \
+            .services(service_sid) \
             .verifications \
-            .create(to=phone, channel='sms')
+            .create(to=phone.strip(), channel='sms')
         logger.info(f"[VERIFY] Sent to {phone}, status: {verification.status}")
         return True
     except Exception as e:
@@ -62,12 +66,15 @@ def check_phone_verification(phone: str, code: str) -> tuple:
     """
     try:
         from twilio.rest import Client
-        from twilio.base.exceptions import TwilioRestException
-        client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+        sid = (getattr(settings, 'TWILIO_ACCOUNT_SID', '') or '').strip()
+        token = (getattr(settings, 'TWILIO_AUTH_TOKEN', '') or '').strip()
+        service_sid = (getattr(settings, 'TWILIO_VERIFY_SERVICE_SID', '') or '').strip()
+
+        client = Client(sid, token)
         result = client.verify.v2 \
-            .services(settings.TWILIO_VERIFY_SERVICE_SID) \
+            .services(service_sid) \
             .verification_checks \
-            .create(to=phone, code=code)
+            .create(to=phone.strip(), code=code.strip())
         approved = result.status == 'approved'
         logger.info(f"[VERIFY] Check for {phone}: {result.status}")
         return approved, ''
